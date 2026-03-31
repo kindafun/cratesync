@@ -78,9 +78,9 @@ export function VariantB() {
       {/* Top bar */}
       <div style={s.topBar}>
         <div>
-          <span style={s.topId}>DMIG-LOCAL · v0.1</span>
+          <span style={s.topId}>CRATESYNC · v0.1</span>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <span style={s.topName}>Collection split control room</span>
+            <span style={s.topName}>CrateSync</span>
             <span style={s.statusChip}>● Backend online</span>
           </div>
         </div>

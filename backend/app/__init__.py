@@ -1,2 +1,1 @@
-"""Discogs Migration app package."""
-
+"""CrateSync app package."""

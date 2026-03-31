@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useState, type ReactNode } from "react";
+import { startTransition, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { API_ORIGINS, api } from "./lib/api";
 import type {
@@ -28,8 +28,16 @@ type OAuthCompleteMessage = {
   account?: ConnectedAccount;
 };
 
-type SnapshotPageSize = 50 | 100 | 250;
-type SnapshotSortColumn = "artist" | "title" | "year" | "folder" | "genre" | "label" | "added";
+type SnapshotSortColumn =
+  | "artist"
+  | "title"
+  | "year"
+  | "folder"
+  | "genre"
+  | "style"
+  | "label"
+  | "format"
+  | "added";
 type SnapshotSortDirection = "asc" | "desc";
 type FilterKey =
   | "specific_date"
@@ -646,6 +654,10 @@ export function App() {
     setSelectedSourceItemIds((current) => appendUnique(current, filteredSourceItemIds));
   }
 
+  function selectSourceRange(itemIds: string[]) {
+    setSelectedSourceItemIds((current) => appendUnique(current, itemIds));
+  }
+
   function deselectFilteredItems() {
     const visibleIds = new Set(filteredSourceItemIds);
     setSelectedSourceItemIds((current) => current.filter((itemId) => !visibleIds.has(itemId)));
@@ -1077,6 +1089,7 @@ export function App() {
             selectedCount={selectedSourceCount}
             selectedItemIds={selectedSourceIdSet}
             onToggleSelect={toggleSourceSelection}
+            onSelectRange={selectSourceRange}
             onSelectAllVisible={selectFilteredItems}
             onDeselectVisible={deselectFilteredItems}
             onClearSelection={clearSelectedItems}
@@ -1515,6 +1528,7 @@ function SourceSelectionSection({
   selectedCount,
   selectedItemIds,
   onToggleSelect,
+  onSelectRange,
   onSelectAllVisible,
   onDeselectVisible,
   onClearSelection,
@@ -1526,44 +1540,64 @@ function SourceSelectionSection({
   selectedCount: number;
   selectedItemIds: Set<string>;
   onToggleSelect(itemId: string): void;
+  onSelectRange(itemIds: string[]): void;
   onSelectAllVisible(): void;
   onDeselectVisible(): void;
   onClearSelection(): void;
 }) {
-  const [pageSize, setPageSize] = useState<SnapshotPageSize>(50);
-  const [pageIndex, setPageIndex] = useState(0);
   const [sortColumn, setSortColumn] = useState<SnapshotSortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<SnapshotSortDirection>("asc");
-
-  useEffect(() => {
-    setPageIndex(0);
-  }, [items]);
+  const lastInteractedItemIdRef = useRef<string | null>(null);
 
   const sortedItems = sortSnapshotItems(items, sortColumn, sortDirection);
   const totalItems = sortedItems.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const currentPage = Math.min(pageIndex, totalPages - 1);
-  const paginatedItems = sortedItems.slice(currentPage * pageSize, currentPage * pageSize + pageSize);
-  const pageStart = totalItems === 0 ? 0 : currentPage * pageSize + 1;
-  const pageEnd = totalItems === 0 ? 0 : Math.min((currentPage + 1) * pageSize, totalItems);
-  const tableWrapClassName = `table-wrap${pageSize > 50 ? " table-wrap-tall" : ""}`;
   const columns: Array<{ key: SnapshotSortColumn; label: string }> = [
     { key: "artist", label: "Artist" },
     { key: "title", label: "Title" },
-    { key: "folder", label: "Folder" },
-    { key: "genre", label: "Genre / style" },
-    { key: "label", label: "Label / format" },
+    { key: "genre", label: "Genre" },
+    { key: "style", label: "Style" },
+    { key: "label", label: "Label" },
+    { key: "format", label: "Format" },
     { key: "added", label: "Added" },
   ];
 
   function handleSort(nextColumn: SnapshotSortColumn) {
-    setPageIndex(0);
     if (sortColumn === nextColumn) {
       setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
       return;
     }
     setSortColumn(nextColumn);
     setSortDirection("asc");
+  }
+
+  useEffect(() => {
+    if (!lastInteractedItemIdRef.current) return;
+    if (!sortedItems.some((item) => item.id === lastInteractedItemIdRef.current)) {
+      lastInteractedItemIdRef.current = null;
+    }
+  }, [sortedItems]);
+
+  function handleItemInteraction(itemId: string, withRange: boolean) {
+    if (withRange && lastInteractedItemIdRef.current) {
+      const startIndex = sortedItems.findIndex((item) => item.id === lastInteractedItemIdRef.current);
+      const endIndex = sortedItems.findIndex((item) => item.id === itemId);
+
+      if (startIndex >= 0 && endIndex >= 0) {
+        const [fromIndex, toIndex] = startIndex < endIndex ? [startIndex, endIndex] : [endIndex, startIndex];
+        onSelectRange(sortedItems.slice(fromIndex, toIndex + 1).map((item) => item.id));
+        lastInteractedItemIdRef.current = itemId;
+        return;
+      }
+    }
+
+    onToggleSelect(itemId);
+    lastInteractedItemIdRef.current = itemId;
+  }
+
+  function handleRowKeyDown(event: KeyboardEvent<HTMLTableRowElement>, itemId: string) {
+    if (event.key !== " " && event.key !== "Enter") return;
+    event.preventDefault();
+    handleItemInteraction(itemId, event.shiftKey);
   }
 
   return (
@@ -1582,22 +1616,12 @@ function SourceSelectionSection({
 
       <div className="selection-toolbar">
         <div className="snapshot-controls">
-          <label className="snapshot-page-size">
-            <span>Rows</span>
-            <select
-              value={String(pageSize)}
-              onChange={(event) => {
-                setPageSize(Number(event.target.value) as SnapshotPageSize);
-                setPageIndex(0);
-              }}
-            >
-              <option value="50">50</option>
-              <option value="100">100</option>
-              <option value="250">250</option>
-            </select>
-          </label>
           <div className="header-note">
-            {totalItems === 0 ? "0 visible rows" : `Showing ${pageStart}-${pageEnd} of ${totalItems}`}
+            {totalItems === 0
+              ? "0 visible rows"
+              : totalItems > 25
+                ? `25 rows visible · scroll for ${totalItems - 25} more`
+                : `${totalItems} visible row${totalItems === 1 ? "" : "s"}`}
           </div>
         </div>
         <div className="toolbar-actions">
@@ -1613,42 +1637,21 @@ function SourceSelectionSection({
         </div>
       </div>
 
-      <div className="snapshot-pagination">
-        <button
-          type="button"
-          className="btn btn-ghost"
-          disabled={currentPage === 0 || totalItems === 0}
-          onClick={() => setPageIndex((value) => Math.max(0, value - 1))}
-        >
-          Previous
-        </button>
-        <span className="header-note">
-          Page {totalItems === 0 ? 0 : currentPage + 1} of {totalItems === 0 ? 0 : totalPages}
-        </span>
-        <button
-          type="button"
-          className="btn btn-ghost"
-          disabled={currentPage >= totalPages - 1 || totalItems === 0}
-          onClick={() => setPageIndex((value) => Math.min(totalPages - 1, value + 1))}
-        >
-          Next
-        </button>
-      </div>
-
-      <div className={tableWrapClassName}>
+      <div className="table-wrap snapshot-frame-wrap">
         <table className="data-table snapshot-table selection-table">
           <colgroup>
-            <col className="selection-col-pick" />
+            <col className="selection-col-choose" />
             <col className="snapshot-col-artist" />
             <col className="snapshot-col-title" />
-            <col className="snapshot-col-folder" />
             <col className="snapshot-col-genre" />
+            <col className="snapshot-col-style" />
             <col className="snapshot-col-label" />
+            <col className="snapshot-col-format" />
             <col className="snapshot-col-added" />
           </colgroup>
           <thead>
             <tr>
-              <th className="selection-column">Pick</th>
+              <th className="selection-column" aria-label="Select rows" />
               {columns.map((column) => {
                 const isActive = sortColumn === column.key;
                 return (
@@ -1672,37 +1675,46 @@ function SourceSelectionSection({
           <tbody>
             {!snapshot && (
               <tr>
-                <td colSpan={7} className="empty-cell">
+                <td colSpan={8} className="empty-cell">
                   Sync the source account to populate the local snapshot.
                 </td>
               </tr>
             )}
             {snapshot && items.length === 0 && (
               <tr>
-                <td colSpan={7} className="empty-cell">
+                <td colSpan={8} className="empty-cell">
                   No rows match the current search and optional filters.
                 </td>
               </tr>
             )}
-            {paginatedItems.map((item) => {
+            {sortedItems.map((item) => {
               const isSelected = selectedItemIds.has(item.id);
               return (
-                <tr key={item.id} className={isSelected ? "row-selected" : undefined}>
+                <tr
+                  key={item.id}
+                  className={`snapshot-selectable-row${isSelected ? " row-selected" : ""}`}
+                  aria-selected={isSelected}
+                  tabIndex={0}
+                  onClick={(event) => handleItemInteraction(item.id, event.shiftKey)}
+                  onKeyDown={(event) => handleRowKeyDown(event, item.id)}
+                >
                   <td>
                     <label className="row-checkbox">
                       <input
                         type="checkbox"
                         checked={isSelected}
-                        onChange={() => onToggleSelect(item.id)}
+                        aria-hidden="true"
+                        readOnly
+                        tabIndex={-1}
                       />
-                      <span>{isSelected ? "Selected" : "Choose"}</span>
                     </label>
                   </td>
                   <td>{item.artist}</td>
                   <td>{item.title}</td>
-                  <td>{item.folder_name ?? item.folder_id}</td>
-                  <td>{formatGenreStyle(item)}</td>
-                  <td>{formatLabelFormat(item)}</td>
+                  <td>{item.genres[0] ?? "—"}</td>
+                  <td>{item.styles[0] ?? "—"}</td>
+                  <td>{item.labels[0] ?? "—"}</td>
+                  <td>{item.formats[0] ?? "—"}</td>
                   <td>{formatDate(item.date_added)}</td>
                 </tr>
               );
@@ -1723,35 +1735,21 @@ function SnapshotSection({
   snapshot: CollectionSnapshot | null;
   items: CollectionItemSnapshot[];
 }) {
-  const [pageSize, setPageSize] = useState<SnapshotPageSize>(50);
-  const [pageIndex, setPageIndex] = useState(0);
   const [sortColumn, setSortColumn] = useState<SnapshotSortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<SnapshotSortDirection>("asc");
 
-  useEffect(() => {
-    setPageIndex(0);
-  }, [items]);
-
   const sortedItems = sortSnapshotItems(items, sortColumn, sortDirection);
   const totalItems = sortedItems.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const currentPage = Math.min(pageIndex, totalPages - 1);
-  const paginatedItems = sortedItems.slice(currentPage * pageSize, currentPage * pageSize + pageSize);
-  const pageStart = totalItems === 0 ? 0 : currentPage * pageSize + 1;
-  const pageEnd = totalItems === 0 ? 0 : Math.min((currentPage + 1) * pageSize, totalItems);
-  const tableWrapClassName = `table-wrap${pageSize > 50 ? " table-wrap-tall" : ""}`;
   const columns: Array<{ key: SnapshotSortColumn; label: string }> = [
     { key: "artist", label: "Artist" },
     { key: "title", label: "Title" },
     { key: "year", label: "Year" },
-    { key: "folder", label: "Folder" },
     { key: "genre", label: "Genre" },
     { key: "label", label: "Label" },
     { key: "added", label: "Added" },
   ];
 
   function handleSort(nextColumn: SnapshotSortColumn) {
-    setPageIndex(0);
     if (sortColumn === nextColumn) {
       setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
       return;
@@ -1775,53 +1773,21 @@ function SnapshotSection({
       </div>
       <div className="snapshot-toolbar">
         <div className="snapshot-controls">
-          <label className="snapshot-page-size">
-            <span>Rows</span>
-            <select
-              value={String(pageSize)}
-              onChange={(event) => {
-                setPageSize(Number(event.target.value) as SnapshotPageSize);
-                setPageIndex(0);
-              }}
-            >
-              <option value="50">50</option>
-              <option value="100">100</option>
-              <option value="250">250</option>
-            </select>
-          </label>
           <div className="header-note">
-            {totalItems === 0 ? "0 items" : `Showing ${pageStart}-${pageEnd} of ${totalItems}`}
+            {totalItems === 0
+              ? "0 items"
+              : totalItems > 25
+                ? `25 rows visible · scroll for ${totalItems - 25} more`
+                : `${totalItems} item${totalItems === 1 ? "" : "s"}`}
           </div>
         </div>
-        <div className="snapshot-pagination">
-          <button
-            type="button"
-            className="btn btn-ghost"
-            disabled={currentPage === 0 || totalItems === 0}
-            onClick={() => setPageIndex((value) => Math.max(0, value - 1))}
-          >
-            Previous
-          </button>
-          <span className="header-note">
-            Page {totalItems === 0 ? 0 : currentPage + 1} of {totalItems === 0 ? 0 : totalPages}
-          </span>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            disabled={currentPage >= totalPages - 1 || totalItems === 0}
-            onClick={() => setPageIndex((value) => Math.min(totalPages - 1, value + 1))}
-          >
-            Next
-          </button>
-        </div>
       </div>
-      <div className={tableWrapClassName}>
+      <div className="table-wrap snapshot-frame-wrap">
         <table className="data-table snapshot-table">
           <colgroup>
             <col className="snapshot-col-artist" />
             <col className="snapshot-col-title" />
             <col className="snapshot-col-year" />
-            <col className="snapshot-col-folder" />
             <col className="snapshot-col-genre" />
             <col className="snapshot-col-label" />
             <col className="snapshot-col-added" />
@@ -1851,17 +1817,16 @@ function SnapshotSection({
           <tbody>
             {items.length === 0 && (
               <tr>
-                <td colSpan={7} className="empty-cell">
+                <td colSpan={6} className="empty-cell">
                   Sync this account to populate the local snapshot.
                 </td>
               </tr>
             )}
-            {paginatedItems.map((item) => (
+            {sortedItems.map((item) => (
               <tr key={item.id}>
                 <td>{item.artist}</td>
                 <td>{item.title}</td>
                 <td>{item.year ?? "—"}</td>
-                <td>{item.folder_name ?? item.folder_id}</td>
                 <td>{item.genres[0] ?? "—"}</td>
                 <td>{item.labels[0] ?? "—"}</td>
                 <td>{formatDate(item.date_added)}</td>
@@ -2299,18 +2264,6 @@ function formatDateTime(value?: string | null) {
   return new Date(value).toLocaleString();
 }
 
-function formatGenreStyle(item: CollectionItemSnapshot) {
-  const genre = item.genres[0] ?? "—";
-  const style = item.styles[0];
-  return style ? `${genre} · ${style}` : genre;
-}
-
-function formatLabelFormat(item: CollectionItemSnapshot) {
-  const label = item.labels[0] ?? "—";
-  const format = item.formats[0];
-  return format ? `${label} · ${format}` : label;
-}
-
 function sortSnapshotItems(
   items: CollectionItemSnapshot[],
   sortColumn: SnapshotSortColumn | null,
@@ -2338,9 +2291,13 @@ function snapshotSortValue(item: CollectionItemSnapshot, column: SnapshotSortCol
     case "folder":
       return item.folder_name ?? String(item.folder_id);
     case "genre":
-      return item.genres[0] ?? item.styles[0] ?? null;
+      return item.genres[0] ?? null;
+    case "style":
+      return item.styles[0] ?? null;
     case "label":
-      return item.labels[0] ?? item.formats[0] ?? null;
+      return item.labels[0] ?? null;
+    case "format":
+      return item.formats[0] ?? null;
     case "added":
       return item.date_added ? new Date(item.date_added).getTime() : null;
   }

@@ -74,8 +74,8 @@ export function VariantC() {
     <div style={s.root}>
       <div style={s.topStrip}>
         <div>
-          <span style={s.appEyebrow}>Discogs Migration · Local v0.1</span>
-          <span style={s.appTitle}>Collection split <em>control room</em></span>
+          <span style={s.appEyebrow}>CrateSync · Local v0.1</span>
+          <span style={s.appTitle}>CrateSync</span>
         </div>
         <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
           <span style={s.statusDot(true)}><span style={s.dot(true)} /> Backend online</span>

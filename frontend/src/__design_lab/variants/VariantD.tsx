@@ -80,7 +80,7 @@ export function VariantD() {
   return (
     <div style={s.root}>
       <div style={s.topBar}>
-        <span style={s.topEye}>Discogs Migration · Local v0.1</span>
+        <span style={s.topEye}>CrateSync · Local v0.1</span>
         <div style={s.topActions}>
           <span style={s.statusPip}><span style={s.dot} /> Backend online</span>
           <button style={s.ghostBtn}>Clear data</button>
@@ -90,10 +90,7 @@ export function VariantD() {
       <div style={s.layout}>
         {/* Left column: big heading + account credits + planner */}
         <div style={s.leftCol}>
-          <h1 style={s.displayHeading}>
-            Collection split<br />
-            <span style={s.displaySub}>control room</span>
-          </h1>
+          <h1 style={s.displayHeading}>CrateSync</h1>
 
           {/* Account credits */}
           <div style={s.creditBlock}>

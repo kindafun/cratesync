@@ -31,6 +31,58 @@ type OAuthCompleteMessage = {
 type SnapshotPageSize = 50 | 100 | 250;
 type SnapshotSortColumn = "artist" | "title" | "year" | "folder" | "genre" | "label" | "added";
 type SnapshotSortDirection = "asc" | "desc";
+type FilterKey =
+  | "specific_date"
+  | "date_range"
+  | "artist_search"
+  | "title_search"
+  | "label_search"
+  | "genre_search"
+  | "format_search"
+  | "style_search"
+  | "genres"
+  | "labels"
+  | "formats"
+  | "styles"
+  | "folders";
+
+const FILTER_OPTIONS: Array<{ key: FilterKey; label: string }> = [
+  { key: "specific_date", label: "Specific date" },
+  { key: "date_range", label: "Date range" },
+  { key: "artist_search", label: "Artist search" },
+  { key: "title_search", label: "Title search" },
+  { key: "label_search", label: "Label search" },
+  { key: "genre_search", label: "Genre search" },
+  { key: "format_search", label: "Format search" },
+  { key: "style_search", label: "Style search" },
+  { key: "genres", label: "Genres" },
+  { key: "labels", label: "Labels" },
+  { key: "formats", label: "Formats" },
+  { key: "styles", label: "Styles" },
+  { key: "folders", label: "Folders" },
+];
+
+const EMPTY_FILTERS: SelectionFilters = {
+  date_from: null,
+  date_to: null,
+  artist_query: null,
+  title_query: null,
+  label_query: null,
+  genre_query: null,
+  format_query: null,
+  style_query: null,
+  folder_ids: [],
+  genres: [],
+  labels: [],
+  formats: [],
+  styles: [],
+  year_min: null,
+  year_max: null,
+  rating_min: null,
+  manual_include_snapshot_item_ids: [],
+  manual_exclude_snapshot_item_ids: [],
+  text_query: null,
+};
 
 function renderOAuthPopup(popup: Window, title: string, message: string, details?: string) {
   const detailMarkup = details
@@ -58,21 +110,6 @@ function escapeHtml(value: string) {
     .replaceAll("'", "&#39;");
 }
 
-const EMPTY_FILTERS: SelectionFilters = {
-  date_from: null,
-  date_to: null,
-  folder_ids: [],
-  genres: [],
-  labels: [],
-  formats: [],
-  year_min: null,
-  year_max: null,
-  rating_min: null,
-  manual_include_snapshot_item_ids: [],
-  manual_exclude_snapshot_item_ids: [],
-  text_query: null,
-};
-
 export function App() {
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
   const [jobs, setJobs] = useState<MigrationJob[]>([]);
@@ -89,46 +126,58 @@ export function App() {
   const [presetName, setPresetName] = useState("");
   const [selectedPresetId, setSelectedPresetId] = useState("");
   const [lastPreviewSignature, setLastPreviewSignature] = useState<string | null>(null);
+  const [nextFilterToAdd, setNextFilterToAdd] = useState<FilterKey | "">("");
+  const [reviewTableMode, setReviewTableMode] = useState<"selected" | "all">("selected");
 
   const [planName, setPlanName] = useState("Digital archive split");
   const [workflowMode, setWorkflowMode] = useState<WorkflowMode>("copy");
+  const [activeFilterKeys, setActiveFilterKeys] = useState<FilterKey[]>([]);
+  const [specificDate, setSpecificDate] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [textQuery, setTextQuery] = useState("");
-  const [yearMin, setYearMin] = useState("");
-  const [yearMax, setYearMax] = useState("");
-  const [ratingMin, setRatingMin] = useState("");
+  const [artistQuery, setArtistQuery] = useState("");
+  const [titleQuery, setTitleQuery] = useState("");
+  const [labelQuery, setLabelQuery] = useState("");
+  const [genreQuery, setGenreQuery] = useState("");
+  const [formatQuery, setFormatQuery] = useState("");
+  const [styleQuery, setStyleQuery] = useState("");
   const [selectedFolderIds, setSelectedFolderIds] = useState<number[]>([]);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
-  const [manualIncludeIds, setManualIncludeIds] = useState<string[]>([]);
-  const [manualExcludeIds, setManualExcludeIds] = useState<string[]>([]);
+  const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
+  const [selectedSourceItemIds, setSelectedSourceItemIds] = useState<string[]>([]);
   const [folderMappingOverrides, setFolderMappingOverrides] = useState<Record<string, number>>({});
-  const [customFieldMappingOverrides, setCustomFieldMappingOverrides] = useState<Record<string, string>>({});
+  const [customFieldMappingOverrides, setCustomFieldMappingOverrides] = useState<
+    Record<string, string>
+  >({});
 
   const sourceAccount = accounts.find((account) => account.role === "source");
   const destinationAccount = accounts.find((account) => account.role === "destination");
 
   const filters = buildFilters({
+    activeFilterKeys,
+    specificDate,
     dateFrom,
     dateTo,
-    textQuery,
-    yearMin,
-    yearMax,
-    ratingMin,
+    artistQuery,
+    titleQuery,
+    labelQuery,
+    genreQuery,
+    formatQuery,
+    styleQuery,
     selectedFolderIds,
     selectedGenres,
     selectedLabels,
     selectedFormats,
-    manualIncludeIds,
-    manualExcludeIds,
+    selectedStyles,
   });
 
   const currentPlan: MigrationPlanPreviewRequest = {
     source_account_id: sourceAccount?.id ?? "",
     destination_account_id: destinationAccount?.id ?? "",
     snapshot_id: sourceSnapshot?.id ?? "",
+    selected_snapshot_item_ids: selectedSourceItemIds,
     workflow_mode: workflowMode,
     name: planName.trim() || "Untitled plan",
     filters,
@@ -140,9 +189,14 @@ export function App() {
 
   const previewSelectedIds = new Set(preview?.selected_items.map((item) => item.id) ?? []);
   const duplicateReleaseIds = new Set(preview?.duplicate_release_ids ?? []);
+  const selectedSourceIdSet = new Set(selectedSourceItemIds);
+  const filteredSourceItems = filterSourceItems(sourceItems, filters);
+  const filteredSourceItemIds = filteredSourceItems.map((item) => item.id);
+  const selectedSourceCount = selectedSourceItemIds.length;
   const launchBlocked =
     !preview ||
     previewIsStale ||
+    selectedSourceCount === 0 ||
     preview.selected_count === 0 ||
     preview.blocking_conflicts.length > 0 ||
     !sourceAccount ||
@@ -153,6 +207,7 @@ export function App() {
   const genreOptions = deriveStringOptions(sourceItems, "genres");
   const labelOptions = deriveStringOptions(sourceItems, "labels");
   const formatOptions = deriveStringOptions(sourceItems, "formats");
+  const styleOptions = deriveStringOptions(sourceItems, "styles");
   const destinationFolderLookup = deriveFolderLookup(destinationItems);
   const recentJobs = jobs.slice(0, 8);
   const previewConflicts = preview?.blocking_conflicts ?? [];
@@ -160,6 +215,50 @@ export function App() {
   const customFieldConflicts = previewConflicts.filter(
     (conflict) => conflict.type === "custom_field_mapping",
   );
+  const availableFilterOptions = FILTER_OPTIONS.filter((option) => {
+    if (activeFilterKeys.includes(option.key)) return false;
+    if (
+      option.key === "specific_date" &&
+      activeFilterKeys.includes("date_range")
+    ) {
+      return false;
+    }
+    if (
+      option.key === "date_range" &&
+      activeFilterKeys.includes("specific_date")
+    ) {
+      return false;
+    }
+    return true;
+  });
+  const reviewItems =
+    reviewTableMode === "selected" ? preview?.selected_items ?? [] : sourceItems;
+  const reviewState = deriveReviewState({
+    preview,
+    previewIsStale,
+    selectedSourceCount,
+    sourceAccount,
+    destinationAccount,
+    sourceSnapshot,
+  });
+
+  useEffect(() => {
+    if (!nextFilterToAdd && availableFilterOptions[0]) {
+      setNextFilterToAdd(availableFilterOptions[0].key);
+      return;
+    }
+    if (
+      nextFilterToAdd &&
+      !availableFilterOptions.some((option) => option.key === nextFilterToAdd)
+    ) {
+      setNextFilterToAdd(availableFilterOptions[0]?.key ?? "");
+    }
+  }, [availableFilterOptions, nextFilterToAdd]);
+
+  useEffect(() => {
+    const validSourceIds = new Set(sourceItems.map((item) => item.id));
+    setSelectedSourceItemIds((current) => current.filter((itemId) => validSourceIds.has(itemId)));
+  }, [sourceItems]);
 
   async function refreshWorkspace() {
     setLoading(true);
@@ -258,7 +357,7 @@ export function App() {
 
     window.addEventListener("message", handleOAuthMessage);
     return () => window.removeEventListener("message", handleOAuthMessage);
-  }, [refreshWorkspace]);
+  }, []);
 
   useEffect(() => {
     if (!sourceAccount) {
@@ -340,6 +439,7 @@ export function App() {
       await api.deleteAccount(accountId);
       setPreview(null);
       setLastPreviewSignature(null);
+      setSelectedSourceItemIds([]);
       if (
         jobDetail?.job.source_account_id === accountId ||
         jobDetail?.job.destination_account_id === accountId
@@ -364,10 +464,11 @@ export function App() {
       const response = await api.previewPlan(currentPlan);
       setPreview(response);
       setLastPreviewSignature(currentPlanSignature);
+      setReviewTableMode("selected");
       setStatus(
         response.blocking_conflicts.length > 0
           ? `Preview generated with ${response.blocking_conflicts.length} blocking conflict${response.blocking_conflicts.length !== 1 ? "s" : ""}.`
-          : `Preview generated for ${response.selected_count} collection items.`,
+          : `Preview generated for ${response.selected_count} selected release${response.selected_count !== 1 ? "s" : ""}.`,
       );
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Preview failed.");
@@ -426,6 +527,7 @@ export function App() {
       setLastPreviewSignature(null);
       setJobDetail(null);
       setSelectedJobId(null);
+      setSelectedSourceItemIds([]);
       setPresets([]);
       setSelectedPresetId("");
       await refreshWorkspace();
@@ -442,7 +544,7 @@ export function App() {
     }
     const trimmedName = presetName.trim() || planName.trim();
     if (!trimmedName) {
-      setStatus("Give the preset a name before saving.");
+      setStatus("Give the saved view a name before saving.");
       return;
     }
     const payload: SaveSelectionPresetRequest = {
@@ -456,29 +558,33 @@ export function App() {
       setPresetName("");
       setSelectedPresetId(preset.id);
       await refreshPresets(sourceAccount.id);
-      setStatus(`Preset "${preset.name}" saved.`);
+      setStatus(`Saved view "${preset.name}" saved.`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Preset save failed.");
     }
   }
 
   function applyPreset(preset: SelectionPreset) {
+    const loadedState = deriveLoadedFilterState(preset.filters);
     setSelectedPresetId(preset.id);
-    setDateFrom(toDateTimeLocalValue(preset.filters.date_from));
-    setDateTo(toDateTimeLocalValue(preset.filters.date_to));
-    setTextQuery(preset.filters.text_query ?? "");
-    setYearMin(toNumberInputValue(preset.filters.year_min));
-    setYearMax(toNumberInputValue(preset.filters.year_max));
-    setRatingMin(toNumberInputValue(preset.filters.rating_min));
+    setActiveFilterKeys(loadedState.activeFilterKeys);
+    setSpecificDate(loadedState.specificDate);
+    setDateFrom(loadedState.dateFrom);
+    setDateTo(loadedState.dateTo);
+    setArtistQuery(loadedState.artistQuery);
+    setTitleQuery(loadedState.titleQuery);
+    setLabelQuery(loadedState.labelQuery);
+    setGenreQuery(loadedState.genreQuery);
+    setFormatQuery(loadedState.formatQuery);
+    setStyleQuery(loadedState.styleQuery);
     setSelectedFolderIds(preset.filters.folder_ids ?? []);
     setSelectedGenres(preset.filters.genres ?? []);
     setSelectedLabels(preset.filters.labels ?? []);
     setSelectedFormats(preset.filters.formats ?? []);
-    setManualIncludeIds(preset.filters.manual_include_snapshot_item_ids ?? []);
-    setManualExcludeIds(preset.filters.manual_exclude_snapshot_item_ids ?? []);
+    setSelectedStyles(preset.filters.styles ?? []);
     setPreview(null);
     setLastPreviewSignature(null);
-    setStatus(`Loaded preset "${preset.name}".`);
+    setStatus(`Loaded saved view "${preset.name}".`);
   }
 
   function handlePresetSelection(presetId: string) {
@@ -489,18 +595,64 @@ export function App() {
     }
   }
 
-  function toggleManualInclude(itemId: string) {
-    setManualIncludeIds((current) =>
-      current.includes(itemId) ? current.filter((value) => value !== itemId) : [...current, itemId],
-    );
-    setManualExcludeIds((current) => current.filter((value) => value !== itemId));
+  function addFilter(key: FilterKey) {
+    setActiveFilterKeys((current) => {
+      const withoutConflicts = current.filter((value) => {
+        if (key === "specific_date" && value === "date_range") return false;
+        if (key === "date_range" && value === "specific_date") return false;
+        return true;
+      });
+      return withoutConflicts.includes(key) ? withoutConflicts : [...withoutConflicts, key];
+    });
+
+    if (key === "specific_date") {
+      setDateFrom("");
+      setDateTo("");
+    }
+    if (key === "date_range") {
+      setSpecificDate("");
+    }
   }
 
-  function toggleManualExclude(itemId: string) {
-    setManualExcludeIds((current) =>
-      current.includes(itemId) ? current.filter((value) => value !== itemId) : [...current, itemId],
+  function removeFilter(key: FilterKey) {
+    setActiveFilterKeys((current) => current.filter((value) => value !== key));
+    if (key === "specific_date") setSpecificDate("");
+    if (key === "date_range") {
+      setDateFrom("");
+      setDateTo("");
+    }
+    if (key === "artist_search") setArtistQuery("");
+    if (key === "title_search") setTitleQuery("");
+    if (key === "label_search") setLabelQuery("");
+    if (key === "genre_search") setGenreQuery("");
+    if (key === "format_search") setFormatQuery("");
+    if (key === "style_search") setStyleQuery("");
+    if (key === "genres") setSelectedGenres([]);
+    if (key === "labels") setSelectedLabels([]);
+    if (key === "formats") setSelectedFormats([]);
+    if (key === "styles") setSelectedStyles([]);
+    if (key === "folders") setSelectedFolderIds([]);
+  }
+
+  function toggleSourceSelection(itemId: string) {
+    setSelectedSourceItemIds((current) =>
+      current.includes(itemId)
+        ? current.filter((value) => value !== itemId)
+        : [...current, itemId],
     );
-    setManualIncludeIds((current) => current.filter((value) => value !== itemId));
+  }
+
+  function selectFilteredItems() {
+    setSelectedSourceItemIds((current) => appendUnique(current, filteredSourceItemIds));
+  }
+
+  function deselectFilteredItems() {
+    const visibleIds = new Set(filteredSourceItemIds);
+    setSelectedSourceItemIds((current) => current.filter((itemId) => !visibleIds.has(itemId)));
+  }
+
+  function clearSelectedItems() {
+    setSelectedSourceItemIds([]);
   }
 
   function setFolderOverride(sourceFolderId: string, destinationFolderId: number | null) {
@@ -520,6 +672,233 @@ export function App() {
       ...current,
       [fieldName]: destinationField,
     }));
+  }
+
+  function renderFilterBlock(key: FilterKey) {
+    switch (key) {
+      case "specific_date":
+        return (
+          <FilterBlock
+            key={key}
+            label="Specific date"
+            description="Keep releases added on one exact day."
+            onRemove={() => removeFilter(key)}
+          >
+            <input
+              type="date"
+              value={specificDate}
+              onChange={(event) => setSpecificDate(event.target.value)}
+            />
+          </FilterBlock>
+        );
+      case "date_range":
+        return (
+          <FilterBlock
+            key={key}
+            label="Date range"
+            description="Keep releases added within a start and end window."
+            onRemove={() => removeFilter(key)}
+          >
+            <div className="field-grid">
+              <Field label="Added after">
+                <input
+                  type="datetime-local"
+                  value={dateFrom}
+                  onChange={(event) => setDateFrom(event.target.value)}
+                />
+              </Field>
+              <Field label="Added before">
+                <input
+                  type="datetime-local"
+                  value={dateTo}
+                  onChange={(event) => setDateTo(event.target.value)}
+                />
+              </Field>
+            </div>
+          </FilterBlock>
+        );
+      case "artist_search":
+        return (
+          <FilterBlock
+            key={key}
+            label="Artist search"
+            description="Match artist names without affecting title or label fields."
+            onRemove={() => removeFilter(key)}
+          >
+            <input
+              type="text"
+              placeholder="e.g. Four Tet"
+              value={artistQuery}
+              onChange={(event) => setArtistQuery(event.target.value)}
+            />
+          </FilterBlock>
+        );
+      case "title_search":
+        return (
+          <FilterBlock
+            key={key}
+            label="Title search"
+            description="Search release titles only."
+            onRemove={() => removeFilter(key)}
+          >
+            <input
+              type="text"
+              placeholder="e.g. Rounds"
+              value={titleQuery}
+              onChange={(event) => setTitleQuery(event.target.value)}
+            />
+          </FilterBlock>
+        );
+      case "label_search":
+        return (
+          <FilterBlock
+            key={key}
+            label="Label search"
+            description="Search label names without mixing them with artist or title."
+            onRemove={() => removeFilter(key)}
+          >
+            <input
+              type="text"
+              placeholder="e.g. Warp"
+              value={labelQuery}
+              onChange={(event) => setLabelQuery(event.target.value)}
+            />
+          </FilterBlock>
+        );
+      case "genre_search":
+        return (
+          <FilterBlock
+            key={key}
+            label="Genre search"
+            description="Search genre values directly."
+            onRemove={() => removeFilter(key)}
+          >
+            <input
+              type="text"
+              placeholder="e.g. Electronic"
+              value={genreQuery}
+              onChange={(event) => setGenreQuery(event.target.value)}
+            />
+          </FilterBlock>
+        );
+      case "format_search":
+        return (
+          <FilterBlock
+            key={key}
+            label="Format search"
+            description="Search Discogs format values."
+            onRemove={() => removeFilter(key)}
+          >
+            <input
+              type="text"
+              placeholder="e.g. Vinyl"
+              value={formatQuery}
+              onChange={(event) => setFormatQuery(event.target.value)}
+            />
+          </FilterBlock>
+        );
+      case "style_search":
+        return (
+          <FilterBlock
+            key={key}
+            label="Style search"
+            description="Search style values independently from genres."
+            onRemove={() => removeFilter(key)}
+          >
+            <input
+              type="text"
+              placeholder="e.g. Deep House"
+              value={styleQuery}
+              onChange={(event) => setStyleQuery(event.target.value)}
+            />
+          </FilterBlock>
+        );
+      case "genres":
+        return (
+          <FilterBlock
+            key={key}
+            label="Genres"
+            description="Narrow the source snapshot by genre."
+            onRemove={() => removeFilter(key)}
+          >
+            <MultiValueSelect
+              options={genreOptions}
+              values={selectedGenres}
+              onChange={setSelectedGenres}
+            />
+          </FilterBlock>
+        );
+      case "labels":
+        return (
+          <FilterBlock
+            key={key}
+            label="Labels"
+            description="Limit the list to selected labels."
+            onRemove={() => removeFilter(key)}
+          >
+            <MultiValueSelect
+              options={labelOptions}
+              values={selectedLabels}
+              onChange={setSelectedLabels}
+            />
+          </FilterBlock>
+        );
+      case "formats":
+        return (
+          <FilterBlock
+            key={key}
+            label="Formats"
+            description="Filter the source list by Discogs formats."
+            onRemove={() => removeFilter(key)}
+          >
+            <MultiValueSelect
+              options={formatOptions}
+              values={selectedFormats}
+              onChange={setSelectedFormats}
+            />
+          </FilterBlock>
+        );
+      case "styles":
+        return (
+          <FilterBlock
+            key={key}
+            label="Styles"
+            description="Use Discogs styles as an optional drill-down."
+            onRemove={() => removeFilter(key)}
+          >
+            <MultiValueSelect
+              options={styleOptions}
+              values={selectedStyles}
+              onChange={setSelectedStyles}
+            />
+          </FilterBlock>
+        );
+      case "folders":
+        return (
+          <FilterBlock
+            key={key}
+            label="Folders"
+            description="Advanced: narrow the source list by folder."
+            onRemove={() => removeFilter(key)}
+          >
+            <select
+              multiple
+              value={selectedFolderIds.map(String)}
+              onChange={(event) =>
+                setSelectedFolderIds(
+                  Array.from(event.currentTarget.selectedOptions, (option) => Number(option.value)),
+                )
+              }
+            >
+              {folderOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </FilterBlock>
+        );
+    }
   }
 
   return (
@@ -542,8 +921,8 @@ export function App() {
           <div className="left-hero">
             <h1>CrateSync</h1>
             <p className="lead-copy">
-              Shape the migration set, review conflicts inline, and launch copy or move jobs with
-              audit visibility before anything destructive happens.
+              Filter the source view only when needed, explicitly pick the releases to migrate, and
+              use the review step to confirm exactly what will happen before launch.
             </p>
             <div className="status-line">{status}</div>
           </div>
@@ -569,8 +948,45 @@ export function App() {
           </section>
 
           <section className="rail-section">
-            <div className="section-label">Planner</div>
-            <div className="editorial-title">Migration composer</div>
+            <div className="planner-header">
+              <div>
+                <div className="section-label">Step 1</div>
+                <div className="editorial-title">Build the source view</div>
+              </div>
+
+              <details className="saved-views-menu">
+                <summary>Saved views</summary>
+                <div className="saved-views-panel">
+                  <Field label="Open saved view">
+                    <select
+                      value={selectedPresetId}
+                      disabled={!sourceAccount || presets.length === 0}
+                      onChange={(event) => handlePresetSelection(event.target.value)}
+                    >
+                      <option value="">Select a saved view</option>
+                      {presets.map((preset) => (
+                        <option key={preset.id} value={preset.id}>
+                          {preset.name}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Save current filters">
+                    <div className="inline-action">
+                      <input
+                        type="text"
+                        placeholder="Night session split"
+                        value={presetName}
+                        onChange={(event) => setPresetName(event.target.value)}
+                      />
+                      <button className="btn btn-ghost" onClick={() => void handleSavePreset()}>
+                        Save
+                      </button>
+                    </div>
+                  </Field>
+                </div>
+              </details>
+            </div>
 
             <div className="field-stack">
               <Field label="Plan name">
@@ -598,108 +1014,89 @@ export function App() {
                 </div>
               </Field>
 
-              <div className="field-grid">
-                <Field label="Added after">
-                  <input
-                    type="datetime-local"
-                    value={dateFrom}
-                    onChange={(event) => setDateFrom(event.target.value)}
-                  />
-                </Field>
-                <Field label="Added on or before">
-                  <input
-                    type="datetime-local"
-                    value={dateTo}
-                    onChange={(event) => setDateTo(event.target.value)}
-                  />
-                </Field>
+              <div className="filter-builder">
+                <div className="filter-builder-header">
+                  <div>
+                    <div className="field-label">Optional filters</div>
+                    <p className="filter-builder-copy">
+                      Add only the filters you want to use, then choose releases from the source
+                      table.
+                    </p>
+                  </div>
+                </div>
+
+                {activeFilterKeys.length === 0 && (
+                  <div className="empty-block compact">
+                    No optional filters enabled. Add only the search or metadata fields you want to
+                    narrow the source snapshot.
+                  </div>
+                )}
+
+                <div className="filter-list">{activeFilterKeys.map(renderFilterBlock)}</div>
+
+                {availableFilterOptions.length > 0 && (
+                  <div className="filter-add-row">
+                    <select
+                      value={nextFilterToAdd}
+                      onChange={(event) => setNextFilterToAdd(event.target.value as FilterKey)}
+                    >
+                      {availableFilterOptions.map((option) => (
+                        <option key={option.key} value={option.key}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      className="btn btn-ghost"
+                      disabled={!nextFilterToAdd}
+                      onClick={() => nextFilterToAdd && addFilter(nextFilterToAdd)}
+                    >
+                      Add filter
+                    </button>
+                  </div>
+                )}
               </div>
-
-              <Field label="Text filter">
-                <input
-                  type="text"
-                  placeholder="artist, title, label, genre"
-                  value={textQuery}
-                  onChange={(event) => setTextQuery(event.target.value)}
-                />
-              </Field>
-
-              <div className="field-grid field-grid-compact">
-                <Field label="Year min">
-                  <input
-                    type="number"
-                    value={yearMin}
-                    onChange={(event) => setYearMin(event.target.value)}
-                  />
-                </Field>
-                <Field label="Year max">
-                  <input
-                    type="number"
-                    value={yearMax}
-                    onChange={(event) => setYearMax(event.target.value)}
-                  />
-                </Field>
-                <Field label="Rating min">
-                  <input
-                    type="number"
-                    min="1"
-                    max="5"
-                    value={ratingMin}
-                    onChange={(event) => setRatingMin(event.target.value)}
-                  />
-                </Field>
-              </div>
-
-              <Field label="Folders">
-                <select
-                  multiple
-                  value={selectedFolderIds.map(String)}
-                  onChange={(event) =>
-                    setSelectedFolderIds(
-                      Array.from(event.currentTarget.selectedOptions, (option) =>
-                        Number(option.value),
-                      ),
-                    )
-                  }
-                >
-                  {folderOptions.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-
-              <div className="field-grid">
-                <Field label="Genres">
-                  <MultiValueSelect
-                    options={genreOptions}
-                    values={selectedGenres}
-                    onChange={setSelectedGenres}
-                  />
-                </Field>
-                <Field label="Labels">
-                  <MultiValueSelect
-                    options={labelOptions}
-                    values={selectedLabels}
-                    onChange={setSelectedLabels}
-                  />
-                </Field>
-              </div>
-
-              <Field label="Formats">
-                <MultiValueSelect
-                  options={formatOptions}
-                  values={selectedFormats}
-                  onChange={setSelectedFormats}
-                />
-              </Field>
             </div>
 
             <div className="planner-footer">
-              <div className="planner-actions">
+              <div className="stats-line">
+                <StatBlock label="Selected releases" value={selectedSourceCount} />
+                <StatBlock label="Visible after filters" value={filteredSourceItems.length} />
+                <StatBlock label="Source total" value={sourceItems.length} muted />
+              </div>
+            </div>
+          </section>
+        </aside>
+
+        <section className="shell-right">
+          <SourceSelectionSection
+            title={`Source selection — ${sourceAccount?.username ?? "Not connected"}`}
+            snapshot={sourceSnapshot}
+            items={filteredSourceItems}
+            totalSourceItems={sourceItems.length}
+            selectedCount={selectedSourceCount}
+            selectedItemIds={selectedSourceIdSet}
+            onToggleSelect={toggleSourceSelection}
+            onSelectAllVisible={selectFilteredItems}
+            onDeselectVisible={deselectFilteredItems}
+            onClearSelection={clearSelectedItems}
+          />
+
+          <SnapshotSection
+            title={`Destination reference — ${destinationAccount?.username ?? "Not connected"}`}
+            snapshot={destinationSnapshot}
+            items={destinationItems}
+          />
+
+          <section className="canvas-section">
+            <div className="canvas-header">
+              <div>
+                <div className="section-label">Step 3</div>
+                <h2>Review and launch</h2>
+              </div>
+              <div className="toolbar-actions">
                 <button className="btn btn-ghost" onClick={() => void handlePreview()}>
-                  Preview plan
+                  Generate preview
                 </button>
                 <button
                   className="btn btn-primary"
@@ -709,93 +1106,30 @@ export function App() {
                   Launch job
                 </button>
               </div>
-
-              <div className="stats-line">
-                <StatBlock label="Selected" value={preview?.selected_count ?? 0} />
-                <StatBlock label="Retained" value={preview?.retained_count ?? 0} />
-                <StatBlock
-                  label="Duplicates"
-                  value={preview?.duplicate_release_ids.length ?? 0}
-                  muted
-                />
-              </div>
             </div>
 
-            <section className="subsection">
-              <div className="section-label">Presets</div>
-              <div className="field-stack">
-                <Field label="Saved presets">
-                  <select
-                    value={selectedPresetId}
-                    disabled={!sourceAccount || presets.length === 0}
-                    onChange={(event) => handlePresetSelection(event.target.value)}
-                  >
-                    <option value="">Select a preset</option>
-                    {presets.map((preset) => (
-                      <option key={preset.id} value={preset.id}>
-                        {preset.name}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Save current filter set">
-                  <div className="inline-action">
-                    <input
-                      type="text"
-                      placeholder="Night session split"
-                      value={presetName}
-                      onChange={(event) => setPresetName(event.target.value)}
-                    />
-                    <button className="btn btn-ghost" onClick={() => void handleSavePreset()}>
-                      Save
-                    </button>
-                  </div>
-                </Field>
-              </div>
-            </section>
-          </section>
-        </aside>
-
-        <section className="shell-right">
-          <SnapshotSection
-            title={`Source — ${sourceAccount?.username ?? "Not connected"}`}
-            snapshot={sourceSnapshot}
-            items={sourceItems}
-          />
-          <SnapshotSection
-            title={`Destination — ${destinationAccount?.username ?? "Not connected"}`}
-            snapshot={destinationSnapshot}
-            items={destinationItems}
-          />
-
-          <section className="canvas-section">
-            <div className="canvas-header">
-              <div>
-                <div className="section-label">Preview</div>
-                <h2>Review workbench</h2>
-              </div>
-              <div className="header-note">
-                {preview
-                  ? `${preview.selected_count} selected · ${preview.retained_count} retained`
-                  : "Generate a preview to review selections and resolve conflicts."}
-              </div>
+            <div className={`review-banner review-banner-${reviewState.tone}`}>
+              <div className="section-label">Next action</div>
+              <h3>{reviewState.title}</h3>
+              <p>{reviewState.message}</p>
             </div>
 
-            {previewIsStale && (
-              <div className="message message-warning">
-                Planner settings changed after the last preview. Re-run preview before launching a
-                job.
-              </div>
-            )}
-
-            {!preview && (
-              <div className="empty-block">
-                Preview results, duplicate detection, and conflict resolution will appear here.
-              </div>
-            )}
+            <div className="summary-strip">
+              <StatBlock label="Chosen releases" value={selectedSourceCount} />
+              <StatBlock label="Preview included" value={preview?.selected_count ?? 0} />
+              <StatBlock label="Duplicates" value={preview?.duplicate_release_ids.length ?? 0} muted />
+            </div>
 
             {preview && (
               <>
+                <div className="review-summary">
+                  <span>Workflow: {workflowMode}</span>
+                  <span>
+                    {preview.selected_count} included · {preview.retained_count} not included
+                  </span>
+                  <span>{preview.blocking_conflicts.length} blocking issue(s)</span>
+                </div>
+
                 {preview.warnings.length > 0 && (
                   <div className="message-list">
                     {preview.warnings.map((warning) => (
@@ -840,10 +1174,22 @@ export function App() {
                   ))}
                 </div>
 
-                <div className="review-summary">
-                  <span>{preview.duplicate_release_ids.length} duplicate release IDs skipped.</span>
-                  <span>{manualIncludeIds.length} manual include overrides.</span>
-                  <span>{manualExcludeIds.length} manual exclude overrides.</span>
+                <div className="review-table-header">
+                  <div className="section-label">Included release review</div>
+                  <div className="history-strip">
+                    <button
+                      className={`history-pill${reviewTableMode === "selected" ? " active" : ""}`}
+                      onClick={() => setReviewTableMode("selected")}
+                    >
+                      Selected only
+                    </button>
+                    <button
+                      className={`history-pill${reviewTableMode === "all" ? " active" : ""}`}
+                      onClick={() => setReviewTableMode("all")}
+                    >
+                      All source rows
+                    </button>
+                  </div>
                 </div>
 
                 <div className="table-wrap table-wrap-tall">
@@ -855,26 +1201,25 @@ export function App() {
                         <th>Source folder</th>
                         <th>Release</th>
                         <th>Added</th>
-                        <th>Preview</th>
-                        <th>Overrides</th>
+                        <th>Review state</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {sourceItems.map((item) => {
-                        const manuallyIncluded = manualIncludeIds.includes(item.id);
-                        const manuallyExcluded = manualExcludeIds.includes(item.id);
-                        const isSelected = previewSelectedIds.has(item.id);
+                      {reviewItems.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="empty-cell">
+                            No rows available for this review mode.
+                          </td>
+                        </tr>
+                      )}
+                      {reviewItems.map((item) => {
+                        const isPreviewSelected = previewSelectedIds.has(item.id);
+                        const isExplicitlySelected = selectedSourceIdSet.has(item.id);
                         const isDuplicate = duplicateReleaseIds.has(item.release_id);
                         return (
                           <tr
                             key={item.id}
-                            className={
-                              isSelected
-                                ? "row-selected"
-                                : manuallyExcluded
-                                  ? "row-excluded"
-                                  : undefined
-                            }
+                            className={isPreviewSelected ? "row-selected" : undefined}
                           >
                             <td>{item.artist}</td>
                             <td>{item.title}</td>
@@ -883,26 +1228,10 @@ export function App() {
                             <td>{formatDate(item.date_added)}</td>
                             <td>
                               <div className="preview-state">
-                                <span className={`state-pill${isSelected ? " active" : ""}`}>
-                                  {isSelected ? "Selected" : "Retained"}
+                                <span className={`state-pill${isPreviewSelected ? " active" : ""}`}>
+                                  {isPreviewSelected ? "Included" : isExplicitlySelected ? "Chosen" : "Not chosen"}
                                 </span>
                                 {isDuplicate && <span className="state-pill warning">Duplicate</span>}
-                              </div>
-                            </td>
-                            <td>
-                              <div className="override-actions">
-                                <button
-                                  className={`chip-button${manuallyIncluded ? " active" : ""}`}
-                                  onClick={() => toggleManualInclude(item.id)}
-                                >
-                                  Include
-                                </button>
-                                <button
-                                  className={`chip-button${manuallyExcluded ? " active danger" : ""}`}
-                                  onClick={() => toggleManualExclude(item.id)}
-                                >
-                                  Exclude
-                                </button>
                               </div>
                             </td>
                           </tr>
@@ -912,6 +1241,14 @@ export function App() {
                   </table>
                 </div>
               </>
+            )}
+
+            {!preview && (
+              <div className="empty-block">
+                Use the source table to choose releases, then generate a preview here. This step
+                will summarize what gets copied or moved, highlight duplicates, and show any
+                conflicts you need to clear before launch.
+              </div>
             )}
           </section>
 
@@ -1103,6 +1440,10 @@ function MultiValueSelect({
   values: string[];
   onChange(values: string[]): void;
 }) {
+  if (options.length === 0) {
+    return <div className="empty-block compact">No values available in the synced source snapshot.</div>;
+  }
+
   return (
     <select
       multiple
@@ -1117,6 +1458,33 @@ function MultiValueSelect({
         </option>
       ))}
     </select>
+  );
+}
+
+function FilterBlock({
+  label,
+  description,
+  children,
+  onRemove,
+}: {
+  label: string;
+  description: string;
+  children: ReactNode;
+  onRemove(): void;
+}) {
+  return (
+    <article className="filter-block">
+      <div className="filter-block-header">
+        <div>
+          <div className="field-label">{label}</div>
+          <p className="filter-block-copy">{description}</p>
+        </div>
+        <button className="text-btn filter-remove" onClick={onRemove}>
+          Remove
+        </button>
+      </div>
+      {children}
+    </article>
   );
 }
 
@@ -1136,6 +1504,213 @@ function StatBlock({
       <span className={`stat-value${muted ? " muted" : ""}`}>{value}</span>
       <span className="stat-label">{label}</span>
     </div>
+  );
+}
+
+function SourceSelectionSection({
+  title,
+  snapshot,
+  items,
+  totalSourceItems,
+  selectedCount,
+  selectedItemIds,
+  onToggleSelect,
+  onSelectAllVisible,
+  onDeselectVisible,
+  onClearSelection,
+}: {
+  title: string;
+  snapshot: CollectionSnapshot | null;
+  items: CollectionItemSnapshot[];
+  totalSourceItems: number;
+  selectedCount: number;
+  selectedItemIds: Set<string>;
+  onToggleSelect(itemId: string): void;
+  onSelectAllVisible(): void;
+  onDeselectVisible(): void;
+  onClearSelection(): void;
+}) {
+  const [pageSize, setPageSize] = useState<SnapshotPageSize>(50);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [sortColumn, setSortColumn] = useState<SnapshotSortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<SnapshotSortDirection>("asc");
+
+  useEffect(() => {
+    setPageIndex(0);
+  }, [items]);
+
+  const sortedItems = sortSnapshotItems(items, sortColumn, sortDirection);
+  const totalItems = sortedItems.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const currentPage = Math.min(pageIndex, totalPages - 1);
+  const paginatedItems = sortedItems.slice(currentPage * pageSize, currentPage * pageSize + pageSize);
+  const pageStart = totalItems === 0 ? 0 : currentPage * pageSize + 1;
+  const pageEnd = totalItems === 0 ? 0 : Math.min((currentPage + 1) * pageSize, totalItems);
+  const tableWrapClassName = `table-wrap${pageSize > 50 ? " table-wrap-tall" : ""}`;
+  const columns: Array<{ key: SnapshotSortColumn; label: string }> = [
+    { key: "artist", label: "Artist" },
+    { key: "title", label: "Title" },
+    { key: "folder", label: "Folder" },
+    { key: "genre", label: "Genre / style" },
+    { key: "label", label: "Label / format" },
+    { key: "added", label: "Added" },
+  ];
+
+  function handleSort(nextColumn: SnapshotSortColumn) {
+    setPageIndex(0);
+    if (sortColumn === nextColumn) {
+      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortColumn(nextColumn);
+    setSortDirection("asc");
+  }
+
+  return (
+    <section className="canvas-section">
+      <div className="canvas-header">
+        <div>
+          <div className="section-label">Step 2</div>
+          <h2>{title}</h2>
+        </div>
+        <div className="header-note">
+          {snapshot
+            ? `${selectedCount} selected · ${totalItems} visible of ${totalSourceItems}`
+            : "No local snapshot"}
+        </div>
+      </div>
+
+      <div className="selection-toolbar">
+        <div className="snapshot-controls">
+          <label className="snapshot-page-size">
+            <span>Rows</span>
+            <select
+              value={String(pageSize)}
+              onChange={(event) => {
+                setPageSize(Number(event.target.value) as SnapshotPageSize);
+                setPageIndex(0);
+              }}
+            >
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="250">250</option>
+            </select>
+          </label>
+          <div className="header-note">
+            {totalItems === 0 ? "0 visible rows" : `Showing ${pageStart}-${pageEnd} of ${totalItems}`}
+          </div>
+        </div>
+        <div className="toolbar-actions">
+          <button className="btn btn-ghost" onClick={onSelectAllVisible} disabled={items.length === 0}>
+            Select all filtered
+          </button>
+          <button className="btn btn-ghost" onClick={onDeselectVisible} disabled={items.length === 0}>
+            Deselect filtered
+          </button>
+          <button className="btn btn-ghost" onClick={onClearSelection} disabled={selectedCount === 0}>
+            Clear all
+          </button>
+        </div>
+      </div>
+
+      <div className="snapshot-pagination">
+        <button
+          type="button"
+          className="btn btn-ghost"
+          disabled={currentPage === 0 || totalItems === 0}
+          onClick={() => setPageIndex((value) => Math.max(0, value - 1))}
+        >
+          Previous
+        </button>
+        <span className="header-note">
+          Page {totalItems === 0 ? 0 : currentPage + 1} of {totalItems === 0 ? 0 : totalPages}
+        </span>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          disabled={currentPage >= totalPages - 1 || totalItems === 0}
+          onClick={() => setPageIndex((value) => Math.min(totalPages - 1, value + 1))}
+        >
+          Next
+        </button>
+      </div>
+
+      <div className={tableWrapClassName}>
+        <table className="data-table snapshot-table selection-table">
+          <colgroup>
+            <col className="selection-col-pick" />
+            <col className="snapshot-col-artist" />
+            <col className="snapshot-col-title" />
+            <col className="snapshot-col-folder" />
+            <col className="snapshot-col-genre" />
+            <col className="snapshot-col-label" />
+            <col className="snapshot-col-added" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th className="selection-column">Pick</th>
+              {columns.map((column) => {
+                const isActive = sortColumn === column.key;
+                return (
+                  <th key={column.key}>
+                    <button
+                      type="button"
+                      className={`snapshot-sort-button${isActive ? " active" : ""}`}
+                      onClick={() => handleSort(column.key)}
+                    >
+                      <span>{column.label}</span>
+                      <span
+                        className={`snapshot-sort-chevron${isActive ? ` ${sortDirection}` : ""}`}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </th>
+                );
+              })}
+            </tr>
+          </thead>
+          <tbody>
+            {!snapshot && (
+              <tr>
+                <td colSpan={7} className="empty-cell">
+                  Sync the source account to populate the local snapshot.
+                </td>
+              </tr>
+            )}
+            {snapshot && items.length === 0 && (
+              <tr>
+                <td colSpan={7} className="empty-cell">
+                  No rows match the current search and optional filters.
+                </td>
+              </tr>
+            )}
+            {paginatedItems.map((item) => {
+              const isSelected = selectedItemIds.has(item.id);
+              return (
+                <tr key={item.id} className={isSelected ? "row-selected" : undefined}>
+                  <td>
+                    <label className="row-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => onToggleSelect(item.id)}
+                      />
+                      <span>{isSelected ? "Selected" : "Choose"}</span>
+                    </label>
+                  </td>
+                  <td>{item.artist}</td>
+                  <td>{item.title}</td>
+                  <td>{item.folder_name ?? item.folder_id}</td>
+                  <td>{formatGenreStyle(item)}</td>
+                  <td>{formatLabelFormat(item)}</td>
+                  <td>{formatDate(item.date_added)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 
@@ -1189,7 +1764,7 @@ function SnapshotSection({
     <section className="canvas-section">
       <div className="canvas-header">
         <div>
-          <div className="section-label">Snapshot</div>
+          <div className="section-label">Destination</div>
           <h2>{title}</h2>
         </div>
         <div className="header-note">
@@ -1370,32 +1945,69 @@ function CustomFieldConflictCard({
 }
 
 function buildFilters(input: {
+  activeFilterKeys: FilterKey[];
+  specificDate: string;
   dateFrom: string;
   dateTo: string;
-  textQuery: string;
-  yearMin: string;
-  yearMax: string;
-  ratingMin: string;
+  artistQuery: string;
+  titleQuery: string;
+  labelQuery: string;
+  genreQuery: string;
+  formatQuery: string;
+  styleQuery: string;
   selectedFolderIds: number[];
   selectedGenres: string[];
   selectedLabels: string[];
   selectedFormats: string[];
-  manualIncludeIds: string[];
-  manualExcludeIds: string[];
+  selectedStyles: string[];
 }): SelectionFilters {
+  const hasSpecificDate = input.activeFilterKeys.includes("specific_date");
+  const hasDateRange = input.activeFilterKeys.includes("date_range");
+
   return {
-    date_from: input.dateFrom ? toIsoDateTime(input.dateFrom) : null,
-    date_to: input.dateTo ? toIsoDateTime(input.dateTo) : null,
-    folder_ids: input.selectedFolderIds,
-    genres: input.selectedGenres,
-    labels: input.selectedLabels,
-    formats: input.selectedFormats,
-    year_min: parseOptionalNumber(input.yearMin),
-    year_max: parseOptionalNumber(input.yearMax),
-    rating_min: parseOptionalNumber(input.ratingMin),
-    manual_include_snapshot_item_ids: input.manualIncludeIds,
-    manual_exclude_snapshot_item_ids: input.manualExcludeIds,
-    text_query: input.textQuery.trim() || null,
+    date_from: hasSpecificDate
+      ? input.specificDate
+        ? startOfDayIso(input.specificDate)
+        : null
+      : hasDateRange && input.dateFrom
+        ? toIsoDateTime(input.dateFrom)
+        : null,
+    date_to: hasSpecificDate
+      ? input.specificDate
+        ? endOfDayIso(input.specificDate)
+        : null
+      : hasDateRange && input.dateTo
+        ? toIsoDateTime(input.dateTo)
+        : null,
+    artist_query: input.activeFilterKeys.includes("artist_search")
+      ? input.artistQuery.trim() || null
+      : null,
+    title_query: input.activeFilterKeys.includes("title_search")
+      ? input.titleQuery.trim() || null
+      : null,
+    label_query: input.activeFilterKeys.includes("label_search")
+      ? input.labelQuery.trim() || null
+      : null,
+    genre_query: input.activeFilterKeys.includes("genre_search")
+      ? input.genreQuery.trim() || null
+      : null,
+    format_query: input.activeFilterKeys.includes("format_search")
+      ? input.formatQuery.trim() || null
+      : null,
+    style_query: input.activeFilterKeys.includes("style_search")
+      ? input.styleQuery.trim() || null
+      : null,
+    folder_ids: input.activeFilterKeys.includes("folders") ? input.selectedFolderIds : [],
+    genres: input.activeFilterKeys.includes("genres") ? input.selectedGenres : [],
+    labels: input.activeFilterKeys.includes("labels") ? input.selectedLabels : [],
+    formats: input.activeFilterKeys.includes("formats") ? input.selectedFormats : [],
+    styles: input.activeFilterKeys.includes("styles") ? input.selectedStyles : [],
+    year_min: null,
+    year_max: null,
+    rating_min: null,
+    manual_include_snapshot_item_ids: [],
+    manual_exclude_snapshot_item_ids: [],
+    text_query: null,
   };
 }
 
@@ -1421,7 +2033,7 @@ function deriveFolderLookup(items: CollectionItemSnapshot[]) {
 
 function deriveStringOptions(
   items: CollectionItemSnapshot[],
-  key: "genres" | "labels" | "formats",
+  key: "genres" | "labels" | "formats" | "styles",
 ) {
   const values = new Set<string>();
   for (const item of items) {
@@ -1430,6 +2042,217 @@ function deriveStringOptions(
     }
   }
   return Array.from(values).sort((left, right) => left.localeCompare(right));
+}
+
+function filterSourceItems(items: CollectionItemSnapshot[], filters: SelectionFilters) {
+  const normalizedGenres = new Set(filters.genres.map((value) => value.toLowerCase()));
+  const normalizedLabels = new Set(filters.labels.map((value) => value.toLowerCase()));
+  const normalizedFormats = new Set(filters.formats.map((value) => value.toLowerCase()));
+  const normalizedStyles = new Set(filters.styles.map((value) => value.toLowerCase()));
+  const artistQuery = filters.artist_query?.trim().toLowerCase();
+  const titleQuery = filters.title_query?.trim().toLowerCase();
+  const labelQuery = filters.label_query?.trim().toLowerCase();
+  const genreQuery = filters.genre_query?.trim().toLowerCase();
+  const formatQuery = filters.format_query?.trim().toLowerCase();
+  const styleQuery = filters.style_query?.trim().toLowerCase();
+  const legacyQuery = filters.text_query?.trim().toLowerCase();
+
+  return items.filter((item) => {
+    if (filters.date_from) {
+      if (!item.date_added || new Date(item.date_added).getTime() < new Date(filters.date_from).getTime()) {
+        return false;
+      }
+    }
+    if (filters.date_to) {
+      if (!item.date_added || new Date(item.date_added).getTime() > new Date(filters.date_to).getTime()) {
+        return false;
+      }
+    }
+    if (filters.folder_ids.length > 0 && !filters.folder_ids.includes(item.folder_id)) {
+      return false;
+    }
+    if (
+      normalizedGenres.size > 0 &&
+      !item.genres.some((value) => normalizedGenres.has(value.toLowerCase()))
+    ) {
+      return false;
+    }
+    if (
+      normalizedLabels.size > 0 &&
+      !item.labels.some((value) => normalizedLabels.has(value.toLowerCase()))
+    ) {
+      return false;
+    }
+    if (
+      normalizedFormats.size > 0 &&
+      !item.formats.some((value) => normalizedFormats.has(value.toLowerCase()))
+    ) {
+      return false;
+    }
+    if (
+      normalizedStyles.size > 0 &&
+      !item.styles.some((value) => normalizedStyles.has(value.toLowerCase()))
+    ) {
+      return false;
+    }
+    if (artistQuery && !item.artist.toLowerCase().includes(artistQuery)) {
+      return false;
+    }
+    if (titleQuery && !item.title.toLowerCase().includes(titleQuery)) {
+      return false;
+    }
+    if (labelQuery && !item.labels.some((value) => value.toLowerCase().includes(labelQuery))) {
+      return false;
+    }
+    if (genreQuery && !item.genres.some((value) => value.toLowerCase().includes(genreQuery))) {
+      return false;
+    }
+    if (formatQuery && !item.formats.some((value) => value.toLowerCase().includes(formatQuery))) {
+      return false;
+    }
+    if (styleQuery && !item.styles.some((value) => value.toLowerCase().includes(styleQuery))) {
+      return false;
+    }
+    if (legacyQuery) {
+      const haystack = [
+        item.artist,
+        item.title,
+        item.folder_name ?? String(item.folder_id),
+        item.labels.join(" "),
+        item.genres.join(" "),
+        item.formats.join(" "),
+        item.styles.join(" "),
+      ]
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(legacyQuery)) {
+        return false;
+      }
+    }
+    return true;
+  });
+}
+
+function deriveLoadedFilterState(filters: SelectionFilters) {
+  const activeFilterKeys: FilterKey[] = [];
+  let specificDate = "";
+  let dateFrom = "";
+  let dateTo = "";
+
+  const derivedSpecificDate = tryDeriveSpecificDate(filters.date_from, filters.date_to);
+  if (derivedSpecificDate) {
+    activeFilterKeys.push("specific_date");
+    specificDate = derivedSpecificDate;
+  } else if (filters.date_from || filters.date_to) {
+    activeFilterKeys.push("date_range");
+    dateFrom = toDateTimeLocalValue(filters.date_from);
+    dateTo = toDateTimeLocalValue(filters.date_to);
+  }
+
+  if ((filters.genres ?? []).length > 0) activeFilterKeys.push("genres");
+  if ((filters.labels ?? []).length > 0) activeFilterKeys.push("labels");
+  if ((filters.formats ?? []).length > 0) activeFilterKeys.push("formats");
+  if ((filters.styles ?? []).length > 0) activeFilterKeys.push("styles");
+  if ((filters.folder_ids ?? []).length > 0) activeFilterKeys.push("folders");
+  if (filters.artist_query) activeFilterKeys.push("artist_search");
+  if (filters.title_query) activeFilterKeys.push("title_search");
+  if (filters.label_query) activeFilterKeys.push("label_search");
+  if (filters.genre_query) activeFilterKeys.push("genre_search");
+  if (filters.format_query) activeFilterKeys.push("format_search");
+  if (filters.style_query) activeFilterKeys.push("style_search");
+
+  return {
+    activeFilterKeys,
+    specificDate,
+    dateFrom,
+    dateTo,
+    artistQuery: filters.artist_query ?? "",
+    titleQuery: filters.title_query ?? "",
+    labelQuery: filters.label_query ?? "",
+    genreQuery: filters.genre_query ?? "",
+    formatQuery: filters.format_query ?? "",
+    styleQuery: filters.style_query ?? "",
+  };
+}
+
+function tryDeriveSpecificDate(dateFrom?: string | null, dateTo?: string | null) {
+  if (!dateFrom || !dateTo) return "";
+  const from = new Date(dateFrom);
+  const to = new Date(dateTo);
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return "";
+  const sameDay =
+    from.getUTCFullYear() === to.getUTCFullYear() &&
+    from.getUTCMonth() === to.getUTCMonth() &&
+    from.getUTCDate() === to.getUTCDate();
+  return sameDay ? from.toISOString().slice(0, 10) : "";
+}
+
+function deriveReviewState({
+  preview,
+  previewIsStale,
+  selectedSourceCount,
+  sourceAccount,
+  destinationAccount,
+  sourceSnapshot,
+}: {
+  preview: PreviewResponse | null;
+  previewIsStale: boolean;
+  selectedSourceCount: number;
+  sourceAccount?: ConnectedAccount;
+  destinationAccount?: ConnectedAccount;
+  sourceSnapshot: CollectionSnapshot | null;
+}) {
+  if (!sourceAccount || !destinationAccount || !sourceSnapshot) {
+    return {
+      tone: "default",
+      title: "Connect and sync both accounts",
+      message: "The review step will unlock once both source and destination snapshots are available.",
+    } as const;
+  }
+  if (selectedSourceCount === 0) {
+    return {
+      tone: "warning",
+      title: "Select at least one release",
+      message: "Use the source table checkboxes or bulk-select all filtered rows before generating a preview.",
+    } as const;
+  }
+  if (!preview) {
+    return {
+      tone: "default",
+      title: "Generate a preview",
+      message: "Validate duplicates, folder mappings, and destination capabilities before launching the job.",
+    } as const;
+  }
+  if (previewIsStale) {
+    return {
+      tone: "warning",
+      title: "Preview is stale",
+      message: "Your search, filters, selections, or workflow changed. Generate a fresh preview before launch.",
+    } as const;
+  }
+  if (preview.blocking_conflicts.length > 0) {
+    return {
+      tone: "warning",
+      title: "Resolve blocking issues",
+      message: `Clear ${preview.blocking_conflicts.length} conflict${preview.blocking_conflicts.length !== 1 ? "s" : ""} below, then launch the job.`,
+    } as const;
+  }
+  return {
+    tone: "ready",
+    title: "Ready to launch",
+    message: "The selected releases have been reviewed. Launch the job when you are satisfied with this preview.",
+  } as const;
+}
+
+function appendUnique(current: string[], nextValues: string[]) {
+  const seen = new Set(current);
+  const merged = [...current];
+  for (const value of nextValues) {
+    if (seen.has(value)) continue;
+    seen.add(value);
+    merged.push(value);
+  }
+  return merged;
 }
 
 function sanitizeStringMap(values: Record<string, string>) {
@@ -1476,6 +2299,18 @@ function formatDateTime(value?: string | null) {
   return new Date(value).toLocaleString();
 }
 
+function formatGenreStyle(item: CollectionItemSnapshot) {
+  const genre = item.genres[0] ?? "—";
+  const style = item.styles[0];
+  return style ? `${genre} · ${style}` : genre;
+}
+
+function formatLabelFormat(item: CollectionItemSnapshot) {
+  const label = item.labels[0] ?? "—";
+  const format = item.formats[0];
+  return format ? `${label} · ${format}` : label;
+}
+
 function sortSnapshotItems(
   items: CollectionItemSnapshot[],
   sortColumn: SnapshotSortColumn | null,
@@ -1503,9 +2338,9 @@ function snapshotSortValue(item: CollectionItemSnapshot, column: SnapshotSortCol
     case "folder":
       return item.folder_name ?? String(item.folder_id);
     case "genre":
-      return item.genres[0] ?? null;
+      return item.genres[0] ?? item.styles[0] ?? null;
     case "label":
-      return item.labels[0] ?? null;
+      return item.labels[0] ?? item.formats[0] ?? null;
     case "added":
       return item.date_added ? new Date(item.date_added).getTime() : null;
   }
@@ -1543,10 +2378,10 @@ function toIsoDateTime(value: string) {
   return new Date(value).toISOString();
 }
 
-function parseOptionalNumber(value: string) {
-  return value.trim() ? Number(value) : null;
+function startOfDayIso(value: string) {
+  return new Date(`${value}T00:00:00`).toISOString();
 }
 
-function toNumberInputValue(value?: number | null) {
-  return value === null || value === undefined ? "" : String(value);
+function endOfDayIso(value: string) {
+  return new Date(`${value}T23:59:59.999`).toISOString();
 }

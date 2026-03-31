@@ -38,6 +38,7 @@ class CollectionNormalizer:
             labels=labels,
             genres=basic.get("genres", []),
             formats=formats,
+            styles=basic.get("styles", []),
             rating=payload.get("rating"),
             notes=notes_text,
             custom_field_values=custom_field_values,
@@ -105,6 +106,18 @@ class SelectionEngine:
             checks.append(item.date_added and item.date_added >= filters.date_from)
         if filters.date_to:
             checks.append(item.date_added and item.date_added <= filters.date_to)
+        if filters.artist_query:
+            checks.append(filters.artist_query.lower() in item.artist.lower())
+        if filters.title_query:
+            checks.append(filters.title_query.lower() in item.title.lower())
+        if filters.label_query:
+            checks.append(any(filters.label_query.lower() in value.lower() for value in item.labels))
+        if filters.genre_query:
+            checks.append(any(filters.genre_query.lower() in value.lower() for value in item.genres))
+        if filters.format_query:
+            checks.append(any(filters.format_query.lower() in value.lower() for value in item.formats))
+        if filters.style_query:
+            checks.append(any(filters.style_query.lower() in value.lower() for value in item.styles))
         if filters.folder_ids:
             checks.append(item.folder_id in filters.folder_ids)
         if filters.genres:
@@ -113,6 +126,8 @@ class SelectionEngine:
             checks.append(bool(set(value.lower() for value in item.labels) & set(value.lower() for value in filters.labels)))
         if filters.formats:
             checks.append(bool(set(value.lower() for value in item.formats) & set(value.lower() for value in filters.formats)))
+        if filters.styles:
+            checks.append(bool(set(value.lower() for value in item.styles) & set(value.lower() for value in filters.styles)))
         if filters.year_min is not None:
             checks.append(item.year is not None and item.year >= filters.year_min)
         if filters.year_max is not None:

@@ -19,10 +19,11 @@ def test_normalizer_handles_discogs_notes_list():
                 "labels": [],
                 "formats": [],
                 "genres": [],
+                "styles": ["Deep House"],
             },
         },
     )
 
     assert item.notes is None
     assert item.custom_field_values == {"field_1": "Mint", "Sleeve": "VG+"}
-
+    assert item.styles == ["Deep House"]

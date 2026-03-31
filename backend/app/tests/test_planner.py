@@ -28,6 +28,7 @@ def make_item(
         labels=["Warp"],
         genres=["Electronic"],
         formats=["Vinyl"],
+        styles=["Deep House"],
         custom_field_values=custom_field_values or {},
     )
 
@@ -51,3 +52,25 @@ def test_preview_detects_duplicates_and_missing_custom_field_mapping():
     assert response.duplicate_release_ids == [101]
     assert destination_folder_ids["item_1"] == 1
     assert any(conflict.type == "custom_field_mapping" for conflict in response.blocking_conflicts)
+
+
+def test_preview_uses_explicit_selected_snapshot_items():
+    source_items = [
+        make_item("item_1", release_id=101, folder_id=2, folder_name="Digital"),
+        make_item("item_2", release_id=202, folder_id=2, folder_name="Digital"),
+    ]
+
+    response, _ = MigrationPlanner.preview(
+        source_items=source_items,
+        destination_items=[],
+        request=MigrationPlanPreviewRequest(
+            source_account_id="acct_src",
+            destination_account_id="acct_dst",
+            snapshot_id="snap_1",
+            selected_snapshot_item_ids=["item_2"],
+            filters=SelectionFilters(genres=["Electronic"]),
+        ),
+    )
+
+    assert response.selected_count == 1
+    assert [item.id for item in response.selected_items] == ["item_2"]

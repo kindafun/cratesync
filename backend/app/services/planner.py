@@ -21,7 +21,11 @@ class MigrationPlanner:
         destination_items: list[CollectionItemSnapshot],
         request: MigrationPlanPreviewRequest,
     ) -> Tuple[MigrationPlanPreviewResponse, dict[str, Optional[int]]]:
-        selected_items = SelectionEngine.select_items(source_items, request.filters)
+        if request.selected_snapshot_item_ids is not None:
+            selected_ids = set(request.selected_snapshot_item_ids)
+            selected_items = [item for item in source_items if item.id in selected_ids]
+        else:
+            selected_items = SelectionEngine.select_items(source_items, request.filters)
         destination_release_ids = {item.release_id for item in destination_items}
         duplicate_release_ids = sorted(
             {item.release_id for item in selected_items if item.release_id in destination_release_ids}

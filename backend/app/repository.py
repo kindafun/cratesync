@@ -122,8 +122,8 @@ class Repository:
                     """
                     INSERT INTO collection_item_snapshots
                     (id, snapshot_id, account_id, release_id, instance_id, folder_id, folder_name, date_added, artist, title, year,
-                     labels_json, genres_json, formats_json, rating, notes, custom_field_values_json, raw_payload_json)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     labels_json, genres_json, formats_json, styles_json, rating, notes, custom_field_values_json, raw_payload_json)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         item.id,
@@ -140,6 +140,7 @@ class Repository:
                         encode_json(item.labels),
                         encode_json(item.genres),
                         encode_json(item.formats),
+                        encode_json(item.styles),
                         item.rating,
                         item.notes,
                         encode_json(item.custom_field_values),
@@ -424,6 +425,7 @@ class Repository:
         payload["labels"] = decode_json(payload.pop("labels_json"), [])
         payload["genres"] = decode_json(payload.pop("genres_json"), [])
         payload["formats"] = decode_json(payload.pop("formats_json"), [])
+        payload["styles"] = decode_json(payload.pop("styles_json", None), [])
         payload["custom_field_values"] = decode_json(
             payload.pop("custom_field_values_json"), {}
         )

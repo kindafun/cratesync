@@ -13,7 +13,7 @@ load_dotenv(ROOT_DIR / ".env")
 
 @dataclass(frozen=True)
 class Settings:
-    app_name: str = "Discogs Migration Local App"
+    app_name: str = "CrateSync Local App"
     app_data_dir: Path = Path(
         os.environ.get(
             "DISCOGS_MIGRATION_APP_DIR",

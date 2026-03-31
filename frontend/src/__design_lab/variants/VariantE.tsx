@@ -100,8 +100,8 @@ export function VariantE() {
       {/* Top bar */}
       <div style={s.topBar}>
         <div>
-          <span style={s.appEye}>Discogs Migration · Local v0.1</span>
-          <div style={s.appTitle}>Collection split <em>control room</em></div>
+          <span style={s.appEye}>CrateSync · Local v0.1</span>
+          <div style={s.appTitle}>CrateSync</div>
         </div>
         <div style={s.statusRow}>
           <span style={s.statusChip}>● Backend online</span>

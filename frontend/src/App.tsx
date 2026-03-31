@@ -28,6 +28,10 @@ type OAuthCompleteMessage = {
   account?: ConnectedAccount;
 };
 
+type SnapshotPageSize = 50 | 100 | 250;
+type SnapshotSortColumn = "artist" | "title" | "year" | "folder" | "genre" | "label" | "added";
+type SnapshotSortDirection = "asc" | "desc";
+
 function renderOAuthPopup(popup: Window, title: string, message: string, details?: string) {
   const detailMarkup = details
     ? `<pre style="margin: 1rem 0 0; padding: 0.75rem; background: #f5f5f5; border-radius: 8px; white-space: pre-wrap; word-break: break-word; text-align: left;">${escapeHtml(
@@ -1144,6 +1148,43 @@ function SnapshotSection({
   snapshot: CollectionSnapshot | null;
   items: CollectionItemSnapshot[];
 }) {
+  const [pageSize, setPageSize] = useState<SnapshotPageSize>(50);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [sortColumn, setSortColumn] = useState<SnapshotSortColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<SnapshotSortDirection>("asc");
+
+  useEffect(() => {
+    setPageIndex(0);
+  }, [items]);
+
+  const sortedItems = sortSnapshotItems(items, sortColumn, sortDirection);
+  const totalItems = sortedItems.length;
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const currentPage = Math.min(pageIndex, totalPages - 1);
+  const paginatedItems = sortedItems.slice(currentPage * pageSize, currentPage * pageSize + pageSize);
+  const pageStart = totalItems === 0 ? 0 : currentPage * pageSize + 1;
+  const pageEnd = totalItems === 0 ? 0 : Math.min((currentPage + 1) * pageSize, totalItems);
+  const tableWrapClassName = `table-wrap${pageSize > 50 ? " table-wrap-tall" : ""}`;
+  const columns: Array<{ key: SnapshotSortColumn; label: string }> = [
+    { key: "artist", label: "Artist" },
+    { key: "title", label: "Title" },
+    { key: "year", label: "Year" },
+    { key: "folder", label: "Folder" },
+    { key: "genre", label: "Genre" },
+    { key: "label", label: "Label" },
+    { key: "added", label: "Added" },
+  ];
+
+  function handleSort(nextColumn: SnapshotSortColumn) {
+    setPageIndex(0);
+    if (sortColumn === nextColumn) {
+      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortColumn(nextColumn);
+    setSortDirection("asc");
+  }
+
   return (
     <section className="canvas-section">
       <div className="canvas-header">
@@ -1157,30 +1198,94 @@ function SnapshotSection({
             : "No local snapshot"}
         </div>
       </div>
-      <div className="table-wrap">
-        <table className="data-table">
+      <div className="snapshot-toolbar">
+        <div className="snapshot-controls">
+          <label className="snapshot-page-size">
+            <span>Rows</span>
+            <select
+              value={String(pageSize)}
+              onChange={(event) => {
+                setPageSize(Number(event.target.value) as SnapshotPageSize);
+                setPageIndex(0);
+              }}
+            >
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="250">250</option>
+            </select>
+          </label>
+          <div className="header-note">
+            {totalItems === 0 ? "0 items" : `Showing ${pageStart}-${pageEnd} of ${totalItems}`}
+          </div>
+        </div>
+        <div className="snapshot-pagination">
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled={currentPage === 0 || totalItems === 0}
+            onClick={() => setPageIndex((value) => Math.max(0, value - 1))}
+          >
+            Previous
+          </button>
+          <span className="header-note">
+            Page {totalItems === 0 ? 0 : currentPage + 1} of {totalItems === 0 ? 0 : totalPages}
+          </span>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            disabled={currentPage >= totalPages - 1 || totalItems === 0}
+            onClick={() => setPageIndex((value) => Math.min(totalPages - 1, value + 1))}
+          >
+            Next
+          </button>
+        </div>
+      </div>
+      <div className={tableWrapClassName}>
+        <table className="data-table snapshot-table">
+          <colgroup>
+            <col className="snapshot-col-artist" />
+            <col className="snapshot-col-title" />
+            <col className="snapshot-col-year" />
+            <col className="snapshot-col-folder" />
+            <col className="snapshot-col-genre" />
+            <col className="snapshot-col-label" />
+            <col className="snapshot-col-added" />
+          </colgroup>
           <thead>
             <tr>
-              <th>Artist</th>
-              <th>Title</th>
-              <th>Folder</th>
-              <th>Genre</th>
-              <th>Label</th>
-              <th>Added</th>
+              {columns.map((column) => {
+                const isActive = sortColumn === column.key;
+                return (
+                  <th key={column.key}>
+                    <button
+                      type="button"
+                      className={`snapshot-sort-button${isActive ? " active" : ""}`}
+                      onClick={() => handleSort(column.key)}
+                    >
+                      <span>{column.label}</span>
+                      <span
+                        className={`snapshot-sort-chevron${isActive ? ` ${sortDirection}` : ""}`}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
             {items.length === 0 && (
               <tr>
-                <td colSpan={6} className="empty-cell">
+                <td colSpan={7} className="empty-cell">
                   Sync this account to populate the local snapshot.
                 </td>
               </tr>
             )}
-            {items.map((item) => (
+            {paginatedItems.map((item) => (
               <tr key={item.id}>
                 <td>{item.artist}</td>
                 <td>{item.title}</td>
+                <td>{item.year ?? "—"}</td>
                 <td>{item.folder_name ?? item.folder_id}</td>
                 <td>{item.genres[0] ?? "—"}</td>
                 <td>{item.labels[0] ?? "—"}</td>
@@ -1369,6 +1474,61 @@ function formatDate(value?: string | null) {
 function formatDateTime(value?: string | null) {
   if (!value) return "—";
   return new Date(value).toLocaleString();
+}
+
+function sortSnapshotItems(
+  items: CollectionItemSnapshot[],
+  sortColumn: SnapshotSortColumn | null,
+  sortDirection: SnapshotSortDirection,
+) {
+  if (!sortColumn) return items;
+
+  return [...items].sort((left, right) =>
+    compareSnapshotSortValues(
+      snapshotSortValue(left, sortColumn),
+      snapshotSortValue(right, sortColumn),
+      sortDirection,
+    ),
+  );
+}
+
+function snapshotSortValue(item: CollectionItemSnapshot, column: SnapshotSortColumn) {
+  switch (column) {
+    case "artist":
+      return item.artist;
+    case "title":
+      return item.title;
+    case "year":
+      return item.year ?? null;
+    case "folder":
+      return item.folder_name ?? String(item.folder_id);
+    case "genre":
+      return item.genres[0] ?? null;
+    case "label":
+      return item.labels[0] ?? null;
+    case "added":
+      return item.date_added ? new Date(item.date_added).getTime() : null;
+  }
+}
+
+function compareSnapshotSortValues(
+  left: string | number | null,
+  right: string | number | null,
+  direction: SnapshotSortDirection,
+) {
+  const multiplier = direction === "asc" ? 1 : -1;
+  const leftEmpty = left === null || left === "";
+  const rightEmpty = right === null || right === "";
+
+  if (leftEmpty && rightEmpty) return 0;
+  if (leftEmpty) return direction === "asc" ? 1 : -1;
+  if (rightEmpty) return direction === "asc" ? -1 : 1;
+
+  if (typeof left === "number" && typeof right === "number") {
+    return (left - right) * multiplier;
+  }
+
+  return String(left).localeCompare(String(right), undefined, { sensitivity: "base" }) * multiplier;
 }
 
 function toDateTimeLocalValue(value?: string | null) {

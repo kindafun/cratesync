@@ -1,0 +1,153 @@
+/* Design Lab — isolated styles for the lab wrapper only */
+
+.lab-root {
+  font-family: "Bricolage Grotesque", sans-serif;
+  background: #0a0c10;
+  color: #d8e0ea;
+  min-height: 100vh;
+}
+
+.lab-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 1.25rem 1.75rem;
+  background: #0e1218;
+  border-bottom: 1px solid #1e2838;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.lab-header-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.lab-badge {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 0.22rem 0.6rem;
+  background: rgba(99, 102, 241, 0.14);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: 3px;
+  white-space: nowrap;
+  margin-top: 0.15rem;
+}
+
+.lab-title {
+  font-family: "Instrument Serif", Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  color: #e8eef8;
+  margin: 0 0 0.2rem;
+}
+
+.lab-subtitle {
+  font-size: 0.75rem;
+  color: #5878a0;
+  margin: 0;
+}
+
+.lab-instructions {
+  font-size: 0.75rem;
+  color: #5878a0;
+  max-width: 28rem;
+  line-height: 1.55;
+  text-align: right;
+}
+
+.lab-instructions strong {
+  color: #8898c0;
+}
+
+.lab-instructions kbd {
+  display: inline-block;
+  font-size: 0.68rem;
+  padding: 0.1rem 0.45rem;
+  background: rgba(99, 102, 241, 0.14);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: 3px;
+  color: #818cf8;
+  font-family: inherit;
+}
+
+/* Variant grid */
+.lab-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+/* Variant E spans full width */
+.lab-variant-wrapper:nth-child(5) {
+  grid-column: span 2;
+}
+
+.lab-variant-wrapper {
+  border-right: 1px solid #1e2838;
+  border-bottom: 1px solid #1e2838;
+}
+
+.lab-variant-meta {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.85rem 1.25rem 0.7rem;
+  background: #0b0f16;
+  border-bottom: 1px solid #1e2838;
+}
+
+.lab-variant-id {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.14);
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  color: #818cf8;
+  font-size: 0.72rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.lab-variant-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #c8d8f0;
+  letter-spacing: -0.01em;
+}
+
+.lab-variant-rationale {
+  font-size: 0.72rem;
+  color: #5878a0;
+  margin: 0.15rem 0 0;
+  line-height: 1.5;
+}
+
+.lab-variant-frame {
+  overflow: hidden;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Scrollbar for variant frames */
+.lab-variant-frame::-webkit-scrollbar {
+  width: 4px;
+}
+.lab-variant-frame::-webkit-scrollbar-track {
+  background: transparent;
+}
+.lab-variant-frame::-webkit-scrollbar-thumb {
+  background: #1e2838;
+  border-radius: 2px;
+}

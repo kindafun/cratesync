@@ -64,8 +64,8 @@ export function VariantA() {
     <div style={s.root}>
       <header style={s.header}>
         <div>
-          <span style={s.headerMeta}>Discogs Migration · Local v0.1</span>
-          <h1 style={s.headerTitle}>Collection split <em>control room</em></h1>
+          <span style={s.headerMeta}>CrateSync · Local v0.1</span>
+          <h1 style={s.headerTitle}>CrateSync</h1>
         </div>
         <button style={s.btnSm}>Clear local data</button>
       </header>

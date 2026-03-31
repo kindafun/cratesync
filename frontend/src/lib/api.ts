@@ -4,7 +4,10 @@ import type {
   ConnectedAccount,
   JobDetailResponse,
   MigrationJob,
+  MigrationPlanPreviewRequest,
   PreviewResponse,
+  SaveSelectionPresetRequest,
+  SelectionPreset,
 } from "./types";
 
 const API_BASE = "http://127.0.0.1:8421";
@@ -18,6 +21,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!response.ok) {
     const text = await response.text();
+    let parsedDetail: unknown;
+    try {
+      parsedDetail = (JSON.parse(text) as { detail?: unknown }).detail;
+    } catch {
+      parsedDetail = undefined;
+    }
+    if (typeof parsedDetail === "string") {
+      throw new Error(parsedDetail);
+    }
+    if (parsedDetail !== undefined) {
+      throw new Error(JSON.stringify(parsedDetail));
+    }
     throw new Error(text || `Request failed: ${response.status}`);
   }
   return (await response.json()) as T;
@@ -42,12 +57,19 @@ export const api = {
     request<{ snapshot: CollectionSnapshot; items: CollectionItemSnapshot[] }>(
       `/collections/${accountId}/items${snapshotId ? `?snapshot_id=${snapshotId}` : ""}`,
     ),
-  previewPlan: (payload: unknown) =>
+  listSelectionPresets: (accountId: string) =>
+    request<SelectionPreset[]>(`/selection-presets/${accountId}`),
+  saveSelectionPreset: (payload: SaveSelectionPresetRequest) =>
+    request<SelectionPreset>("/selection-presets", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  previewPlan: (payload: MigrationPlanPreviewRequest) =>
     request<PreviewResponse>("/migration-plans/preview", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
-  createJob: (payload: unknown) =>
+  createJob: (payload: { plan: MigrationPlanPreviewRequest }) =>
     request<JobDetailResponse>("/jobs", {
       method: "POST",
       body: JSON.stringify(payload),

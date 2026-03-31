@@ -50,7 +50,7 @@ export function DesignLabPage() {
         <div className="lab-header-left">
           <span className="lab-badge">Design Lab</span>
           <div>
-            <h1 className="lab-title">Discogs Migration — Full App Redesign</h1>
+            <h1 className="lab-title">CrateSync — Full App Redesign</h1>
             <p className="lab-subtitle">
               5 distinct explorations · Fresh direction · Discogs-inspired density
             </p>
@@ -82,7 +82,7 @@ export function DesignLabPage() {
       </div>
 
       {/* Feedback overlay */}
-      <FeedbackOverlay targetName="DiscogsMigrationApp" />
+      <FeedbackOverlay targetName="CrateSyncApp" />
     </div>
   );
 }

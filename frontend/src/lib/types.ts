@@ -1,4 +1,14 @@
 export type AccountRole = "source" | "destination";
+export type WorkflowMode = "copy" | "move";
+export type JobStatus =
+  | "draft"
+  | "running_copy"
+  | "awaiting_delete_confirmation"
+  | "running_delete"
+  | "completed"
+  | "completed_with_issues"
+  | "failed"
+  | "cancelled";
 
 export interface ConnectedAccount {
   id: string;
@@ -39,6 +49,32 @@ export interface CollectionItemSnapshot {
   custom_field_values: Record<string, unknown>;
 }
 
+export interface SelectionFilters {
+  date_from?: string | null;
+  date_to?: string | null;
+  folder_ids: number[];
+  genres: string[];
+  labels: string[];
+  formats: string[];
+  year_min?: number | null;
+  year_max?: number | null;
+  rating_min?: number | null;
+  manual_include_snapshot_item_ids: string[];
+  manual_exclude_snapshot_item_ids: string[];
+  text_query?: string | null;
+}
+
+export interface MigrationPlanPreviewRequest {
+  source_account_id: string;
+  destination_account_id: string;
+  snapshot_id: string;
+  workflow_mode: WorkflowMode;
+  name: string;
+  filters: SelectionFilters;
+  folder_mapping_overrides: Record<string, number>;
+  custom_field_mapping_overrides: Record<string, string>;
+}
+
 export interface PreviewWarning {
   code: string;
   message: string;
@@ -71,8 +107,8 @@ export interface MigrationJob {
   source_account_id: string;
   destination_account_id: string;
   snapshot_id: string;
-  workflow_mode: "copy" | "move";
-  status: string;
+  workflow_mode: WorkflowMode;
+  status: JobStatus;
   created_at: string;
   updated_at: string;
   started_at?: string | null;
@@ -109,3 +145,17 @@ export interface JobDetailResponse {
   events: JobEvent[];
 }
 
+export interface SelectionPreset {
+  id: string;
+  name: string;
+  account_id: string;
+  filters: SelectionFilters;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SaveSelectionPresetRequest {
+  name: string;
+  account_id: string;
+  filters: SelectionFilters;
+}

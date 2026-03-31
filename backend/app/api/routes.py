@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import HTMLResponse
 
 from ..config import settings
 from ..database import db
@@ -39,9 +41,9 @@ def health() -> dict[str, str]:
 
 
 @router.get("/auth/discogs/start", response_model=OAuthStartResponse)
-def start_discogs_auth(role: str) -> OAuthStartResponse:
+def start_discogs_auth(role: str, request: Request) -> OAuthStartResponse:
     _require_discogs_oauth()
-    callback = f"{settings.backend_origin}/auth/discogs/callback"
+    callback = str(request.url_for("finish_discogs_auth"))
     authorization_url, request_token_key, request_token_secret = discogs_client.start_oauth(callback)
     db.save_oauth_request(request_token_key, request_token_secret, role)
     return OAuthStartResponse(
@@ -50,8 +52,8 @@ def start_discogs_auth(role: str) -> OAuthStartResponse:
     )
 
 
-@router.get("/auth/discogs/callback", response_model=ConnectedAccount)
-def finish_discogs_auth(oauth_token: str, oauth_verifier: str) -> ConnectedAccount:
+@router.get("/auth/discogs/callback", response_class=HTMLResponse)
+def finish_discogs_auth(oauth_token: str, oauth_verifier: str) -> HTMLResponse:
     _require_discogs_oauth()
     stored = db.consume_oauth_request(oauth_token)
     if not stored:
@@ -66,13 +68,78 @@ def finish_discogs_auth(oauth_token: str, oauth_verifier: str) -> ConnectedAccou
     token_secret_key = f"discogs-secret-{identity['username']}"
     keychain_store.set_secret(token_key, access["oauth_token"])
     keychain_store.set_secret(token_secret_key, access["oauth_token_secret"])
-    return repository.upsert_connected_account(
+    account = repository.upsert_connected_account(
         username=identity["username"],
         role=stored["role"],
         discogs_user_id=identity.get("id"),
         token_key=token_key,
         token_secret_key=token_secret_key,
     )
+    payload = json.dumps(
+        {
+            "type": "discogs-oauth-complete",
+            "account": account.model_dump(mode="json"),
+        }
+    )
+    frontend_origin = json.dumps(settings.frontend_origin)
+    html = f"""<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Discogs Connected</title>
+    <style>
+      :root {{
+        color-scheme: light;
+        font-family: system-ui, sans-serif;
+      }}
+
+      body {{
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #f4f1eb;
+        color: #1d1d1d;
+      }}
+
+      main {{
+        max-width: 28rem;
+        padding: 2rem;
+        text-align: center;
+      }}
+
+      h1 {{
+        margin: 0 0 0.75rem;
+        font-size: 1.4rem;
+      }}
+
+      p {{
+        margin: 0;
+        line-height: 1.5;
+      }}
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Discogs account connected</h1>
+      <p>You can return to the app. This window should close automatically.</p>
+    </main>
+    <script>
+      const targetOrigin = {frontend_origin};
+      const payload = {payload};
+
+      if (window.opener && !window.opener.closed) {{
+        window.opener.postMessage(payload, targetOrigin);
+        window.close();
+      }} else {{
+        window.location.replace(targetOrigin);
+      }}
+    </script>
+  </body>
+</html>
+"""
+    return HTMLResponse(content=html)
 
 
 @router.get("/accounts", response_model=list[ConnectedAccount])

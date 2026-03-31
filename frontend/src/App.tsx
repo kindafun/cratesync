@@ -1,6 +1,6 @@
 import { startTransition, useEffect, useState, type ReactNode } from "react";
 
-import { api } from "./lib/api";
+import { API_ORIGINS, api } from "./lib/api";
 import type {
   CollectionItemSnapshot,
   CollectionSnapshot,
@@ -22,6 +22,37 @@ const ACTIVE_JOB_STATUSES: JobStatus[] = [
   "awaiting_delete_confirmation",
   "running_delete",
 ];
+
+type OAuthCompleteMessage = {
+  type: "discogs-oauth-complete";
+  account?: ConnectedAccount;
+};
+
+function renderOAuthPopup(popup: Window, title: string, message: string, details?: string) {
+  const detailMarkup = details
+    ? `<pre style="margin: 1rem 0 0; padding: 0.75rem; background: #f5f5f5; border-radius: 8px; white-space: pre-wrap; word-break: break-word; text-align: left;">${escapeHtml(
+        details,
+      )}</pre>`
+    : "";
+
+  popup.document.title = title;
+  popup.document.body.innerHTML = `
+    <main style="max-width: 42rem; margin: 0 auto; padding: 24px; font-family: system-ui, sans-serif; color: #1d1d1d;">
+      <h1 style="margin: 0 0 12px; font-size: 1.25rem;">${escapeHtml(title)}</h1>
+      <p style="margin: 0; line-height: 1.5;">${escapeHtml(message)}</p>
+      ${detailMarkup}
+    </main>
+  `;
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
 
 const EMPTY_FILTERS: SelectionFilters = {
   date_from: null,
@@ -208,6 +239,24 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    function handleOAuthMessage(event: MessageEvent<OAuthCompleteMessage>) {
+      if (!API_ORIGINS.includes(event.origin)) return;
+      if (event.data?.type !== "discogs-oauth-complete") return;
+
+      const role = event.data.account?.role;
+      void refreshWorkspace();
+      setStatus(
+        role
+          ? `${role[0].toUpperCase()}${role.slice(1)} account connected.`
+          : "Discogs account connected.",
+      );
+    }
+
+    window.addEventListener("message", handleOAuthMessage);
+    return () => window.removeEventListener("message", handleOAuthMessage);
+  }, [refreshWorkspace]);
+
+  useEffect(() => {
     if (!sourceAccount) {
       setPresets([]);
       setSelectedPresetId("");
@@ -244,12 +293,31 @@ export function App() {
   }, [jobDetail?.job.id, jobDetail?.job.status]);
 
   async function handleConnect(role: "source" | "destination") {
+    const popup = window.open("", `discogs-oauth-${role}`, "popup=yes,width=960,height=720");
+    if (!popup) {
+      setStatus("Popup blocked. Allow popups for this app and try again.");
+      return;
+    }
+
+    renderOAuthPopup(
+      popup,
+      "Connecting to Discogs",
+      "Starting Discogs OAuth. This window will redirect when the backend responds.",
+    );
+
     try {
       const response = await api.startOAuth(role);
-      window.open(response.authorization_url, "_blank", "width=960,height=720");
+      popup.location.replace(response.authorization_url);
       setStatus(`OAuth started for ${role}. Finish the callback flow in the opened window.`);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "OAuth start failed.");
+      const message = error instanceof Error ? error.message : "OAuth start failed.";
+      renderOAuthPopup(
+        popup,
+        "Could not start Discogs OAuth",
+        "The app could not begin the account connection flow.",
+        message,
+      );
+      setStatus(message);
     }
   }
 

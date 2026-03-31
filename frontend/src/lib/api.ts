@@ -10,15 +10,50 @@ import type {
   SelectionPreset,
 } from "./types";
 
-const API_BASE = "http://127.0.0.1:8421";
+const ENV_API_BASE =
+  typeof import.meta !== "undefined" ? import.meta.env.VITE_API_BASE?.trim() || "" : "";
+const API_CANDIDATES = Array.from(
+  new Set(
+    [ENV_API_BASE, "http://127.0.0.1:8421", "http://127.0.0.1:8000"].filter(
+      (value): value is string => Boolean(value),
+    ),
+  ),
+);
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
+let activeApiBase = API_CANDIDATES[0];
+
+export const API_ORIGINS = API_CANDIDATES.map((value) => new URL(value).origin);
+
+async function fetchFromBase(path: string, init: RequestInit | undefined, base: string) {
+  return fetch(`${base}${path}`, {
     headers: {
       "Content-Type": "application/json",
     },
     ...init,
   });
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  let response: Response | null = null;
+  let lastNetworkError: unknown;
+
+  for (const base of [activeApiBase, ...API_CANDIDATES.filter((value) => value !== activeApiBase)]) {
+    try {
+      response = await fetchFromBase(path, init, base);
+      activeApiBase = base;
+      break;
+    } catch (error) {
+      lastNetworkError = error;
+    }
+  }
+
+  if (!response) {
+    if (lastNetworkError instanceof Error) {
+      throw lastNetworkError;
+    }
+    throw new Error("Could not reach the backend API.");
+  }
+
   if (!response.ok) {
     const text = await response.text();
     let parsedDetail: unknown;

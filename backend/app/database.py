@@ -99,6 +99,7 @@ class Database:
                     labels_json TEXT NOT NULL,
                     genres_json TEXT NOT NULL,
                     formats_json TEXT NOT NULL,
+                    styles_json TEXT NOT NULL DEFAULT '[]',
                     rating INTEGER,
                     notes TEXT,
                     custom_field_values_json TEXT NOT NULL,
@@ -157,6 +158,27 @@ class Database:
                 );
                 """
             )
+            self._ensure_column(
+                conn,
+                "collection_item_snapshots",
+                "styles_json",
+                "TEXT NOT NULL DEFAULT '[]'",
+            )
+
+    def _ensure_column(
+        self,
+        conn: sqlite3.Connection,
+        table_name: str,
+        column_name: str,
+        column_sql: str,
+    ) -> None:
+        existing_columns = {
+            row["name"]
+            for row in conn.execute(f"PRAGMA table_info({table_name})").fetchall()
+        }
+        if column_name in existing_columns:
+            return
+        conn.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_sql}")
 
     def save_oauth_request(
         self, request_token_key: str, request_token_secret: str, role: str

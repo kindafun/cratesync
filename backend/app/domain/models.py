@@ -66,6 +66,7 @@ class CollectionItemSnapshot(BaseModel):
     labels: list[str] = Field(default_factory=list)
     genres: list[str] = Field(default_factory=list)
     formats: list[str] = Field(default_factory=list)
+    styles: list[str] = Field(default_factory=list)
     rating: Optional[int] = None
     notes: Optional[str] = None
     custom_field_values: dict[str, Any] = Field(default_factory=dict)
@@ -90,10 +91,17 @@ class AccountLinkRequest(BaseModel):
 class SelectionFilters(BaseModel):
     date_from: Optional[datetime] = None
     date_to: Optional[datetime] = None
+    artist_query: Optional[str] = None
+    title_query: Optional[str] = None
+    label_query: Optional[str] = None
+    genre_query: Optional[str] = None
+    format_query: Optional[str] = None
+    style_query: Optional[str] = None
     folder_ids: list[int] = Field(default_factory=list)
     genres: list[str] = Field(default_factory=list)
     labels: list[str] = Field(default_factory=list)
     formats: list[str] = Field(default_factory=list)
+    styles: list[str] = Field(default_factory=list)
     year_min: Optional[int] = None
     year_max: Optional[int] = None
     rating_min: Optional[int] = None
@@ -106,6 +114,7 @@ class MigrationPlanPreviewRequest(BaseModel):
     source_account_id: str
     destination_account_id: str
     snapshot_id: str
+    selected_snapshot_item_ids: Optional[list[str]] = None
     workflow_mode: WorkflowMode = "copy"
     name: str = "Untitled plan"
     filters: SelectionFilters = Field(default_factory=SelectionFilters)

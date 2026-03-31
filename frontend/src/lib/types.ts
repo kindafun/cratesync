@@ -44,6 +44,7 @@ export interface CollectionItemSnapshot {
   labels: string[];
   genres: string[];
   formats: string[];
+  styles: string[];
   rating?: number | null;
   notes?: string | null;
   custom_field_values: Record<string, unknown>;
@@ -52,10 +53,17 @@ export interface CollectionItemSnapshot {
 export interface SelectionFilters {
   date_from?: string | null;
   date_to?: string | null;
+  artist_query?: string | null;
+  title_query?: string | null;
+  label_query?: string | null;
+  genre_query?: string | null;
+  format_query?: string | null;
+  style_query?: string | null;
   folder_ids: number[];
   genres: string[];
   labels: string[];
   formats: string[];
+  styles: string[];
   year_min?: number | null;
   year_max?: number | null;
   rating_min?: number | null;
@@ -68,6 +76,7 @@ export interface MigrationPlanPreviewRequest {
   source_account_id: string;
   destination_account_id: string;
   snapshot_id: string;
+  selected_snapshot_item_ids?: string[] | null;
   workflow_mode: WorkflowMode;
   name: string;
   filters: SelectionFilters;

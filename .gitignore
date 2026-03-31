@@ -1,0 +1,13 @@
+.DS_Store
+.env
+.venv
+node_modules
+dist
+build
+__pycache__
+.pytest_cache
+*.pyc
+*.egg-info/
+app_data
+exports
+.claude-design/

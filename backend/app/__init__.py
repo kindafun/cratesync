@@ -1,0 +1,2 @@
+"""Discogs Migration app package."""
+

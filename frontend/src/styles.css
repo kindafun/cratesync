@@ -99,6 +99,47 @@ body,
   min-height: 100%;
 }
 
+html {
+  scrollbar-color: rgba(212, 160, 80, 0.72) rgba(26, 23, 18, 0.92);
+  scrollbar-width: thin;
+}
+
+* {
+  scrollbar-color: rgba(212, 160, 80, 0.72) rgba(26, 23, 18, 0.92);
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(26, 23, 18, 0.92);
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(26, 23, 18, 0.92);
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(221, 176, 101, 0.9),
+    rgba(160, 118, 54, 0.9)
+  );
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(236, 194, 118, 0.95),
+    rgba(184, 136, 62, 0.95)
+  );
+}
+
+*::-webkit-scrollbar-corner {
+  background: rgba(26, 23, 18, 0.92);
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -525,6 +566,30 @@ select:focus {
   font-size: var(--text-title-md);
 }
 
+.snapshot-toolbar,
+.snapshot-controls,
+.snapshot-pagination,
+.snapshot-page-size {
+  display: flex;
+  align-items: center;
+  gap: var(--inline-gap-md);
+  flex-wrap: wrap;
+}
+
+.snapshot-toolbar {
+  justify-content: space-between;
+  margin-bottom: var(--stack-sm);
+}
+
+.snapshot-page-size {
+  color: var(--color-muted);
+  font-size: var(--text-meta);
+}
+
+.snapshot-page-size select {
+  min-width: 5rem;
+}
+
 .table-wrap {
   overflow: auto;
   border: var(--border-subtle);
@@ -543,6 +608,38 @@ select:focus {
   font-size: var(--text-table);
 }
 
+.snapshot-table {
+  table-layout: fixed;
+}
+
+.snapshot-table .snapshot-col-artist {
+  width: 18%;
+}
+
+.snapshot-table .snapshot-col-title {
+  width: 24%;
+}
+
+.snapshot-table .snapshot-col-year {
+  width: 8%;
+}
+
+.snapshot-table .snapshot-col-folder {
+  width: 12%;
+}
+
+.snapshot-table .snapshot-col-genre {
+  width: 14%;
+}
+
+.snapshot-table .snapshot-col-label {
+  width: 14%;
+}
+
+.snapshot-table .snapshot-col-added {
+  width: 10%;
+}
+
 .data-table th,
 .data-table td {
   padding: var(--table-cell-padding-y) var(--table-cell-padding-x);
@@ -558,6 +655,52 @@ select:focus {
   background: #13110d;
   color: var(--color-accent);
   letter-spacing: var(--tracking-table);
+}
+
+.snapshot-sort-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.snapshot-table td,
+.snapshot-table th {
+  overflow-wrap: anywhere;
+}
+
+.snapshot-sort-chevron {
+  width: 0.46rem;
+  height: 0.46rem;
+  flex-shrink: 0;
+  border-right: 1.5px solid var(--color-muted);
+  border-bottom: 1.5px solid var(--color-muted);
+  transform: rotate(45deg);
+  transition: transform 120ms ease, border-color 120ms ease, opacity 120ms ease;
+  opacity: 0.55;
+}
+
+.snapshot-sort-button.active .snapshot-sort-chevron,
+.snapshot-sort-button:hover .snapshot-sort-chevron {
+  border-color: var(--color-accent);
+  opacity: 1;
+}
+
+.snapshot-sort-chevron.asc {
+  transform: rotate(225deg);
+}
+
+.snapshot-sort-chevron.desc {
+  transform: rotate(45deg);
 }
 
 .data-table tbody tr:hover {
@@ -806,7 +949,8 @@ select:focus {
 
   .planner-actions,
   .inline-action,
-  .toolbar-actions {
+  .toolbar-actions,
+  .snapshot-controls {
     flex-direction: column;
     align-items: stretch;
   }
@@ -815,6 +959,11 @@ select:focus {
   .text-btn,
   .history-pill {
     width: 100%;
+  }
+
+  .snapshot-pagination {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .left-hero h1 {

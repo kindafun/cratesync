@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { memo, startTransition, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 
 import { API_ORIGINS, api } from "./lib/api";
 import {
@@ -84,43 +84,89 @@ export function App() {
   const sourceAccount = accounts.find((account) => account.role === "source");
   const destinationAccount = accounts.find((account) => account.role === "destination");
 
-  const filters = buildFilters({
-    activeFilterKeys,
-    specificDate,
-    dateFrom,
-    dateTo,
-    artistQuery,
-    titleQuery,
-    labelQuery,
-    genreQuery,
-    formatQuery,
-    styleQuery,
-    selectedFolderIds,
-    selectedGenres,
-    selectedLabels,
-    selectedFormats,
-    selectedStyles,
-  });
+  const filters = useMemo(
+    () =>
+      buildFilters({
+        activeFilterKeys,
+        specificDate,
+        dateFrom,
+        dateTo,
+        artistQuery,
+        titleQuery,
+        labelQuery,
+        genreQuery,
+        formatQuery,
+        styleQuery,
+        selectedFolderIds,
+        selectedGenres,
+        selectedLabels,
+        selectedFormats,
+        selectedStyles,
+      }),
+    [
+      activeFilterKeys,
+      specificDate,
+      dateFrom,
+      dateTo,
+      artistQuery,
+      titleQuery,
+      labelQuery,
+      genreQuery,
+      formatQuery,
+      styleQuery,
+      selectedFolderIds,
+      selectedGenres,
+      selectedLabels,
+      selectedFormats,
+      selectedStyles,
+    ],
+  );
 
-  const currentPlan: MigrationPlanPreviewRequest = {
-    source_account_id: sourceAccount?.id ?? "",
-    destination_account_id: destinationAccount?.id ?? "",
-    snapshot_id: sourceSnapshot?.id ?? "",
-    selected_snapshot_item_ids: selectedSourceItemIds,
-    workflow_mode: workflowMode,
-    name: planName.trim() || "Untitled plan",
-    filters,
-    folder_mapping_overrides: folderMappingOverrides,
-    custom_field_mapping_overrides: sanitizeStringMap(customFieldMappingOverrides),
-  };
-  const currentPlanSignature = JSON.stringify(currentPlan);
+  const currentPlan = useMemo<MigrationPlanPreviewRequest>(
+    () => ({
+      source_account_id: sourceAccount?.id ?? "",
+      destination_account_id: destinationAccount?.id ?? "",
+      snapshot_id: sourceSnapshot?.id ?? "",
+      selected_snapshot_item_ids: selectedSourceItemIds,
+      workflow_mode: workflowMode,
+      name: planName.trim() || "Untitled plan",
+      filters,
+      folder_mapping_overrides: folderMappingOverrides,
+      custom_field_mapping_overrides: sanitizeStringMap(customFieldMappingOverrides),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [
+      sourceAccount?.id,
+      destinationAccount?.id,
+      sourceSnapshot?.id,
+      selectedSourceItemIds,
+      workflowMode,
+      planName,
+      filters,
+      folderMappingOverrides,
+      customFieldMappingOverrides,
+    ],
+  );
+  const currentPlanSignature = useMemo(() => JSON.stringify(currentPlan), [currentPlan]);
   const previewIsStale = Boolean(preview && lastPreviewSignature !== currentPlanSignature);
 
-  const previewSelectedIds = new Set(preview?.selected_items.map((item) => item.id) ?? []);
-  const duplicateReleaseIds = new Set(preview?.duplicate_release_ids ?? []);
-  const selectedSourceIdSet = new Set(selectedSourceItemIds);
-  const filteredSourceItems = filterSourceItems(sourceItems, filters);
-  const filteredSourceItemIds = filteredSourceItems.map((item) => item.id);
+  const previewSelectedIds = useMemo(
+    () => new Set(preview?.selected_items.map((item) => item.id) ?? []),
+    [preview],
+  );
+  const duplicateReleaseIds = useMemo(
+    () => new Set(preview?.duplicate_release_ids ?? []),
+    [preview],
+  );
+  const selectedSourceIdSet = useMemo(() => new Set(selectedSourceItemIds), [selectedSourceItemIds]);
+  const filteredSourceItems = useMemo(
+    () => filterSourceItems(sourceItems, filters),
+    [sourceItems, filters],
+  );
+  const filteredSourceItemIds = useMemo(
+    () => filteredSourceItems.map((item) => item.id),
+    [filteredSourceItems],
+  );
   const selectedSourceCount = selectedSourceItemIds.length;
   const launchBlocked =
     !preview ||
@@ -132,34 +178,28 @@ export function App() {
     !destinationAccount ||
     !sourceSnapshot;
 
-  const folderOptions = deriveFolderOptions(sourceItems);
-  const genreOptions = deriveStringOptions(sourceItems, "genres");
-  const labelOptions = deriveStringOptions(sourceItems, "labels");
-  const formatOptions = deriveStringOptions(sourceItems, "formats");
-  const styleOptions = deriveStringOptions(sourceItems, "styles");
-  const destinationFolderLookup = deriveFolderLookup(destinationItems);
+  const folderOptions = useMemo(() => deriveFolderOptions(sourceItems), [sourceItems]);
+  const genreOptions = useMemo(() => deriveStringOptions(sourceItems, "genres"), [sourceItems]);
+  const labelOptions = useMemo(() => deriveStringOptions(sourceItems, "labels"), [sourceItems]);
+  const formatOptions = useMemo(() => deriveStringOptions(sourceItems, "formats"), [sourceItems]);
+  const styleOptions = useMemo(() => deriveStringOptions(sourceItems, "styles"), [sourceItems]);
+  const destinationFolderLookup = useMemo(() => deriveFolderLookup(destinationItems), [destinationItems]);
   const recentJobs = jobs.slice(0, 8);
   const previewConflicts = preview?.blocking_conflicts ?? [];
   const folderConflicts = previewConflicts.filter((conflict) => conflict.type === "folder_mapping");
   const customFieldConflicts = previewConflicts.filter(
     (conflict) => conflict.type === "custom_field_mapping",
   );
-  const availableFilterOptions = FILTER_OPTIONS.filter((option) => {
-    if (activeFilterKeys.includes(option.key)) return false;
-    if (
-      option.key === "specific_date" &&
-      activeFilterKeys.includes("date_range")
-    ) {
-      return false;
-    }
-    if (
-      option.key === "date_range" &&
-      activeFilterKeys.includes("specific_date")
-    ) {
-      return false;
-    }
-    return true;
-  });
+  const availableFilterOptions = useMemo(
+    () =>
+      FILTER_OPTIONS.filter((option) => {
+        if (activeFilterKeys.includes(option.key)) return false;
+        if (option.key === "specific_date" && activeFilterKeys.includes("date_range")) return false;
+        if (option.key === "date_range" && activeFilterKeys.includes("specific_date")) return false;
+        return true;
+      }),
+    [activeFilterKeys],
+  );
   const reviewItems =
     reviewTableMode === "selected" ? preview?.selected_items ?? [] : sourceItems;
   const reviewState = deriveReviewState({
@@ -563,30 +603,30 @@ export function App() {
     if (key === "folders") setSelectedFolderIds([]);
   }
 
-  function toggleSourceSelection(itemId: string) {
+  const toggleSourceSelection = useCallback((itemId: string) => {
     setSelectedSourceItemIds((current) =>
       current.includes(itemId)
         ? current.filter((value) => value !== itemId)
         : [...current, itemId],
     );
-  }
+  }, []);
 
-  function selectFilteredItems() {
+  const selectFilteredItems = useCallback(() => {
     setSelectedSourceItemIds((current) => appendUnique(current, filteredSourceItemIds));
-  }
+  }, [filteredSourceItemIds]);
 
-  function selectSourceRange(itemIds: string[]) {
+  const selectSourceRange = useCallback((itemIds: string[]) => {
     setSelectedSourceItemIds((current) => appendUnique(current, itemIds));
-  }
+  }, []);
 
-  function deselectFilteredItems() {
+  const deselectFilteredItems = useCallback(() => {
     const visibleIds = new Set(filteredSourceItemIds);
     setSelectedSourceItemIds((current) => current.filter((itemId) => !visibleIds.has(itemId)));
-  }
+  }, [filteredSourceItemIds]);
 
-  function clearSelectedItems() {
+  const clearSelectedItems = useCallback(() => {
     setSelectedSourceItemIds([]);
-  }
+  }, []);
 
   function setFolderOverride(sourceFolderId: string, destinationFolderId: number | null) {
     setFolderMappingOverrides((current) => {
@@ -1198,7 +1238,7 @@ export function App() {
             </div>
 
             <div className="history-strip">
-              {recentJobs.length === 0 && <span className="history-empty">No jobs created yet.</span>}
+              {recentJobs.length === 0 && <span className="text-muted text-meta">No jobs created yet.</span>}
               {recentJobs.map((job) => (
                 <button
                   key={job.id}
@@ -1441,7 +1481,17 @@ function StatBlock({
   );
 }
 
-function SourceSelectionSection({
+const SOURCE_COLUMNS: Array<{ key: SnapshotSortColumn; label: string }> = [
+  { key: "artist", label: "Artist" },
+  { key: "title", label: "Title" },
+  { key: "genre", label: "Genre" },
+  { key: "style", label: "Style" },
+  { key: "label", label: "Label" },
+  { key: "format", label: "Format" },
+  { key: "added", label: "Added" },
+];
+
+const SourceSelectionSection = memo(function SourceSelectionSection({
   title,
   snapshot,
   items,
@@ -1470,17 +1520,12 @@ function SourceSelectionSection({
   const [sortDirection, setSortDirection] = useState<SnapshotSortDirection>("asc");
   const lastInteractedItemIdRef = useRef<string | null>(null);
 
-  const sortedItems = sortSnapshotItems(items, sortColumn, sortDirection);
+  const sortedItems = useMemo(
+    () => sortSnapshotItems(items, sortColumn, sortDirection),
+    [items, sortColumn, sortDirection],
+  );
   const totalItems = sortedItems.length;
-  const columns: Array<{ key: SnapshotSortColumn; label: string }> = [
-    { key: "artist", label: "Artist" },
-    { key: "title", label: "Title" },
-    { key: "genre", label: "Genre" },
-    { key: "style", label: "Style" },
-    { key: "label", label: "Label" },
-    { key: "format", label: "Format" },
-    { key: "added", label: "Added" },
-  ];
+  const columns = SOURCE_COLUMNS;
 
   function handleSort(nextColumn: SnapshotSortColumn) {
     if (sortColumn === nextColumn) {
@@ -1645,9 +1690,18 @@ function SourceSelectionSection({
       </div>
     </section>
   );
-}
+});
 
-function SnapshotSection({
+const SNAPSHOT_COLUMNS: Array<{ key: SnapshotSortColumn; label: string }> = [
+  { key: "artist", label: "Artist" },
+  { key: "title", label: "Title" },
+  { key: "year", label: "Year" },
+  { key: "genre", label: "Genre" },
+  { key: "label", label: "Label" },
+  { key: "added", label: "Added" },
+];
+
+const SnapshotSection = memo(function SnapshotSection({
   title,
   snapshot,
   items,
@@ -1659,16 +1713,12 @@ function SnapshotSection({
   const [sortColumn, setSortColumn] = useState<SnapshotSortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<SnapshotSortDirection>("asc");
 
-  const sortedItems = sortSnapshotItems(items, sortColumn, sortDirection);
+  const sortedItems = useMemo(
+    () => sortSnapshotItems(items, sortColumn, sortDirection),
+    [items, sortColumn, sortDirection],
+  );
   const totalItems = sortedItems.length;
-  const columns: Array<{ key: SnapshotSortColumn; label: string }> = [
-    { key: "artist", label: "Artist" },
-    { key: "title", label: "Title" },
-    { key: "year", label: "Year" },
-    { key: "genre", label: "Genre" },
-    { key: "label", label: "Label" },
-    { key: "added", label: "Added" },
-  ];
+  const columns = SNAPSHOT_COLUMNS;
 
   function handleSort(nextColumn: SnapshotSortColumn) {
     if (sortColumn === nextColumn) {
@@ -1758,7 +1808,7 @@ function SnapshotSection({
       </div>
     </section>
   );
-}
+});
 
 function FolderConflictCard({
   conflict,

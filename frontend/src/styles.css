@@ -80,6 +80,10 @@
   --radius-md: 6px;
   --radius-pill: 999px;
 
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-base: 140ms;
+
   /* Borders and surfaces */
   --border-subtle: 1px solid var(--color-rule);
   --border-strong: 1px solid var(--color-rule-strong);
@@ -235,7 +239,7 @@ p {
   padding: var(--space-xs) var(--stack-md);
   border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+  transition: border-color var(--duration-base) ease, color var(--duration-base) ease, background var(--duration-base) ease;
 }
 
 .text-btn:hover {
@@ -380,7 +384,6 @@ p {
 .credit-meta,
 .header-note,
 .job-meta,
-.history-empty,
 .review-summary,
 .empty-block,
 .empty-cell {
@@ -521,7 +524,7 @@ select {
   background: var(--color-surface-raised);
   color: var(--color-ink);
   padding: var(--control-padding-y) var(--control-padding-x);
-  transition: border-color 140ms ease, background 140ms ease;
+  transition: border-color var(--duration-base) ease, background var(--duration-base) ease;
 }
 
 select[multiple] {
@@ -554,7 +557,7 @@ select:focus {
   color: var(--color-muted);
   padding: 0.72rem 0.65rem;
   cursor: pointer;
-  transition: background 140ms ease, color 140ms ease;
+  transition: background var(--duration-base) ease, color var(--duration-base) ease;
 }
 
 .toggle-option.active {
@@ -579,7 +582,7 @@ select:focus {
   padding: var(--control-padding-y) var(--space-md);
   cursor: pointer;
   line-height: 1;
-  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, opacity 140ms ease;
+  transition: background var(--duration-base) ease, border-color var(--duration-base) ease, color var(--duration-base) ease, opacity var(--duration-base) ease;
 }
 
 .btn:disabled {
@@ -705,11 +708,11 @@ select:focus {
 }
 
 .table-wrap-tall {
-  max-height: 38rem;
+  max-height: min(38rem, 70vh);
 }
 
 .snapshot-frame-wrap {
-  max-height: 53rem;
+  max-height: min(53rem, 80vh);
 }
 
 .data-table {
@@ -844,7 +847,7 @@ select:focus {
   border-right: 1.5px solid var(--color-muted);
   border-bottom: 1.5px solid var(--color-muted);
   transform: rotate(45deg);
-  transition: transform 120ms ease, border-color 120ms ease, opacity 120ms ease;
+  transition: transform var(--duration-fast) ease, border-color var(--duration-fast) ease, opacity var(--duration-fast) ease;
   opacity: 0.55;
 }
 
@@ -1109,7 +1112,9 @@ select:focus {
   :root {
     --shell-padding-right: var(--shell-padding);
   }
+}
 
+@media (max-width: 960px) {
   .shell-grid {
     grid-template-columns: 1fr;
   }
@@ -1126,6 +1131,7 @@ select:focus {
     --shell-padding-right: var(--space-md);
     --section-gap: var(--space-md);
     --section-divider-space: var(--space-md);
+    --control-height: 2.75rem;
   }
 
   .topbar,
@@ -1164,6 +1170,22 @@ select:focus {
     width: 100%;
   }
 
+  .toggle-option {
+    min-height: var(--control-height);
+  }
+
+  .chip-button {
+    min-height: var(--control-height);
+    padding-block: var(--space-xs);
+  }
+
+  .saved-views-menu summary {
+    min-height: var(--control-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .snapshot-pagination {
     width: 100%;
     justify-content: space-between;
@@ -1185,6 +1207,11 @@ select:focus {
 
 .text-faint {
   color: var(--color-faint);
+}
+
+.text-meta {
+  font-size: var(--text-meta);
+  line-height: var(--line-height-body);
 }
 
 /* Account slot copy */

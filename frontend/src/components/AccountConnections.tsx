@@ -65,7 +65,7 @@ function ConnectionSlot({ role, account, onConnect, onSync, onDisconnect }: Conn
     return (
       <article className="account-card account-card-empty">
         <span className={`role-badge role-${role}`}>{role}</span>
-        <p style={{ color: "var(--muted)", fontSize: "0.83rem", margin: "0.1rem 0" }}>
+        <p className="account-slot-hint">
           Authorize the {role} Discogs account to begin.
         </p>
         <button className="btn btn-primary btn-sm" onClick={() => onConnect(role)}>

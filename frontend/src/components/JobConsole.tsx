@@ -52,7 +52,11 @@ export function JobConsole({ detail, onConfirmDelete, onRollback, onExport }: Jo
         <>
           <div className="job-header">
             <span className="job-name">{detail.job.name}</span>
-            <span className={`job-status-badge ${getStatusClass(detail.job.status)}`}>
+            <span
+              className={`job-status-badge ${getStatusClass(detail.job.status)}`}
+              role="status"
+              aria-live="polite"
+            >
               {detail.job.status.replace(/_/g, " ")}
             </span>
           </div>
@@ -69,7 +73,7 @@ export function JobConsole({ detail, onConfirmDelete, onRollback, onExport }: Jo
           )}
 
           {detail.events.length > 0 && (
-            <div className="event-feed">
+            <div className="event-feed" aria-live="polite" aria-label="Job events" aria-atomic="false">
               {detail.events.map((event) => (
                 <div key={event.id} className={`event event-${event.level}`}>
                   <div className="event-stripe" />
@@ -100,7 +104,7 @@ export function JobConsole({ detail, onConfirmDelete, onRollback, onExport }: Jo
                 ))}
                 {detail.items.length === 0 && (
                   <tr>
-                    <td colSpan={4} style={{ color: "var(--faint)", textAlign: "center", padding: "1.5rem" }}>
+                    <td colSpan={4} className="empty-cell">
                       No items processed yet.
                     </td>
                   </tr>

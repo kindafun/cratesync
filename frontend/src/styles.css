@@ -244,6 +244,11 @@ p {
   background: var(--color-overlay);
 }
 
+.text-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 .shell-grid {
   display: grid;
   grid-template-columns: minmax(340px, 1fr) minmax(0, 2.15fr);
@@ -463,6 +468,11 @@ p {
   display: none;
 }
 
+.saved-views-menu summary:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 .saved-views-menu[open] summary {
   border-color: var(--color-rule-strong);
   background: var(--color-overlay);
@@ -553,6 +563,11 @@ select:focus {
   font-weight: 700;
 }
 
+.toggle-option:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -570,6 +585,11 @@ select:focus {
 .btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .btn-primary {
@@ -770,6 +790,12 @@ select:focus {
   cursor: pointer;
 }
 
+.snapshot-sort-button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
 .snapshot-table td,
 .snapshot-table th {
   overflow-wrap: normal;
@@ -918,6 +944,12 @@ select:focus {
   border-color: rgba(196, 72, 50, 0.36);
   color: var(--color-danger-ink);
   background: var(--color-danger-soft);
+}
+
+.chip-button:focus-visible,
+.history-pill:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .message-list,
@@ -1143,5 +1175,55 @@ select:focus {
 
   .canvas-header h2 {
     font-size: 1.4rem;
+  }
+}
+
+/* Utility */
+.text-muted {
+  color: var(--color-muted);
+}
+
+.text-faint {
+  color: var(--color-faint);
+}
+
+/* Account slot copy */
+.account-slot-hint {
+  color: var(--color-muted);
+  font-size: 0.83rem;
+  margin: 0.1rem 0;
+}
+
+/* Error boundary */
+.error-boundary-fallback {
+  display: grid;
+  gap: var(--stack-md);
+  padding: var(--space-xl);
+  text-align: center;
+  max-width: 28rem;
+  margin: var(--space-3xl) auto;
+}
+
+.error-boundary-title {
+  font-family: var(--font-display);
+  font-size: var(--text-title-sm);
+  color: var(--color-ink);
+  font-weight: 400;
+}
+
+.error-boundary-message {
+  color: var(--color-muted);
+  font-size: var(--text-body);
+  line-height: var(--line-height-body);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

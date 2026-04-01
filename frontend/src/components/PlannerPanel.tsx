@@ -63,16 +63,20 @@ export function PlannerPanel({ accounts, onPreview, onCreateJob, preview }: Plan
         </div>
 
         <div className="field">
-          <span className="field-label">Workflow mode</span>
-          <div className="toggle-group">
+          <span className="field-label" id="workflow-mode-label">Workflow mode</span>
+          <div className="toggle-group" role="radiogroup" aria-labelledby="workflow-mode-label">
             <button
               className={`toggle-option${workflowMode === "copy" ? " active" : ""}`}
+              role="radio"
+              aria-checked={workflowMode === "copy"}
               onClick={() => setWorkflowMode("copy")}
             >
               Copy only
             </button>
             <button
               className={`toggle-option${workflowMode === "move" ? " active" : ""}`}
+              role="radio"
+              aria-checked={workflowMode === "move"}
               onClick={() => setWorkflowMode("move")}
             >
               Two-phase move

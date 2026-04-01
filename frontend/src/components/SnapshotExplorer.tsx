@@ -47,7 +47,7 @@ export function SnapshotExplorer({ title, snapshot, items }: SnapshotExplorerPro
             ))}
             {items.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ color: "var(--faint)", textAlign: "center", padding: "2rem" }}>
+                <td colSpan={6} className="empty-cell">
                   No snapshot data — sync this account to populate.
                 </td>
               </tr>

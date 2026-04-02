@@ -57,6 +57,7 @@ export function App() {
   const [lastPreviewSignature, setLastPreviewSignature] = useState<string | null>(null);
   const [nextFilterToAdd, setNextFilterToAdd] = useState<FilterKey | "">("");
   const [reviewTableMode, setReviewTableMode] = useState<"selected" | "all">("selected");
+  const [retryFn, setRetryFn] = useState<(() => void) | null>(null);
 
   const [planName, setPlanName] = useState("Digital archive split");
   const [workflowMode, setWorkflowMode] = useState<WorkflowMode>("copy");
@@ -231,6 +232,7 @@ export function App() {
 
   async function refreshWorkspace() {
     setLoading(true);
+    setRetryFn(null);
     try {
       const [health, accountList, jobList] = await Promise.all([
         api.health(),
@@ -278,6 +280,7 @@ export function App() {
       }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Failed to load state.");
+      setRetryFn(() => () => void refreshWorkspace());
     } finally {
       setLoading(false);
     }
@@ -394,12 +397,14 @@ export function App() {
   }
 
   async function handleSync(accountId: string) {
+    setRetryFn(null);
     try {
       setStatus("Syncing collection snapshot from Discogs…");
       await api.syncCollection(accountId);
       await refreshWorkspace();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Sync failed.");
+      setRetryFn(() => () => void handleSync(accountId));
     }
   }
 
@@ -424,8 +429,13 @@ export function App() {
   }
 
   async function handlePreview() {
+    setRetryFn(null);
     if (!sourceSnapshot || !sourceAccount || !destinationAccount) {
       setStatus("Sync both source and destination snapshots before planning.");
+      return;
+    }
+    if (selectedSourceCount === 0) {
+      setStatus("Select at least one release before generating a preview.");
       return;
     }
     try {
@@ -441,6 +451,7 @@ export function App() {
       );
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Preview failed.");
+      setRetryFn(() => () => void handlePreview());
     }
   }
 
@@ -659,6 +670,7 @@ export function App() {
           >
             <input
               type="date"
+              aria-label="Specific date"
               value={specificDate}
               onChange={(event) => setSpecificDate(event.target.value)}
             />
@@ -700,6 +712,7 @@ export function App() {
           >
             <input
               type="text"
+              aria-label="Artist name"
               placeholder="e.g. Four Tet"
               value={artistQuery}
               onChange={(event) => setArtistQuery(event.target.value)}
@@ -716,6 +729,7 @@ export function App() {
           >
             <input
               type="text"
+              aria-label="Release title"
               placeholder="e.g. Rounds"
               value={titleQuery}
               onChange={(event) => setTitleQuery(event.target.value)}
@@ -732,6 +746,7 @@ export function App() {
           >
             <input
               type="text"
+              aria-label="Label name"
               placeholder="e.g. Warp"
               value={labelQuery}
               onChange={(event) => setLabelQuery(event.target.value)}
@@ -748,6 +763,7 @@ export function App() {
           >
             <input
               type="text"
+              aria-label="Genre"
               placeholder="e.g. Electronic"
               value={genreQuery}
               onChange={(event) => setGenreQuery(event.target.value)}
@@ -764,6 +780,7 @@ export function App() {
           >
             <input
               type="text"
+              aria-label="Format"
               placeholder="e.g. Vinyl"
               value={formatQuery}
               onChange={(event) => setFormatQuery(event.target.value)}
@@ -780,6 +797,7 @@ export function App() {
           >
             <input
               type="text"
+              aria-label="Style"
               placeholder="e.g. Deep House"
               value={styleQuery}
               onChange={(event) => setStyleQuery(event.target.value)}
@@ -798,6 +816,7 @@ export function App() {
               options={genreOptions}
               values={selectedGenres}
               onChange={setSelectedGenres}
+              ariaLabel="Filter by genre"
             />
           </FilterBlock>
         );
@@ -813,6 +832,7 @@ export function App() {
               options={labelOptions}
               values={selectedLabels}
               onChange={setSelectedLabels}
+              ariaLabel="Filter by label"
             />
           </FilterBlock>
         );
@@ -828,6 +848,7 @@ export function App() {
               options={formatOptions}
               values={selectedFormats}
               onChange={setSelectedFormats}
+              ariaLabel="Filter by format"
             />
           </FilterBlock>
         );
@@ -843,6 +864,7 @@ export function App() {
               options={styleOptions}
               values={selectedStyles}
               onChange={setSelectedStyles}
+              ariaLabel="Filter by style"
             />
           </FilterBlock>
         );
@@ -856,6 +878,7 @@ export function App() {
           >
             <select
               multiple
+              aria-label="Filter by folder"
               value={selectedFolderIds.map(String)}
               onChange={(event) =>
                 setSelectedFolderIds(
@@ -897,11 +920,16 @@ export function App() {
               Filter the source view only when needed, explicitly pick the releases to migrate, and
               use the review step to confirm exactly what will happen before launch.
             </p>
-            <div className="status-line">{status}</div>
+            <div className="status-line">
+              <span>{status}</span>
+              {retryFn && (
+                <button className="btn btn-ghost btn-sm" onClick={retryFn}>Try again</button>
+              )}
+            </div>
           </div>
 
           <section className="rail-section">
-            <div className="section-label">Accounts</div>
+            <h2 className="section-label">Accounts</h2>
             <AccountCard
               role="source"
               account={sourceAccount}
@@ -924,7 +952,7 @@ export function App() {
             <div className="planner-header">
               <div>
                 <div className="section-label">Step 1</div>
-                <div className="editorial-title">Build the source view</div>
+                <h2 className="editorial-title">Build the source view</h2>
               </div>
 
               <details className="saved-views-menu">
@@ -1010,6 +1038,7 @@ export function App() {
                 {availableFilterOptions.length > 0 && (
                   <div className="filter-add-row">
                     <select
+                      aria-label="Select filter to add"
                       value={nextFilterToAdd}
                       onChange={(event) => setNextFilterToAdd(event.target.value as FilterKey)}
                     >
@@ -1149,7 +1178,7 @@ export function App() {
                 </div>
 
                 <div className="review-table-header">
-                  <div className="section-label">Included release review</div>
+                  <h3 className="section-label">Included release review</h3>
                   <div className="history-strip">
                     <button
                       className={`history-pill${reviewTableMode === "selected" ? " active" : ""}`}
@@ -1409,10 +1438,12 @@ function MultiValueSelect({
   options,
   values,
   onChange,
+  ariaLabel,
 }: {
   options: string[];
   values: string[];
   onChange(values: string[]): void;
+  ariaLabel?: string;
 }) {
   if (options.length === 0) {
     return <div className="empty-block compact">No values available in the synced source snapshot.</div>;
@@ -1421,6 +1452,7 @@ function MultiValueSelect({
   return (
     <select
       multiple
+      aria-label={ariaLabel}
       value={values}
       onChange={(event) =>
         onChange(Array.from(event.currentTarget.selectedOptions, (option) => option.value))
@@ -1621,7 +1653,7 @@ const SourceSelectionSection = memo(function SourceSelectionSection({
               {columns.map((column) => {
                 const isActive = sortColumn === column.key;
                 return (
-                  <th key={column.key}>
+                  <th key={column.key} aria-sort={isActive ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}>
                     <button
                       type="button"
                       className={`snapshot-sort-button${isActive ? " active" : ""}`}
@@ -1768,7 +1800,7 @@ const SnapshotSection = memo(function SnapshotSection({
               {columns.map((column) => {
                 const isActive = sortColumn === column.key;
                 return (
-                  <th key={column.key}>
+                  <th key={column.key} aria-sort={isActive ? (sortDirection === "asc" ? "ascending" : "descending") : "none"}>
                     <button
                       type="button"
                       className={`snapshot-sort-button${isActive ? " active" : ""}`}
@@ -1833,6 +1865,7 @@ function FolderConflictCard({
       <h3>{folderName}</h3>
       <p>{conflict.message}</p>
       <select
+        aria-label={`Map ${folderName} to destination folder`}
         value={selectedValue ? String(selectedValue) : ""}
         onChange={(event) =>
           onChange(sourceFolderId, event.target.value ? Number(event.target.value) : null)
@@ -1868,6 +1901,7 @@ function CustomFieldConflictCard({
       <div className="inline-action">
         <input
           type="text"
+          aria-label={`Destination field name for ${fieldName}`}
           placeholder={`Destination field for ${fieldName}`}
           value={value}
           onChange={(event) => onChange(fieldName, event.target.value)}

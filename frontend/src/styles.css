@@ -295,6 +295,21 @@ p {
   line-height: var(--line-height-relaxed);
 }
 
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--inline-gap-md);
+  flex-wrap: wrap;
+  padding: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-md);
+  background: rgba(180, 60, 50, 0.12);
+  border: 1px solid rgba(180, 60, 50, 0.3);
+  border-radius: var(--radius-sm);
+  color: #e07060;
+  font-size: var(--text-meta);
+  line-height: var(--line-height-body);
+}
+
 .status-line {
   margin-top: var(--space-md);
   padding-top: var(--space-md);

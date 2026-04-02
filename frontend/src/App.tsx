@@ -56,6 +56,7 @@ export function App() {
   const [status, setStatus] = useState("Connecting to local backend…");
   const [loading, setLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState<string | null>(null);
+  const [syncProgress, setSyncProgress] = useState<{ fetched: number; total: number | null } | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [presetName, setPresetName] = useState("");
   const [selectedPresetId, setSelectedPresetId] = useState("");
@@ -434,15 +435,27 @@ export function App() {
   async function handleSync(accountId: string) {
     setRetryFn(null);
     setIsSyncing(accountId);
+    setSyncProgress(null);
     try {
-      setStatus("Syncing collection snapshot from Discogs…");
       await api.syncCollection(accountId);
+      while (true) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 800));
+        const progress = await api.getSyncProgress(accountId);
+        if (progress.status === "error") {
+          throw new Error(progress.error ?? "Sync failed.");
+        }
+        if (progress.status === "running") {
+          setSyncProgress({ fetched: progress.fetched ?? 0, total: progress.total ?? null });
+        }
+        if (progress.status === "done") break;
+      }
       await refreshWorkspace();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Sync failed.");
       setRetryFn(() => () => void handleSync(accountId));
     } finally {
       setIsSyncing(null);
+      setSyncProgress(null);
     }
   }
 
@@ -945,7 +958,9 @@ export function App() {
         <div className="topbar-actions">
           <span className="hero-status">
             <span className={`status-dot${loading ? " status-dot-busy" : ""}`} />
-            {loading ? "Refreshing workspace" : "Backend online"}
+            {loading
+              ? "Refreshing workspace"
+              : `Backend online${accounts.length > 0 ? ` · ${accounts.length} account${accounts.length !== 1 ? "s" : ""}` : ""}`}
           </span>
           <button className="text-btn" onClick={() => void handleClearLocalData()}>
             Clear local data
@@ -961,21 +976,22 @@ export function App() {
               Filter the source view only when needed, explicitly pick the releases to migrate, and
               use the review step to confirm exactly what will happen before launch.
             </p>
-            <div className="status-line">
-              <span>{status}</span>
-              {retryFn && (
-                <button className="btn btn-ghost btn-sm" onClick={retryFn}>Try again</button>
-              )}
-            </div>
           </div>
 
           <section className="rail-section">
             <h2 className="section-label">Accounts</h2>
+            {retryFn && (
+              <div className="error-banner">
+                <span>{status}</span>
+                <button className="btn btn-ghost btn-sm" onClick={retryFn}>Try again</button>
+              </div>
+            )}
             <AccountCard
               role="source"
               account={sourceAccount}
               itemCount={sourceSnapshot?.total_items ?? 0}
               syncing={isSyncing === sourceAccount?.id}
+              syncProgress={isSyncing === sourceAccount?.id ? syncProgress : null}
               onConnect={handleConnect}
               onSync={handleSync}
               onDisconnect={handleDisconnect}
@@ -985,6 +1001,7 @@ export function App() {
               account={destinationAccount}
               itemCount={destinationSnapshot?.total_items ?? 0}
               syncing={isSyncing === destinationAccount?.id}
+              syncProgress={isSyncing === destinationAccount?.id ? syncProgress : null}
               onConnect={handleConnect}
               onSync={handleSync}
               onDisconnect={handleDisconnect}
@@ -1180,6 +1197,7 @@ function AccountCard({
   account,
   itemCount,
   syncing = false,
+  syncProgress = null,
   onConnect,
   onSync,
   onDisconnect,
@@ -1188,6 +1206,7 @@ function AccountCard({
   account?: ConnectedAccount;
   itemCount: number;
   syncing?: boolean;
+  syncProgress?: { fetched: number; total: number | null } | null;
   onConnect(role: "source" | "destination"): void;
   onSync(accountId: string): void;
   onDisconnect(accountId: string): void;
@@ -1210,9 +1229,13 @@ function AccountCard({
       <span className={`role-chip role-${role}`}>{role}</span>
       <div className="credit-name">{account.username}</div>
       <p className="credit-meta">
-        {account.last_synced_at
-          ? `Synced ${formatDateTime(account.last_synced_at)} · ${itemCount} items`
-          : "Connected, not yet synced"}
+        {syncing
+          ? syncProgress
+            ? `Fetching ${syncProgress.fetched.toLocaleString()} / ${syncProgress.total != null ? syncProgress.total.toLocaleString() : "…"} releases…`
+            : "Syncing…"
+          : account.last_synced_at
+            ? `Synced ${formatDateTime(account.last_synced_at)} · ${itemCount} items`
+            : "Connected, not yet synced"}
       </p>
       <div className="inline-button-row">
         <button className="btn btn-primary" disabled={syncing} onClick={() => onSync(account.id)}>

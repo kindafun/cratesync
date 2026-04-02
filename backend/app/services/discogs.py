@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from datetime import datetime
 from typing import Any, Optional
 
@@ -72,6 +73,7 @@ class DiscogsClient:
         username: str,
         oauth_token: str,
         oauth_token_secret: str,
+        on_progress: Optional[Callable[[int, int], None]] = None,
     ) -> list[dict[str, Any]]:
         session = self._oauth_session(
             oauth_token=oauth_token,
@@ -96,6 +98,8 @@ class DiscogsClient:
             batch = data.get("releases", [])
             items.extend(batch)
             pagination = data.get("pagination", {})
+            if on_progress is not None:
+                on_progress(len(items), pagination.get("items", 0))
             if not batch or page >= pagination.get("pages", 0):
                 break
             page += 1

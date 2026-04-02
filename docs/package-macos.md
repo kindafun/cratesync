@@ -1,3 +1,9 @@
+---
+title: package-macos
+type: note
+permalink: discogs-migration/package-macos
+---
+
 # macOS Packaging Notes
 
 The current implementation is built as a localhost app:
@@ -19,4 +25,3 @@ The current implementation is built as a localhost app:
 - Serve the production frontend bundle directly from the backend.
 - Replace the current browser-open helper with a signed app launcher.
 - Add app icon, signed bundle metadata, and update feed.
-

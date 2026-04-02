@@ -1,3 +1,9 @@
+---
+title: design-system
+type: note
+permalink: discogs-migration/design-system
+---
+
 # CrateSync Design System
 
 ## Direction

@@ -473,10 +473,17 @@ p {
   padding: var(--space-xs) var(--stack-md);
   color: var(--color-muted);
   text-align: center;
+  transition: border-color var(--duration-base) ease, color var(--duration-base) ease, background var(--duration-base) ease;
 }
 
 .saved-views-menu summary::-webkit-details-marker {
   display: none;
+}
+
+.saved-views-menu summary:hover {
+  color: var(--color-ink);
+  border-color: var(--color-rule-strong);
+  background: var(--color-overlay);
 }
 
 .saved-views-menu summary:focus-visible {
@@ -522,6 +529,7 @@ p {
 
 input[type="text"],
 input[type="datetime-local"],
+input[type="date"],
 input[type="number"],
 select {
   width: 100%;
@@ -968,6 +976,12 @@ select:focus {
   background: var(--color-danger-soft);
 }
 
+.chip-button:hover:not(.active),
+.history-pill:hover:not(.active) {
+  border-color: var(--color-rule-strong);
+  color: var(--color-ink);
+}
+
 .chip-button:focus-visible,
 .history-pill:focus-visible {
   outline: 2px solid var(--color-accent);
@@ -1232,13 +1246,6 @@ select:focus {
 .text-meta {
   font-size: var(--text-meta);
   line-height: var(--line-height-body);
-}
-
-/* Account slot copy */
-.account-slot-hint {
-  color: var(--color-muted);
-  font-size: 0.83rem;
-  margin: 0.1rem 0;
 }
 
 /* Error boundary */

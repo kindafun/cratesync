@@ -1,5 +1,7 @@
 import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { JobConsoleSection } from "./components/JobConsoleSection";
+import { ReviewSection } from "./components/ReviewSection";
 import { SnapshotSection } from "./components/SnapshotSection";
 import { SourceSelectionSection } from "./components/SourceSelectionSection";
 import { Field, FilterBlock, MultiValueSelect, StatBlock } from "./components/ui";
@@ -17,7 +19,7 @@ import {
   sanitizeStringMap,
   type FilterKey,
 } from "./lib/filters";
-import { formatDate, formatDateTime, formatJobStatus, renderCapabilities, statusTone } from "./lib/format";
+import { formatDateTime, formatJobStatus } from "./lib/format";
 import { renderOAuthPopup, type OAuthCompleteMessage } from "./lib/oauth";
 import type {
   CollectionItemSnapshot,
@@ -27,7 +29,6 @@ import type {
   JobStatus,
   MigrationJob,
   MigrationPlanPreviewRequest,
-  PreviewConflict,
   PreviewResponse,
   SaveSelectionPresetRequest,
   SelectionFilters,
@@ -1135,294 +1136,39 @@ export function App() {
             loading={loading || isSyncing !== null}
           />
 
-          <section className="canvas-section">
-            <div className="canvas-header">
-              <div>
-                <div className="section-label">Step 3</div>
-                <h2>Review and launch</h2>
-              </div>
-              <div className="toolbar-actions">
-                <button className="btn btn-ghost" disabled={isGeneratingPreview} onClick={() => void handlePreview()}>
-                  {isGeneratingPreview ? "Checking…" : "Generate preview"}
-                </button>
-                <button
-                  className="btn btn-primary"
-                  disabled={launchBlocked}
-                  onClick={() => void handleCreateJob()}
-                >
-                  Launch job
-                </button>
-              </div>
-            </div>
+          <ReviewSection
+            isGeneratingPreview={isGeneratingPreview}
+            onGeneratePreview={() => void handlePreview()}
+            launchBlocked={launchBlocked}
+            onLaunchJob={() => void handleCreateJob()}
+            reviewState={reviewState}
+            selectedSourceCount={selectedSourceCount}
+            preview={preview}
+            workflowMode={workflowMode}
+            previewSelectedIds={previewSelectedIds}
+            duplicateReleaseIds={duplicateReleaseIds}
+            folderConflicts={folderConflicts}
+            customFieldConflicts={customFieldConflicts}
+            destinationFolderLookup={destinationFolderLookup}
+            folderMappingOverrides={folderMappingOverrides}
+            customFieldMappingOverrides={customFieldMappingOverrides}
+            onFolderOverride={setFolderOverride}
+            onCustomFieldOverride={setCustomFieldOverride}
+            reviewTableMode={reviewTableMode}
+            onReviewTableModeChange={setReviewTableMode}
+            reviewItems={reviewItems}
+            selectedSourceIdSet={selectedSourceIdSet}
+          />
 
-            <div className={`review-banner review-banner-${reviewState.tone}`}>
-              <div className="section-label">Next action</div>
-              <h3>{reviewState.title}</h3>
-              <p>{reviewState.message}</p>
-            </div>
-
-            <div className="summary-strip">
-              <StatBlock label="Chosen releases" value={selectedSourceCount} />
-              <StatBlock label="Preview included" value={preview?.selected_count ?? 0} />
-              <StatBlock label="Duplicates" value={preview?.duplicate_release_ids.length ?? 0} muted />
-            </div>
-
-            {preview && (
-              <>
-                <div className="review-summary">
-                  <span>Workflow: {workflowMode}</span>
-                  <span>
-                    {preview.selected_count} included · {preview.retained_count} not included
-                  </span>
-                  <span>{preview.blocking_conflicts.length} blocking {preview.blocking_conflicts.length === 1 ? "issue" : "issues"}</span>
-                </div>
-
-                {preview.warnings.length > 0 && (
-                  <div className="message-list">
-                    {preview.warnings.map((warning) => (
-                      <div key={warning.code} className="message message-warning">
-                        {warning.message}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {preview.blocking_conflicts.length > 0 && (
-                  <div className="conflict-grid">
-                    {folderConflicts.map((conflict) => (
-                      <FolderConflictCard
-                        key={`folder-${String(conflict.payload.source_folder_id)}`}
-                        conflict={conflict}
-                        destinationFolderLookup={destinationFolderLookup}
-                        selectedValue={
-                          folderMappingOverrides[String(conflict.payload.source_folder_id)] ?? null
-                        }
-                        onChange={setFolderOverride}
-                      />
-                    ))}
-                    {customFieldConflicts.map((conflict) => (
-                      <CustomFieldConflictCard
-                        key={`field-${String(conflict.payload.field_name)}`}
-                        conflict={conflict}
-                        value={
-                          customFieldMappingOverrides[String(conflict.payload.field_name)] ?? ""
-                        }
-                        onChange={setCustomFieldOverride}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                <div className="capability-row">
-                  {renderCapabilities(preview.metadata_capabilities).map((capability) => (
-                    <span key={capability} className="capability-chip">
-                      {capability}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="review-table-header">
-                  <h3 className="section-label">Included release review</h3>
-                  <div className="history-strip">
-                    <button
-                      className={`history-pill${reviewTableMode === "selected" ? " active" : ""}`}
-                      onClick={() => setReviewTableMode("selected")}
-                    >
-                      Selected only
-                    </button>
-                    <button
-                      className={`history-pill${reviewTableMode === "all" ? " active" : ""}`}
-                      onClick={() => setReviewTableMode("all")}
-                    >
-                      All source rows
-                    </button>
-                  </div>
-                </div>
-
-                <div className="table-wrap table-wrap-tall">
-                  <table className="data-table review-table">
-                    <thead>
-                      <tr>
-                        <th>Artist</th>
-                        <th>Title</th>
-                        <th>Source folder</th>
-                        <th>Release</th>
-                        <th>Added</th>
-                        <th>Review state</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {reviewItems.length === 0 && (
-                        <tr>
-                          <td colSpan={6} className="empty-cell">
-                            No rows available for this review mode.
-                          </td>
-                        </tr>
-                      )}
-                      {reviewItems.map((item) => {
-                        const isPreviewSelected = previewSelectedIds.has(item.id);
-                        const isExplicitlySelected = selectedSourceIdSet.has(item.id);
-                        const isDuplicate = duplicateReleaseIds.has(item.release_id);
-                        return (
-                          <tr
-                            key={item.id}
-                            className={isPreviewSelected ? "row-selected" : undefined}
-                          >
-                            <td>{item.artist}</td>
-                            <td>{item.title}</td>
-                            <td>{item.folder_name ?? `Folder ${item.folder_id}`}</td>
-                            <td>{item.release_id}</td>
-                            <td>{formatDate(item.date_added)}</td>
-                            <td>
-                              <div className="preview-state">
-                                <span className={`state-pill${isPreviewSelected ? " active" : ""}`}>
-                                  {isPreviewSelected ? "Included" : isExplicitlySelected ? "Chosen" : "Not chosen"}
-                                </span>
-                                {isDuplicate && <span className="state-pill warning">Duplicate</span>}
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-
-            {!preview && (
-              <div className={`empty-block${isGeneratingPreview ? " preview-loading" : ""}`}>
-                {isGeneratingPreview ? (
-                  <>
-                    <span className="preview-loading-label">Checking selections against destination…</span>
-                    <div className="preview-loading-bars">
-                      <span className="skeleton-cell skeleton-cell-long" />
-                      <span className="skeleton-cell skeleton-cell-mid" />
-                      <span className="skeleton-cell skeleton-cell-short" />
-                    </div>
-                  </>
-                ) : (
-                  "Use the source table to choose releases, then generate a preview here. This step will summarize what gets copied or moved, highlight duplicates, and show any conflicts you need to clear before launch."
-                )}
-              </div>
-            )}
-          </section>
-
-          <section className="canvas-section">
-            <div className="canvas-header">
-              <div>
-                <div className="section-label">Execution</div>
-                <h2>Job console</h2>
-              </div>
-              <div className="header-note">
-                {jobDetail ? formatJobStatus(jobDetail.job.status) : "Choose a recent job to inspect."}
-              </div>
-            </div>
-
-            <div className="history-strip">
-              {recentJobs.length === 0 && <span className="text-muted text-meta">No jobs created yet.</span>}
-              {recentJobs.map((job) => (
-                <button
-                  key={job.id}
-                  className={`history-pill${selectedJobId === job.id ? " active" : ""}`}
-                  onClick={() => setSelectedJobId(job.id)}
-                >
-                  <span>{job.name}</span>
-                  <span>{formatJobStatus(job.status)}</span>
-                </button>
-              ))}
-            </div>
-
-            {!jobDetail && (
-              <div className="empty-block">
-                Launch a job or select a recent one to inspect events, item outcomes, and exports.
-              </div>
-            )}
-
-            {jobDetail && (
-              <>
-                <div className="job-toolbar">
-                  <div>
-                    <div className="job-name">{jobDetail.job.name}</div>
-                    <div className="job-meta">
-                      {jobDetail.job.workflow_mode} workflow · created {formatDateTime(jobDetail.job.created_at)}
-                    </div>
-                  </div>
-                  <div className="toolbar-actions">
-                    {jobDetail.job.status === "awaiting_delete_confirmation" && (
-                      <>
-                        <button
-                          className="btn btn-ghost"
-                          onClick={() => void handleRollback(jobDetail.job.id)}
-                        >
-                          Roll back adds
-                        </button>
-                        <button
-                          className="btn btn-danger"
-                          onClick={() => void handleConfirmDelete(jobDetail.job.id)}
-                        >
-                          Confirm delete
-                        </button>
-                      </>
-                    )}
-                    <button className="btn btn-ghost" onClick={() => void handleExport(jobDetail.job.id)}>
-                      Export reports
-                    </button>
-                  </div>
-                </div>
-
-                <div className="summary-strip">
-                  {Object.entries(jobDetail.job.summary).map(([key, value]) => (
-                    <StatBlock key={key} label={key.replace(/_/g, " ")} value={value} small />
-                  ))}
-                </div>
-
-                <div className="event-feed">
-                  {jobDetail.events.length === 0 && (
-                    <div className="empty-block compact">No job events recorded yet.</div>
-                  )}
-                  {jobDetail.events.map((event) => (
-                    <div key={event.id} className={`event event-${event.level}`}>
-                      <div className="event-stripe" />
-                      <div className="event-body">
-                        <strong>{formatDateTime(event.created_at)}</strong>
-                        <span>{event.message}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="table-wrap">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Release</th>
-                        <th>Instance</th>
-                        <th>Status</th>
-                        <th>Destination</th>
-                        <th>Message</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {jobDetail.items.map((item) => (
-                        <tr key={item.id}>
-                          <td>{item.release_id}</td>
-                          <td>{item.instance_id}</td>
-                          <td>
-                            <span className={`state-pill status-${statusTone(item.status)}`}>
-                              {item.status.replace(/_/g, " ")}
-                            </span>
-                          </td>
-                          <td>{item.destination_folder_id ?? "—"}</td>
-                          <td>{item.message ?? "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
-          </section>
+          <JobConsoleSection
+            recentJobs={recentJobs}
+            selectedJobId={selectedJobId}
+            onSelectJob={setSelectedJobId}
+            jobDetail={jobDetail}
+            onConfirmDelete={(jobId) => void handleConfirmDelete(jobId)}
+            onRollback={(jobId) => void handleRollback(jobId)}
+            onExport={(jobId) => void handleExport(jobId)}
+          />
         </section>
       </section>
     </main>
@@ -1474,79 +1220,6 @@ function AccountCard({
         </button>
         <button className="btn btn-ghost" disabled={syncing} onClick={() => onDisconnect(account.id)}>
           Disconnect
-        </button>
-      </div>
-    </article>
-  );
-}
-
-
-function FolderConflictCard({
-  conflict,
-  destinationFolderLookup,
-  selectedValue,
-  onChange,
-}: {
-  conflict: PreviewConflict;
-  destinationFolderLookup: Record<number, string>;
-  selectedValue: number | null;
-  onChange(sourceFolderId: string, destinationFolderId: number | null): void;
-}) {
-  const sourceFolderId = String(conflict.payload.source_folder_id ?? "");
-  const folderName = String(conflict.payload.folder_name ?? "Unknown folder");
-  const destinationFolderIds = Array.isArray(conflict.payload.destination_folder_ids)
-    ? conflict.payload.destination_folder_ids.map((value) => Number(value))
-    : [];
-
-  return (
-    <article className="conflict-card">
-      <div className="section-label">Folder mapping</div>
-      <h3>{folderName}</h3>
-      <p>{conflict.message}</p>
-      <select
-        aria-label={`Map ${folderName} to destination folder`}
-        value={selectedValue ? String(selectedValue) : ""}
-        onChange={(event) =>
-          onChange(sourceFolderId, event.target.value ? Number(event.target.value) : null)
-        }
-      >
-        <option value="">Choose destination folder</option>
-        {destinationFolderIds.map((folderId) => (
-          <option key={folderId} value={folderId}>
-            {destinationFolderLookup[folderId] ?? `Folder ${folderId}`}
-          </option>
-        ))}
-      </select>
-    </article>
-  );
-}
-
-function CustomFieldConflictCard({
-  conflict,
-  value,
-  onChange,
-}: {
-  conflict: PreviewConflict;
-  value: string;
-  onChange(fieldName: string, destinationField: string): void;
-}) {
-  const fieldName = String(conflict.payload.field_name ?? "custom_field");
-
-  return (
-    <article className="conflict-card">
-      <div className="section-label">Custom field</div>
-      <h3>{fieldName}</h3>
-      <p>{conflict.message}</p>
-      <div className="inline-action">
-        <input
-          type="text"
-          aria-label={`Destination field name for ${fieldName}`}
-          placeholder={`Destination field for ${fieldName}`}
-          value={value}
-          onChange={(event) => onChange(fieldName, event.target.value)}
-        />
-        <button className="btn btn-ghost" onClick={() => onChange(fieldName, fieldName)}>
-          Use same name
         </button>
       </div>
     </article>

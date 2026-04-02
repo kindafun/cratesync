@@ -1,6 +1,6 @@
 # CrateSync — Session Handoff
 
-**Repo:** `kindafun/cratesync` · **Branch:** `main` · **Last updated:** 2026-04-02 (session 5)
+**Repo:** `kindafun/cratesync` · **Branch:** `main` · **Last updated:** 2026-04-02 (session 6)
 
 ---
 
@@ -14,14 +14,41 @@
 - No build step needed for dev — `vite dev` against the local backend
 
 **Key entry points:**
-- `frontend/src/App.tsx` — main application (~1,612 lines after this session)
+- `frontend/src/App.tsx` — main application (~1,285 lines after this session)
 - `frontend/src/styles.css` — all styles, comprehensive CSS custom properties design system
 - `frontend/src/lib/` — utility modules
 - `frontend/src/components/` — standalone components
 
 ---
 
-## What was done this session (2026-04-02, session 5)
+## What was done this session (2026-04-02, session 6)
+
+### `/quieter` — Remove success-green ambient gradient from body background
+
+**Files changed:** `frontend/src/styles.css`
+
+**Change:** Removed `radial-gradient(circle at 100% 100%, rgba(90, 184, 122, 0.08), transparent 24%)` from the `body` background stack.
+
+The green glow occupied the bottom-right corner of the viewport at all times, including when there is no active sync, no selected source, nothing happening. `--color-success` is the semantic color for source accounts, selected rows, and successful job states — ambient background color is not that context. The warm gold glow at top-left (`rgba(212, 160, 80, 0.14)`) is kept as it maps to the accent/primary-action color and reads as the app's resting character rather than a status signal.
+
+### `/extract` (continued) — ReviewSection and JobConsoleSection extracted from App.tsx
+
+**Files changed:** `frontend/src/App.tsx` (−327 lines), new component files
+
+**New files:**
+- `frontend/src/components/ReviewSection.tsx` (303 lines) — Step 3 "Review and launch" section; carries `FolderConflictCard`, `CustomFieldConflictCard`, and the review table. `reviewTableMode` kept in App.tsx (reset on new preview in `handlePreview`). `ReviewState` type exported for use upstream.
+- `frontend/src/components/JobConsoleSection.tsx` (139 lines) — "Job console" section; job history pills, event feed, item outcome table, rollback/confirm-delete controls.
+
+**App.tsx import cleanup:**
+- Removed `formatDate`, `renderCapabilities`, `statusTone` from format import (all moved to component files)
+- Removed `PreviewConflict` from types import (no longer explicitly annotated in App.tsx)
+- Removed `FolderConflictCard`, `CustomFieldConflictCard` functions (moved to `ReviewSection.tsx`)
+
+**App.tsx line count:** ~1,612 → ~1,285 lines
+
+---
+
+## What was done previously (2026-04-02, session 5)
 
 ### `/extract` — Component extraction from App.tsx monolith
 
@@ -32,10 +59,10 @@
 - `frontend/src/components/SourceSelectionSection.tsx` (233 lines) — sortable selection table with skeleton loading and shift-click range selection; carries `SOURCE_COLUMNS` and its own sort state
 - `frontend/src/components/SnapshotSection.tsx` (138 lines) — sortable destination reference table; carries `SNAPSHOT_COLUMNS` and its own sort state
 
-**Left in App.tsx (deliberate):**
+**Left in App.tsx at the time (deliberate):**
 - `AccountCard` — small, tightly coupled to connect/sync/disconnect handlers
-- `FolderConflictCard`, `CustomFieldConflictCard` — single-use domain-specific conflict resolvers
-- `deriveReviewState` — pure function tightly coupled to App's preview state
+- `FolderConflictCard`, `CustomFieldConflictCard` — subsequently moved to `ReviewSection.tsx` in session 6
+- `deriveReviewState` — pure function tightly coupled to App's preview state; still in App.tsx
 
 **App.tsx import cleanup:**
 - Removed `memo`, `type KeyboardEvent`, `type ReactNode` from React import (all moved to component files)
@@ -205,14 +232,16 @@ Both components now skip re-render entirely during job polling, status bar updat
 
 ```
 src/
-├── App.tsx                        # ~1,612 lines — main app, all state + render
+├── App.tsx                        # ~1,285 lines — main app, all state + render
 ├── main.tsx                       # Entry point, wraps with ErrorBoundary
 ├── styles.css                     # ~1,340 lines — full design system
 ├── components/
 │   ├── AccountConnections.tsx     # ⚠ Not imported by App.tsx (design lab variant)
 │   ├── ErrorBoundary.tsx          # ✅ Wraps app root
 │   ├── JobConsole.tsx             # ⚠ Not imported by App.tsx (design lab variant)
+│   ├── JobConsoleSection.tsx      # ✅ Execution / job console section (extracted session 7)
 │   ├── PlannerPanel.tsx           # ⚠ Not imported by App.tsx (design lab variant)
+│   ├── ReviewSection.tsx          # ✅ Step 3 review + launch section (extracted session 7)
 │   ├── SnapshotExplorer.tsx       # ⚠ Not imported by App.tsx (design lab variant)
 │   ├── SnapshotSection.tsx        # ✅ Destination reference table (extracted session 5)
 │   ├── SourceSelectionSection.tsx # ✅ Source selection table (extracted session 5)
@@ -243,12 +272,12 @@ src/
 *(All previously-high items are now complete: `/normalize`, `/optimize`, `/adapt`)*
 
 ### Medium
-- **`/quieter`** — Remove the `--color-success` radial gradient from `body` background (semantically odd in neutral state; keep only the warm accent glow)
+*(All medium items are now complete)*
 
 ### Low / backlog
-- **`/polish`** — Firefox scrollbar CSS (currently WebKit-only via `-webkit-scrollbar`; standard `scrollbar-color` already covers Firefox at basic level)
-- **`/adapt`** (continued) — Virtualize large tables (`react-virtual`) for 1,000+ item libraries; current row limits (18, 24 rows) are hardcoded truncations with no "show more"
-- **`/extract`** (continued) — App.tsx is now ~1,612 lines; remaining split candidates are the Step 3 review section and Job console section, but both are tightly coupled to App state and would require state restructuring first
+- **`/polish`** — Firefox scrollbar CSS: `scrollbar-color`/`scrollbar-width` already handles Firefox (gold thumb, dark track). No further action required.
+- **`/adapt`** (continued) — Virtualize large tables with `@tanstack/react-virtual`; all rows currently render in DOM, limited by CSS `max-height` scroll. Approach discussed, not yet implemented.
+- **`/extract`** (continued) — App.tsx now ~1,285 lines. Remaining candidates: `AccountCard` (small, tightly coupled to handlers); `renderFilterBlock` + Step 1 sidebar (depends on 15+ filter state values, feasible with props).
 
 ---
 

@@ -150,7 +150,6 @@ body {
   min-height: 100vh;
   background:
     radial-gradient(circle at 8% 0%, rgba(212, 160, 80, 0.14), transparent 28%),
-    radial-gradient(circle at 100% 100%, rgba(90, 184, 122, 0.08), transparent 24%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.015), transparent 18%),
     var(--color-bg);
   color: var(--color-ink);

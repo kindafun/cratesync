@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import json
-from typing import Optional
+from typing import Any, Optional
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
 from ..config import settings
@@ -28,6 +28,8 @@ router = APIRouter()
 repository = Repository(db)
 job_runner = JobRunner(repository, discogs_client, keychain_store)
 export_service = ExportService(repository)
+
+_sync_progress: dict[str, dict[str, Any]] = {}
 
 
 def _require_discogs_oauth() -> None:
@@ -156,19 +158,39 @@ def delete_account(account_id: str) -> dict[str, bool]:
     return {"ok": True}
 
 
+def _run_sync(account_id: str) -> None:
+    try:
+        account = repository.get_account(account_id)
+        oauth_token = keychain_store.get_secret(account.token_key)
+        oauth_secret = keychain_store.get_secret(account.token_secret_key)
+
+        def on_progress(fetched: int, total: int) -> None:
+            _sync_progress[account_id] = {"status": "running", "fetched": fetched, "total": total}
+
+        raw_items = discogs_client.paged_collection_items(
+            account.username, oauth_token, oauth_secret, on_progress=on_progress
+        )
+        snapshot_id = "pending"
+        items = [
+            CollectionNormalizer.from_discogs_payload(account.id, snapshot_id, item)
+            for item in raw_items
+        ]
+        snapshot = repository.replace_snapshot(account.id, account.username, items)
+        _sync_progress[account_id] = {"status": "done", "snapshot_id": snapshot.id}
+    except Exception as exc:
+        _sync_progress[account_id] = {"status": "error", "error": str(exc)}
+
+
 @router.post("/collections/{account_id}/sync")
-def sync_collection(account_id: str) -> dict[str, str]:
-    account = repository.get_account(account_id)
-    oauth_token = keychain_store.get_secret(account.token_key)
-    oauth_secret = keychain_store.get_secret(account.token_secret_key)
-    raw_items = discogs_client.paged_collection_items(account.username, oauth_token, oauth_secret)
-    snapshot_id = "pending"
-    items = [
-        CollectionNormalizer.from_discogs_payload(account.id, snapshot_id, item)
-        for item in raw_items
-    ]
-    snapshot = repository.replace_snapshot(account.id, account.username, items)
-    return {"snapshot_id": snapshot.id}
+def sync_collection(account_id: str, background_tasks: BackgroundTasks) -> dict[str, str]:
+    _sync_progress[account_id] = {"status": "running", "fetched": 0, "total": None}
+    background_tasks.add_task(_run_sync, account_id)
+    return {"status": "started"}
+
+
+@router.get("/collections/{account_id}/sync-progress")
+def get_sync_progress(account_id: str) -> dict[str, Any]:
+    return _sync_progress.get(account_id, {"status": "idle"})
 
 
 @router.get("/collections/{account_id}/items")

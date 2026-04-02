@@ -85,9 +85,13 @@ export const api = {
       `/auth/discogs/start?role=${role}`,
     ),
   syncCollection: (accountId: string) =>
-    request<{ snapshot_id: string }>(`/collections/${accountId}/sync`, {
+    request<{ status: string }>(`/collections/${accountId}/sync`, {
       method: "POST",
     }),
+  getSyncProgress: (accountId: string) =>
+    request<{ status: string; fetched?: number; total?: number | null; error?: string }>(
+      `/collections/${accountId}/sync-progress`,
+    ),
   listCollectionItems: (accountId: string, snapshotId?: string) =>
     request<{ snapshot: CollectionSnapshot; items: CollectionItemSnapshot[] }>(
       `/collections/${accountId}/items${snapshotId ? `?snapshot_id=${snapshotId}` : ""}`,

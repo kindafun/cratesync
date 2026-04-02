@@ -1,6 +1,6 @@
 # CrateSync — Session Handoff
 
-**Repo:** `kindafun/cratesync` · **Branch:** `main` · **Last updated:** 2026-04-02 (session 3)
+**Repo:** `kindafun/cratesync` · **Branch:** `main` · **Last updated:** 2026-04-02 (session 5)
 
 ---
 
@@ -14,16 +14,57 @@
 - No build step needed for dev — `vite dev` against the local backend
 
 **Key entry points:**
-- `frontend/src/App.tsx` — main application (~1,980 lines after this session)
+- `frontend/src/App.tsx` — main application (~1,612 lines after this session)
 - `frontend/src/styles.css` — all styles, comprehensive CSS custom properties design system
 - `frontend/src/lib/` — utility modules
 - `frontend/src/components/` — standalone components
 
 ---
 
-## What was done this session (2026-04-02, session 3)
+## What was done this session (2026-04-02, session 5)
 
-Commit `42cca4b` — `/delight` run.
+### `/extract` — Component extraction from App.tsx monolith
+
+**Files changed:** `frontend/src/App.tsx` (−446 lines), new component files
+
+**New files:**
+- `frontend/src/components/ui.tsx` (89 lines) — `Field`, `StatBlock`, `FilterBlock`, `MultiValueSelect`
+- `frontend/src/components/SourceSelectionSection.tsx` (233 lines) — sortable selection table with skeleton loading and shift-click range selection; carries `SOURCE_COLUMNS` and its own sort state
+- `frontend/src/components/SnapshotSection.tsx` (138 lines) — sortable destination reference table; carries `SNAPSHOT_COLUMNS` and its own sort state
+
+**Left in App.tsx (deliberate):**
+- `AccountCard` — small, tightly coupled to connect/sync/disconnect handlers
+- `FolderConflictCard`, `CustomFieldConflictCard` — single-use domain-specific conflict resolvers
+- `deriveReviewState` — pure function tightly coupled to App's preview state
+
+**App.tsx import cleanup:**
+- Removed `memo`, `type KeyboardEvent`, `type ReactNode` from React import (all moved to component files)
+- Removed `sortSnapshotItems`, `SnapshotSortColumn`, `SnapshotSortDirection` from sort import (moved to component files)
+
+---
+
+## What was done previously (2026-04-02, session 4)
+
+Commit `34f0996` — `/polish` run.
+
+### `/polish` — Hover states, date input styling, button feedback, page title
+
+**Files changed:** `frontend/src/App.tsx`, `frontend/src/styles.css`
+
+**CSS fixes:**
+- `input[type="date"]` added to design-system input selector — the Specific Date filter block was rendering with browser-default styling instead of design tokens
+- `.saved-views-menu summary` — added `transition` property and `:hover` state (consistent with `.text-btn`); previously had instant/no feedback on hover
+- `.chip-button:hover:not(.active)` / `.history-pill:hover:not(.active)` — added hover state (border + ink color); job history pills had zero hover feedback
+- `.account-slot-hint` — removed dead CSS class (defined but never referenced in App.tsx)
+
+**App.tsx fixes:**
+- "Generate preview" button now `disabled={isGeneratingPreview}` and shows `"Checking…"` text during generation — was previously spammable with no button-level feedback
+- `blocking issue(s)` → proper plural (`blocking issue` / `blocking issues`) — inconsistent with all other pluralization in the codebase
+- Dynamic `document.title` via new `useEffect` — updates to `Syncing… · CrateSync` during sync and `{jobStatus} · {jobName} · CrateSync` during active jobs; resets to `CrateSync` at rest
+
+---
+
+## What was done previously (2026-04-02, session 3)
 
 ### `/delight` — Loading skeletons, sync state, micro-interactions, keyboard shortcuts
 
@@ -164,15 +205,18 @@ Both components now skip re-render entirely during job polling, status bar updat
 
 ```
 src/
-├── App.tsx                        # ~2,050 lines — main app, all state + render
+├── App.tsx                        # ~1,612 lines — main app, all state + render
 ├── main.tsx                       # Entry point, wraps with ErrorBoundary
 ├── styles.css                     # ~1,340 lines — full design system
 ├── components/
-│   ├── AccountConnections.tsx     # ⚠ Not imported by App.tsx (design lab variant?)
+│   ├── AccountConnections.tsx     # ⚠ Not imported by App.tsx (design lab variant)
 │   ├── ErrorBoundary.tsx          # ✅ Wraps app root
-│   ├── JobConsole.tsx             # ⚠ Not imported by App.tsx (design lab variant?)
-│   ├── PlannerPanel.tsx           # ⚠ Not imported by App.tsx (design lab variant?)
-│   └── SnapshotExplorer.tsx       # ⚠ Not imported by App.tsx (design lab variant?)
+│   ├── JobConsole.tsx             # ⚠ Not imported by App.tsx (design lab variant)
+│   ├── PlannerPanel.tsx           # ⚠ Not imported by App.tsx (design lab variant)
+│   ├── SnapshotExplorer.tsx       # ⚠ Not imported by App.tsx (design lab variant)
+│   ├── SnapshotSection.tsx        # ✅ Destination reference table (extracted session 5)
+│   ├── SourceSelectionSection.tsx # ✅ Source selection table (extracted session 5)
+│   └── ui.tsx                     # ✅ Field, StatBlock, FilterBlock, MultiValueSelect (extracted session 5)
 └── lib/
     ├── api.ts                     # All API calls, backend URL config
     ├── filters.ts                 # Filter logic, buildFilters, filterSourceItems, derive* helpers
@@ -182,7 +226,7 @@ src/
     └── types.ts                   # All shared TypeScript types
 ```
 
-> **Note on `src/components/`:** The four components there are **not imported by App.tsx**. They appear to be design lab variants with different CSS class names. Do not delete without confirming.
+> **Note on design lab variants:** `AccountConnections.tsx`, `JobConsole.tsx`, `PlannerPanel.tsx`, `SnapshotExplorer.tsx` are **not imported by App.tsx**. They use different CSS class names from the production app. Do not delete without confirming.
 
 ---
 
@@ -202,9 +246,9 @@ src/
 - **`/quieter`** — Remove the `--color-success` radial gradient from `body` background (semantically odd in neutral state; keep only the warm accent glow)
 
 ### Low / backlog
-- **`/polish`** — Firefox scrollbar CSS (currently WebKit-only); dynamic page title reflecting job status
+- **`/polish`** — Firefox scrollbar CSS (currently WebKit-only via `-webkit-scrollbar`; standard `scrollbar-color` already covers Firefox at basic level)
 - **`/adapt`** (continued) — Virtualize large tables (`react-virtual`) for 1,000+ item libraries; current row limits (18, 24 rows) are hardcoded truncations with no "show more"
-- **`/extract`** (continued) — Split App.tsx render sections into extracted components once state is restructured; App.tsx is still ~1,980 lines, still a monolith at the render level
+- **`/extract`** (continued) — App.tsx is now ~1,612 lines; remaining split candidates are the Step 3 review section and Job console section, but both are tightly coupled to App state and would require state restructuring first
 
 ---
 

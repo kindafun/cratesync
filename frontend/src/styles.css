@@ -300,6 +300,10 @@ p {
   color: var(--color-muted);
   font-size: var(--text-meta);
   line-height: var(--line-height-body);
+  display: flex;
+  align-items: center;
+  gap: var(--inline-gap-md);
+  flex-wrap: wrap;
 }
 
 .rail-section,
@@ -615,6 +619,12 @@ select:focus {
 .btn-ghost:hover:not(:disabled) {
   background: var(--color-overlay);
   border-color: var(--color-rule-strong);
+}
+
+.btn-sm {
+  min-height: unset;
+  padding: 0.3rem 0.65rem;
+  font-size: var(--text-meta);
 }
 
 .btn-danger {

@@ -1,4 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { formatDate } from "../lib/format";
 import { sortSnapshotItems, type SnapshotSortColumn, type SnapshotSortDirection } from "../lib/sort";
@@ -44,6 +45,7 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
   const [sortColumn, setSortColumn] = useState<SnapshotSortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<SnapshotSortDirection>("asc");
   const lastInteractedItemIdRef = useRef<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const sortedItems = useMemo(
     () => sortSnapshotItems(items, sortColumn, sortDirection),
@@ -51,6 +53,20 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
   );
   const totalItems = sortedItems.length;
   const columns = SOURCE_COLUMNS;
+
+  const rowVirtualizer = useVirtualizer({
+    count: sortedItems.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 36,
+    overscan: 5,
+  });
+
+  const virtualItems = rowVirtualizer.getVirtualItems();
+  const paddingTop = virtualItems.length > 0 ? (virtualItems[0]?.start ?? 0) : 0;
+  const paddingBottom =
+    virtualItems.length > 0
+      ? rowVirtualizer.getTotalSize() - (virtualItems[virtualItems.length - 1]?.end ?? 0)
+      : 0;
 
   function handleSort(nextColumn: SnapshotSortColumn) {
     if (sortColumn === nextColumn) {
@@ -110,9 +126,7 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
           <div className="header-note">
             {totalItems === 0
               ? "0 visible rows"
-              : totalItems > 25
-                ? `25 rows visible · scroll for ${totalItems - 25} more`
-                : `${totalItems} visible row${totalItems === 1 ? "" : "s"}`}
+              : `${totalItems} visible row${totalItems === 1 ? "" : "s"}`}
           </div>
         </div>
         <div className="toolbar-actions">
@@ -128,7 +142,7 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
         </div>
       </div>
 
-      <div className="table-wrap snapshot-frame-wrap">
+      <div ref={scrollRef} className="table-wrap snapshot-frame-wrap">
         <table className="data-table snapshot-table selection-table">
           <colgroup>
             <col className="selection-col-choose" />
@@ -193,7 +207,11 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
                 </td>
               </tr>
             )}
-            {sortedItems.map((item) => {
+            {sortedItems.length > 0 && paddingTop > 0 && (
+              <tr><td colSpan={8} style={{ height: paddingTop, padding: 0, border: "none" }} /></tr>
+            )}
+            {virtualItems.map((virtualRow) => {
+              const item = sortedItems[virtualRow.index];
               const isSelected = selectedItemIds.has(item.id);
               return (
                 <tr
@@ -225,6 +243,9 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
                 </tr>
               );
             })}
+            {sortedItems.length > 0 && paddingBottom > 0 && (
+              <tr><td colSpan={8} style={{ height: paddingBottom, padding: 0, border: "none" }} /></tr>
+            )}
           </tbody>
         </table>
       </div>

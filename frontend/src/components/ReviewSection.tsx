@@ -82,7 +82,7 @@ export function ReviewSection({
   }
 
   return (
-    <section className={`canvas-section${collapsed ? " is-collapsed" : ""}`}>
+    <section className={`canvas-section canvas-section-review${collapsed ? " is-collapsed" : ""}`}>
       <div
         className="canvas-header is-toggle"
         role="button"

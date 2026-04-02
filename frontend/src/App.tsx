@@ -557,6 +557,11 @@ export function App() {
   }
 
   async function handleClearLocalData() {
+    const confirmed = window.confirm(
+      "Clear local data, connected-account tokens, saved presets, and job history from this machine?",
+    );
+    if (!confirmed) return;
+
     try {
       await api.clearLocalData();
       setPreview(null);
@@ -964,7 +969,7 @@ export function App() {
               ? "Refreshing workspace"
               : `Backend online${accounts.length > 0 ? ` · ${accounts.length} account${accounts.length !== 1 ? "s" : ""}` : ""}`}
           </span>
-          <button className="text-btn" onClick={() => void handleClearLocalData()}>
+          <button className="text-btn text-btn-danger" onClick={() => void handleClearLocalData()}>
             Clear local data
           </button>
         </div>
@@ -973,7 +978,7 @@ export function App() {
       <section className="shell-grid">
         <aside className="shell-left">
           <div className="left-hero">
-            <h1>CrateSync</h1>
+            <h1 className="hero-title">Migration control</h1>
             <p className="lead-copy">
               Filter the source view only when needed, explicitly pick the releases to migrate, and
               use the review step to confirm exactly what will happen before launch.
@@ -1114,8 +1119,8 @@ export function App() {
 
                 {activeFilterKeys.length === 0 && (
                   <div className="empty-block compact">
-                    No optional filters enabled. Add only the search or metadata fields you want to
-                    narrow the source snapshot.
+                    No filters active — all source releases are in scope. Add only the search or
+                    metadata fields you need.
                   </div>
                 )}
 
@@ -1148,9 +1153,9 @@ export function App() {
 
             <div className="planner-footer">
               <div className="stats-line">
-                <StatBlock label="Selected releases" value={selectedSourceCount} />
-                <StatBlock label="Visible after filters" value={filteredSourceItems.length} />
-                <StatBlock label="Source total" value={sourceItems.length} muted />
+                <StatBlock label="Selected releases" value={selectedSourceCount} small />
+                <StatBlock label="Visible after filters" value={filteredSourceItems.length} small />
+                <StatBlock label="Source total" value={sourceItems.length} muted small />
               </div>
             </div>
             </>
@@ -1243,7 +1248,7 @@ function AccountCard({
     return (
       <article className="credit-card credit-card-empty">
         <span className={`role-chip role-${role}`}>{role}</span>
-        <div className="credit-name">Authorize {role}</div>
+        <div className="credit-name credit-name-empty">Authorize {role} account</div>
         <p className="credit-meta">Connect the {role} Discogs account to populate local snapshots.</p>
         <button className="btn btn-primary" onClick={() => onConnect(role)}>
           Connect account
@@ -1333,4 +1338,3 @@ function deriveReviewState({
     message: "The selected releases have been reviewed. Launch the job when you are satisfied with this preview.",
   } as const;
 }
-

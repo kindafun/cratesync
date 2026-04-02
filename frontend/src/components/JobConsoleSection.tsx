@@ -1,3 +1,4 @@
+import { useState, type KeyboardEvent } from "react";
 import { formatDateTime, formatJobStatus, statusTone } from "../lib/format";
 import type { JobDetailResponse, MigrationJob } from "../lib/types";
 import { StatBlock } from "./ui";
@@ -19,9 +20,29 @@ export function JobConsoleSection({
   onRollback(jobId: string): void;
   onExport(jobId: string): void;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  function handleToggle() {
+    setCollapsed((c) => !c);
+  }
+
+  function handleHeaderKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleToggle();
+    }
+  }
+
   return (
-    <section className="canvas-section">
-      <div className="canvas-header">
+    <section className={`canvas-section${collapsed ? " is-collapsed" : ""}`}>
+      <div
+        className="canvas-header is-toggle"
+        role="button"
+        tabIndex={0}
+        aria-expanded={!collapsed}
+        onClick={handleToggle}
+        onKeyDown={handleHeaderKeyDown}
+      >
         <div>
           <div className="section-label">Execution</div>
           <h2>Job console</h2>
@@ -29,8 +50,11 @@ export function JobConsoleSection({
         <div className="header-note">
           {jobDetail ? formatJobStatus(jobDetail.job.status) : "Choose a recent job to inspect."}
         </div>
+        <span className={`section-collapse-icon${collapsed ? " collapsed" : ""}`} aria-hidden="true" />
       </div>
 
+      {!collapsed && (
+      <>
       <div className="history-strip">
         {recentJobs.length === 0 && <span className="text-muted text-meta">No jobs created yet.</span>}
         {recentJobs.map((job) => (
@@ -133,6 +157,8 @@ export function JobConsoleSection({
             </table>
           </div>
         </>
+      )}
+      </>
       )}
     </section>
   );

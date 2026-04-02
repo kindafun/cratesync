@@ -1,3 +1,4 @@
+import { useState, type KeyboardEvent } from "react";
 import { formatDate, renderCapabilities } from "../lib/format";
 import type { CollectionItemSnapshot, PreviewConflict, PreviewResponse, WorkflowMode } from "../lib/types";
 import { StatBlock } from "./ui";
@@ -55,15 +56,46 @@ export function ReviewSection({
   reviewItems: CollectionItemSnapshot[];
   selectedSourceIdSet: Set<string>;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const [tableCollapsed, setTableCollapsed] = useState(false);
+
+  function handleToggle() {
+    setCollapsed((c) => !c);
+  }
+
+  function handleHeaderKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleToggle();
+    }
+  }
+
+  function handleTableToggle() {
+    setTableCollapsed((c) => !c);
+  }
+
+  function handleTableHeaderKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleTableToggle();
+    }
+  }
 
   return (
-    <section className="canvas-section">
-      <div className="canvas-header">
+    <section className={`canvas-section${collapsed ? " is-collapsed" : ""}`}>
+      <div
+        className="canvas-header is-toggle"
+        role="button"
+        tabIndex={0}
+        aria-expanded={!collapsed}
+        onClick={handleToggle}
+        onKeyDown={handleHeaderKeyDown}
+      >
         <div>
           <div className="section-label">Step 3</div>
           <h2>Review and launch</h2>
         </div>
-        <div className="toolbar-actions">
+        <div className="toolbar-actions" onClick={(e) => e.stopPropagation()}>
           <button className="btn btn-ghost" disabled={isGeneratingPreview} onClick={onGeneratePreview}>
             {isGeneratingPreview ? "Checking…" : "Generate preview"}
           </button>
@@ -75,8 +107,11 @@ export function ReviewSection({
             Launch job
           </button>
         </div>
+        <span className={`section-collapse-icon${collapsed ? " collapsed" : ""}`} aria-hidden="true" />
       </div>
 
+      {!collapsed && (
+      <>
       <div className={`review-banner review-banner-${reviewState.tone}`}>
         <div className="section-label">Next action</div>
         <h3>{reviewState.title}</h3>
@@ -143,9 +178,16 @@ export function ReviewSection({
             ))}
           </div>
 
-          <div className="review-table-header">
+          <div
+            className="review-table-header is-toggle"
+            role="button"
+            tabIndex={0}
+            aria-expanded={!tableCollapsed}
+            onClick={handleTableToggle}
+            onKeyDown={handleTableHeaderKeyDown}
+          >
             <h3 className="section-label">Included release review</h3>
-            <div className="history-strip">
+            <div className="history-strip" onClick={(e) => e.stopPropagation()}>
               <button
                 className={`history-pill${reviewTableMode === "selected" ? " active" : ""}`}
                 onClick={() => onReviewTableModeChange("selected")}
@@ -159,8 +201,10 @@ export function ReviewSection({
                 All source rows
               </button>
             </div>
+            <span className={`section-collapse-icon${tableCollapsed ? " collapsed" : ""}`} aria-hidden="true" />
           </div>
 
+          {!tableCollapsed && (
           <div className="table-wrap table-wrap-tall">
             <table className="data-table review-table">
               <thead>
@@ -209,6 +253,7 @@ export function ReviewSection({
               </tbody>
             </table>
           </div>
+          )}
         </>
       )}
 
@@ -227,6 +272,8 @@ export function ReviewSection({
             "Use the source table to choose releases, then generate a preview here. This step will summarize what gets copied or moved, highlight duplicates, and show any conflicts you need to clear before launch."
           )}
         </div>
+      )}
+      </>
       )}
     </section>
   );

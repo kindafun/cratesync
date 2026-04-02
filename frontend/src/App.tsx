@@ -64,6 +64,8 @@ export function App() {
   const [nextFilterToAdd, setNextFilterToAdd] = useState<FilterKey | "">("");
   const [reviewTableMode, setReviewTableMode] = useState<"selected" | "all">("selected");
   const [retryFn, setRetryFn] = useState<(() => void) | null>(null);
+  const [accountsCollapsed, setAccountsCollapsed] = useState(false);
+  const [plannerCollapsed, setPlannerCollapsed] = useState(false);
 
   const [planName, setPlanName] = useState("Digital archive split");
   const [workflowMode, setWorkflowMode] = useState<WorkflowMode>("copy");
@@ -979,7 +981,19 @@ export function App() {
           </div>
 
           <section className="rail-section">
-            <h2 className="section-label">Accounts</h2>
+            <div
+              className="rail-section-header"
+              role="button"
+              tabIndex={0}
+              aria-expanded={!accountsCollapsed}
+              onClick={() => setAccountsCollapsed((c) => !c)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setAccountsCollapsed((c) => !c); }}}
+            >
+              <h2 className="section-label">Accounts</h2>
+              <span className={`section-collapse-icon${accountsCollapsed ? " collapsed" : ""}`} aria-hidden="true" />
+            </div>
+            {!accountsCollapsed && (
+            <>
             {retryFn && (
               <div className="error-banner">
                 <span>{status}</span>
@@ -1006,16 +1020,27 @@ export function App() {
               onSync={handleSync}
               onDisconnect={handleDisconnect}
             />
+            </>
+            )}
           </section>
 
           <section className="rail-section">
-            <div className="planner-header">
+            <div
+              className="rail-section-header"
+              role="button"
+              tabIndex={0}
+              aria-expanded={!plannerCollapsed}
+              onClick={() => setPlannerCollapsed((c) => !c)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPlannerCollapsed((c) => !c); }}}
+            >
               <div>
                 <div className="section-label">Step 1</div>
                 <h2 className="editorial-title">Build the source view</h2>
               </div>
+              <span className={`section-collapse-icon${plannerCollapsed ? " collapsed" : ""}`} aria-hidden="true" />
+            </div>
 
-              <details className="saved-views-menu" ref={savedViewsRef}>
+            <details className="saved-views-menu" ref={savedViewsRef}>
                 <summary>Saved views</summary>
                 <div className="saved-views-panel">
                   <Field label="Open saved view">
@@ -1046,9 +1071,10 @@ export function App() {
                     </div>
                   </Field>
                 </div>
-              </details>
-            </div>
+            </details>
 
+            {!plannerCollapsed && (
+            <>
             <div className="field-stack">
               <Field label="Plan name">
                 <input
@@ -1127,6 +1153,8 @@ export function App() {
                 <StatBlock label="Source total" value={sourceItems.length} muted />
               </div>
             </div>
+            </>
+            )}
           </section>
         </aside>
 

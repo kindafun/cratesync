@@ -1,4 +1,4 @@
-import { memo, useMemo, useRef, useState } from "react";
+import { memo, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { formatDate, formatDateTime } from "../lib/format";
@@ -25,6 +25,7 @@ export const SnapshotSection = memo(function SnapshotSection({
   items: CollectionItemSnapshot[];
   loading: boolean;
 }) {
+  const [collapsed, setCollapsed] = useState(true);
   const [sortColumn, setSortColumn] = useState<SnapshotSortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<SnapshotSortDirection>("asc");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -59,9 +60,27 @@ export const SnapshotSection = memo(function SnapshotSection({
     setSortDirection("asc");
   }
 
+  function handleToggle() {
+    setCollapsed((c) => !c);
+  }
+
+  function handleKeyDown(event: KeyboardEvent) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleToggle();
+    }
+  }
+
   return (
-    <section className="canvas-section">
-      <div className="canvas-header">
+    <section className={`canvas-section${collapsed ? " is-collapsed" : ""}`}>
+      <div
+        className="canvas-header is-toggle"
+        role="button"
+        tabIndex={0}
+        aria-expanded={!collapsed}
+        onClick={handleToggle}
+        onKeyDown={handleKeyDown}
+      >
         <div>
           <div className="section-label">Destination</div>
           <h2>{title}</h2>
@@ -71,7 +90,10 @@ export const SnapshotSection = memo(function SnapshotSection({
             ? `${snapshot.total_items} items · synced ${formatDateTime(snapshot.created_at)}`
             : "No local snapshot"}
         </div>
+        <span className={`section-collapse-icon${collapsed ? " collapsed" : ""}`} aria-hidden="true" />
       </div>
+      {!collapsed && (
+      <>
       <div className="snapshot-toolbar">
         <div className="snapshot-controls">
           <div className="header-note">
@@ -156,6 +178,8 @@ export const SnapshotSection = memo(function SnapshotSection({
           </tbody>
         </table>
       </div>
+      </>
+      )}
     </section>
   );
 });

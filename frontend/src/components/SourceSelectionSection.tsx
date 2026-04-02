@@ -42,6 +42,7 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
   onDeselectVisible(): void;
   onClearSelection(): void;
 }) {
+  const [collapsed, setCollapsed] = useState(false);
   const [sortColumn, setSortColumn] = useState<SnapshotSortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<SnapshotSortDirection>("asc");
   const lastInteractedItemIdRef = useRef<string | null>(null);
@@ -107,9 +108,27 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
     handleItemInteraction(itemId, event.shiftKey);
   }
 
+  function handleToggle() {
+    setCollapsed((c) => !c);
+  }
+
+  function handleHeaderKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleToggle();
+    }
+  }
+
   return (
-    <section className="canvas-section">
-      <div className="canvas-header">
+    <section className={`canvas-section${collapsed ? " is-collapsed" : ""}`}>
+      <div
+        className="canvas-header is-toggle"
+        role="button"
+        tabIndex={0}
+        aria-expanded={!collapsed}
+        onClick={handleToggle}
+        onKeyDown={handleHeaderKeyDown}
+      >
         <div>
           <div className="section-label">Step 2</div>
           <h2>{title}</h2>
@@ -119,8 +138,11 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
             ? `${selectedCount} selected · ${totalItems} visible of ${totalSourceItems}`
             : "No local snapshot"}
         </div>
+        <span className={`section-collapse-icon${collapsed ? " collapsed" : ""}`} aria-hidden="true" />
       </div>
 
+      {!collapsed && (
+      <>
       <div className="selection-toolbar">
         <div className="snapshot-controls">
           <div className="header-note">
@@ -249,6 +271,8 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
           </tbody>
         </table>
       </div>
+      </>
+      )}
     </section>
   );
 });

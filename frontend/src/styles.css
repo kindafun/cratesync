@@ -253,6 +253,17 @@ p {
   background: var(--color-overlay);
 }
 
+.text-btn-danger {
+  border-color: rgba(196, 42, 26, 0.22);
+  color: var(--color-danger-ink);
+}
+
+.text-btn-danger:hover {
+  border-color: rgba(196, 42, 26, 0.38);
+  background: var(--color-danger-soft);
+  color: var(--color-danger-ink);
+}
+
 .text-btn:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
@@ -274,6 +285,7 @@ p {
 }
 
 .left-hero h1,
+.hero-title,
 .canvas-header h2,
 .editorial-title,
 .credit-name,
@@ -285,10 +297,17 @@ p {
   letter-spacing: -0.02em;
 }
 
-.left-hero h1 {
-  font-size: var(--text-display);
+.hero-title {
+  margin-bottom: 0.75rem;
+  font-size: var(--text-title-lg);
   line-height: 0.95;
-  margin-bottom: var(--space-md);
+  color: var(--color-ink);
+}
+
+.left-hero h1 {
+  font-size: var(--text-title-lg);
+  line-height: 0.95;
+  margin-bottom: 0.75rem;
 }
 
 .lead-copy {
@@ -405,6 +424,10 @@ p {
   margin: 0.55rem 0 0.25rem;
 }
 
+.credit-name-empty {
+  font-size: 1.35rem;
+}
+
 .credit-meta,
 .header-note,
 .job-meta,
@@ -434,6 +457,27 @@ p {
   margin-top: var(--space-sm);
   display: grid;
   gap: var(--space-sm);
+}
+
+.planner-footer .stats-line {
+  gap: 1rem 1.4rem;
+}
+
+.planner-footer .stat-block-small {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+
+.planner-footer .stat-block-small .stat-value {
+  font-family: var(--font-ui);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.planner-footer .stat-block-small .stat-label {
+  font-size: 0.58rem;
 }
 
 .planner-actions {
@@ -713,6 +757,12 @@ select:focus {
   justify-content: space-between;
   gap: var(--inline-gap-lg);
   margin-bottom: var(--stack-md);
+}
+
+.canvas-section-review {
+  border-top: 3px solid var(--color-accent);
+  margin-top: calc(var(--section-gap) + 0.65rem);
+  padding-top: 1.6rem;
 }
 
 .canvas-header h2 {
@@ -1041,11 +1091,11 @@ select:focus {
 }
 
 .review-banner {
-  border: var(--border-subtle);
+  border: var(--border-grid-strong);
   border-radius: var(--radius-md);
   padding: var(--space-md);
   margin-bottom: var(--space-md);
-  background: var(--surface-card);
+  background: color-mix(in srgb, var(--color-surface) 72%, transparent);
 }
 
 .review-banner h3 {
@@ -1062,13 +1112,13 @@ select:focus {
 }
 
 .review-banner-warning {
-  border-color: rgba(240, 82, 42, 0.28);
-  background: rgba(240, 82, 42, 0.07);
+  border-color: rgba(240, 82, 42, 0.34);
+  background: rgba(240, 82, 42, 0.09);
 }
 
 .review-banner-ready {
-  border-color: rgba(30, 122, 58, 0.28);
-  background: rgba(30, 122, 58, 0.08);
+  border-color: rgba(30, 122, 58, 0.34);
+  background: rgba(30, 122, 58, 0.1);
   animation: banner-in 240ms ease-out both;
 }
 
@@ -1126,7 +1176,19 @@ select:focus {
   border: var(--border-grid);
   border-radius: var(--radius-md);
   overflow: hidden;
-  background: transparent;
+  background: color-mix(in srgb, var(--color-surface) 42%, transparent);
+}
+
+.event-info {
+  background: rgba(30, 122, 58, 0.05);
+}
+
+.event-warning {
+  background: rgba(240, 82, 42, 0.06);
+}
+
+.event-error {
+  background: rgba(196, 42, 26, 0.06);
 }
 
 .event-info .event-stripe {
@@ -1248,7 +1310,11 @@ select:focus {
   }
 
   .left-hero h1 {
-    font-size: 3.25rem;
+    font-size: 2.4rem;
+  }
+
+  .hero-title {
+    font-size: 2.4rem;
   }
 
   .canvas-header h2 {

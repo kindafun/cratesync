@@ -11,7 +11,7 @@ Branch: `ui/grid-functional-exploration`
 
 ## What This Is
 
-A full design direction exploration. Three pillars were implemented together:
+A full design direction exploration. Four pillars were implemented together:
 
 1. **Exposed grid** — The layout structure is visible. Table cells have four-sided borders. Section dividers use a heavier 2px rule. Panel boundaries (topbar, left/right column divide) are declared with stronger borders. No soft background cards — borders alone define regions.
 
@@ -88,13 +88,21 @@ Added `useState(true)` collapsed state. Section **starts collapsed** — destina
 Added `useState(false)` collapsed state. Section **starts open** — primary action surface for step 2.
 
 ### `frontend/src/components/ReviewSection.tsx`
-Added `useState(false)` outer section collapse + `useState(false)` inner table collapse. The toolbar actions (Generate preview / Launch job) use `stopPropagation` so clicking them doesn't toggle the section. The history-strip mode pills also use `stopPropagation`.
+Added `useState(false)` outer section collapse + `useState(false)` inner table collapse. The toolbar actions (Generate preview / Launch job) use `stopPropagation` so clicking them doesn't toggle the section. The history-strip mode pills also use `stopPropagation`. The outer section now carries a `canvas-section-review` modifier so Review reads as the highest-stakes threshold step instead of another generic section.
 
 ### `frontend/src/components/JobConsoleSection.tsx`
 Added `useState(false)` collapsed state. Section **starts open**.
 
 ### `frontend/src/App.tsx`
 Added `accountsCollapsed` and `plannerCollapsed` state. Rail sections in `shell-left` are now collapsible via `rail-section-header`. The saved views `<details>` sits **outside** the planner collapse body so it remains accessible when the filter builder is hidden.
+
+Latest continuation on this branch:
+- `handleClearLocalData()` now asks for explicit confirmation before deleting local cache, account tokens, presets, and job history.
+- The topbar destructive action uses `text-btn-danger` instead of the default neutral treatment.
+- The oversized left-rail `h1` was replaced with a smaller semantic `h1.hero-title` ("Migration control") so branding no longer dominates the control surface.
+- Planner footer counters now use the compact `StatBlock small` treatment and CSS overrides for inline bookkeeping proportions.
+- Empty source-filter copy was tightened to: "No filters active — all source releases are in scope."
+- Empty account-card heading copy was adjusted to "Authorize {role} account".
 
 ---
 
@@ -106,12 +114,12 @@ Added `accountsCollapsed` and `plannerCollapsed` state. Rail sections in `shell-
 - TE orange on cream is high-contrast and punchy without being harsh.
 - Square buttons feel deliberate — the `.btn:active` scale transform now reads as a mechanical stamp press.
 - Progressive disclosure is functionally correct: source selection open, destination hidden, review/console open.
+- The accent-weighted Review divider creates a stronger "pre-launch checkpoint" moment than the generic 2px rule.
+- Severity-tinted event rows keep the 3px left-stripe motif but restore enough tonal separation for mixed logs.
 
 **Open questions for the next session:**
-- The `left-hero` `h1` ("CrateSync") is still present and quite large. The backlog item `/distill` (remove or shrink it) is relevant here — it reads oddly prominent on a light background.
-- Stat block values at `2.15rem` feel oversized in the light context. The backlog `/typeset` item applies.
-- The `.event` feed items now have transparent backgrounds — the colored left stripe is the only visual anchor. This reads clean but loses the tonal separation between events. Worth evaluating with real job data.
-- The `review-banner` is the only element that still carries a soft color fill. This is intentional (state urgency), but the fill may need adjusting for contrast on light bg.
+- The `review-banner` still carries a soft state fill while most other cards remain transparent. This still seems appropriate for urgency, but the exact fill strength may need one more contrast pass with real previews.
+- `.btn` and chip radii are currently all square because `--radius-pill` is `0px`. The backlog note says button corners should become `--radius-sm` while chip-style tags stay round, which conflicts with this branch's stricter zero-radius exploration. Decide whether the no-radius pillar stays absolute or becomes more selective.
 - Consider whether the amber-to-orange swap should be applied back to `main` independently of the grid exploration. The two changes are separable.
 
 ---
@@ -125,3 +133,9 @@ cd backend && uvicorn app.main:app --reload  # port 8421
 ```
 
 No new packages. Backend unchanged.
+
+Validation run after the latest continuation:
+
+```bash
+npm run build --prefix frontend
+```

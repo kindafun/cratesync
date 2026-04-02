@@ -336,6 +336,16 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    if (jobDetail && ACTIVE_JOB_STATUSES.includes(jobDetail.job.status)) {
+      document.title = `${formatJobStatus(jobDetail.job.status)} · ${jobDetail.job.name} · CrateSync`;
+    } else if (isSyncing !== null) {
+      document.title = "Syncing… · CrateSync";
+    } else {
+      document.title = "CrateSync";
+    }
+  }, [jobDetail, isSyncing]);
+
+  useEffect(() => {
     function handleOAuthMessage(event: MessageEvent<OAuthCompleteMessage>) {
       if (!API_ORIGINS.includes(event.origin)) return;
       if (event.data?.type !== "discogs-oauth-complete") return;
@@ -1130,8 +1140,8 @@ export function App() {
                 <h2>Review and launch</h2>
               </div>
               <div className="toolbar-actions">
-                <button className="btn btn-ghost" onClick={() => void handlePreview()}>
-                  Generate preview
+                <button className="btn btn-ghost" disabled={isGeneratingPreview} onClick={() => void handlePreview()}>
+                  {isGeneratingPreview ? "Checking…" : "Generate preview"}
                 </button>
                 <button
                   className="btn btn-primary"
@@ -1162,7 +1172,7 @@ export function App() {
                   <span>
                     {preview.selected_count} included · {preview.retained_count} not included
                   </span>
-                  <span>{preview.blocking_conflicts.length} blocking issue(s)</span>
+                  <span>{preview.blocking_conflicts.length} blocking {preview.blocking_conflicts.length === 1 ? "issue" : "issues"}</span>
                 </div>
 
                 {preview.warnings.length > 0 && (

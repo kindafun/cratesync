@@ -1,4 +1,5 @@
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { formatDate, formatDateTime } from "../lib/format";
 import { sortSnapshotItems, type SnapshotSortColumn, type SnapshotSortDirection } from "../lib/sort";
@@ -26,6 +27,7 @@ export const SnapshotSection = memo(function SnapshotSection({
 }) {
   const [sortColumn, setSortColumn] = useState<SnapshotSortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<SnapshotSortDirection>("asc");
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const sortedItems = useMemo(
     () => sortSnapshotItems(items, sortColumn, sortDirection),
@@ -33,6 +35,20 @@ export const SnapshotSection = memo(function SnapshotSection({
   );
   const totalItems = sortedItems.length;
   const columns = SNAPSHOT_COLUMNS;
+
+  const rowVirtualizer = useVirtualizer({
+    count: sortedItems.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => 36,
+    overscan: 5,
+  });
+
+  const virtualItems = rowVirtualizer.getVirtualItems();
+  const paddingTop = virtualItems.length > 0 ? (virtualItems[0]?.start ?? 0) : 0;
+  const paddingBottom =
+    virtualItems.length > 0
+      ? rowVirtualizer.getTotalSize() - (virtualItems[virtualItems.length - 1]?.end ?? 0)
+      : 0;
 
   function handleSort(nextColumn: SnapshotSortColumn) {
     if (sortColumn === nextColumn) {
@@ -61,13 +77,11 @@ export const SnapshotSection = memo(function SnapshotSection({
           <div className="header-note">
             {totalItems === 0
               ? "0 items"
-              : totalItems > 25
-                ? `25 rows visible · scroll for ${totalItems - 25} more`
-                : `${totalItems} item${totalItems === 1 ? "" : "s"}`}
+              : `${totalItems} item${totalItems === 1 ? "" : "s"}`}
           </div>
         </div>
       </div>
-      <div className="table-wrap snapshot-frame-wrap">
+      <div ref={scrollRef} className="table-wrap snapshot-frame-wrap">
         <table className="data-table snapshot-table">
           <colgroup>
             <col className="snapshot-col-artist" />
@@ -120,16 +134,25 @@ export const SnapshotSection = memo(function SnapshotSection({
                 </tr>
               )
             )}
-            {sortedItems.map((item) => (
-              <tr key={item.id}>
-                <td>{item.artist}</td>
-                <td>{item.title}</td>
-                <td>{item.year ?? "—"}</td>
-                <td>{item.genres[0] ?? "—"}</td>
-                <td>{item.labels[0] ?? "—"}</td>
-                <td>{formatDate(item.date_added)}</td>
-              </tr>
-            ))}
+            {sortedItems.length > 0 && paddingTop > 0 && (
+              <tr><td colSpan={6} style={{ height: paddingTop, padding: 0, border: "none" }} /></tr>
+            )}
+            {virtualItems.map((virtualRow) => {
+              const item = sortedItems[virtualRow.index];
+              return (
+                <tr key={item.id}>
+                  <td>{item.artist}</td>
+                  <td>{item.title}</td>
+                  <td>{item.year ?? "—"}</td>
+                  <td>{item.genres[0] ?? "—"}</td>
+                  <td>{item.labels[0] ?? "—"}</td>
+                  <td>{formatDate(item.date_added)}</td>
+                </tr>
+              );
+            })}
+            {sortedItems.length > 0 && paddingBottom > 0 && (
+              <tr><td colSpan={6} style={{ height: paddingBottom, padding: 0, border: "none" }} /></tr>
+            )}
           </tbody>
         </table>
       </div>

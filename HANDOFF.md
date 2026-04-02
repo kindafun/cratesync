@@ -1,6 +1,6 @@
 # CrateSync — Session Handoff
 
-**Repo:** `kindafun/cratesync` · **Branch:** `main` · **Last updated:** 2026-04-02 (session 6)
+**Repo:** `kindafun/cratesync` · **Branch:** `main` · **Last updated:** 2026-04-02 (session 7)
 
 ---
 
@@ -21,7 +21,30 @@
 
 ---
 
-## What was done this session (2026-04-02, session 6)
+## What was done this session (2026-04-02, session 7)
+
+### `/adapt` (continued) — Table virtualization with `@tanstack/react-virtual`
+
+**Files changed:** `frontend/src/components/SourceSelectionSection.tsx`, `frontend/src/components/SnapshotSection.tsx`, `frontend/package.json`
+
+**New dependency:** `@tanstack/react-virtual` (2 packages, zero peer deps)
+
+**Pattern used:** padding-row technique — the scroll container div gets a `ref`, `useVirtualizer` watches it and returns only the visible row indices. Two spacer `<tr>` elements (top + bottom) carry the virtual height so the scrollbar behaves as if all rows are present. Standard `<table>` layout is preserved.
+
+**Changes per component:**
+- `scrollRef` added to the `.table-wrap.snapshot-frame-wrap` div (already had `overflow: auto` + `max-height`)
+- `useVirtualizer({ count, getScrollElement, estimateSize: () => 36, overscan: 5 })` — 36px matches `--table-cell-padding-y: 0.55rem` × 2 + `--text-table: 0.77rem` line height + 1px border; uniform rows so no per-row measurement needed
+- `sortedItems.map(...)` replaced with `virtualItems.map(virtualRow => sortedItems[virtualRow.index])`
+- Skeleton/empty-state rows are outside the virtual loop and render unconditionally as before
+- Shift-click range selection in `SourceSelectionSection` unchanged — `sortedItems.findIndex()` still operates on the full array regardless of which rows are in the DOM
+
+**Toolbar message:** Removed hardcoded `"25 rows visible · scroll for N more"` — replaced with plain total count in both components. All rows are now accessible via scroll rather than artificially capped.
+
+**No CSS changes needed** — existing `max-height: min(53rem, 80vh)` on `.snapshot-frame-wrap` already provides the fixed-height scroll container the virtualizer requires.
+
+---
+
+## What was done previously (2026-04-02, session 6)
 
 ### `/quieter` — Remove success-green ambient gradient from body background
 
@@ -276,7 +299,7 @@ src/
 
 ### Low / backlog
 - **`/polish`** — Firefox scrollbar CSS: `scrollbar-color`/`scrollbar-width` already handles Firefox (gold thumb, dark track). No further action required.
-- **`/adapt`** (continued) — Virtualize large tables with `@tanstack/react-virtual`; all rows currently render in DOM, limited by CSS `max-height` scroll. Approach discussed, not yet implemented.
+- **`/adapt`** (continued) — Table virtualization complete. ✅
 - **`/extract`** (continued) — App.tsx now ~1,285 lines. Remaining candidates: `AccountCard` (small, tightly coupled to handlers); `renderFilterBlock` + Step 1 sidebar (depends on 15+ filter state values, feasible with props).
 
 ---

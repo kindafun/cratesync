@@ -52,6 +52,8 @@ export function App() {
   const [destinationItems, setDestinationItems] = useState<CollectionItemSnapshot[]>([]);
   const [status, setStatus] = useState("Connecting to local backend…");
   const [loading, setLoading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState<string | null>(null);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [presetName, setPresetName] = useState("");
   const [selectedPresetId, setSelectedPresetId] = useState("");
   const [lastPreviewSignature, setLastPreviewSignature] = useState<string | null>(null);
@@ -309,8 +311,28 @@ export function App() {
     }
   }
 
+  const savedViewsRef = useRef<HTMLDetailsElement>(null);
+  const handlePreviewRef = useRef(handlePreview);
+  handlePreviewRef.current = handlePreview;
+
   useEffect(() => {
     void refreshWorkspace();
+  }, []);
+
+  useEffect(() => {
+    function onKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape" && savedViewsRef.current?.open) {
+        savedViewsRef.current.open = false;
+        return;
+      }
+      if ((event.metaKey || event.ctrlKey) && event.key === "g") {
+        if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+        event.preventDefault();
+        void handlePreviewRef.current();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
   useEffect(() => {
@@ -398,6 +420,7 @@ export function App() {
 
   async function handleSync(accountId: string) {
     setRetryFn(null);
+    setIsSyncing(accountId);
     try {
       setStatus("Syncing collection snapshot from Discogs…");
       await api.syncCollection(accountId);
@@ -405,6 +428,8 @@ export function App() {
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Sync failed.");
       setRetryFn(() => () => void handleSync(accountId));
+    } finally {
+      setIsSyncing(null);
     }
   }
 
@@ -438,6 +463,7 @@ export function App() {
       setStatus("Select at least one release before generating a preview.");
       return;
     }
+    setIsGeneratingPreview(true);
     try {
       setStatus("Generating preview…");
       const response = await api.previewPlan(currentPlan);
@@ -452,6 +478,8 @@ export function App() {
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Preview failed.");
       setRetryFn(() => () => void handlePreview());
+    } finally {
+      setIsGeneratingPreview(false);
     }
   }
 
@@ -934,6 +962,7 @@ export function App() {
               role="source"
               account={sourceAccount}
               itemCount={sourceSnapshot?.total_items ?? 0}
+              syncing={isSyncing === sourceAccount?.id}
               onConnect={handleConnect}
               onSync={handleSync}
               onDisconnect={handleDisconnect}
@@ -942,6 +971,7 @@ export function App() {
               role="destination"
               account={destinationAccount}
               itemCount={destinationSnapshot?.total_items ?? 0}
+              syncing={isSyncing === destinationAccount?.id}
               onConnect={handleConnect}
               onSync={handleSync}
               onDisconnect={handleDisconnect}
@@ -955,7 +985,7 @@ export function App() {
                 <h2 className="editorial-title">Build the source view</h2>
               </div>
 
-              <details className="saved-views-menu">
+              <details className="saved-views-menu" ref={savedViewsRef}>
                 <summary>Saved views</summary>
                 <div className="saved-views-panel">
                   <Field label="Open saved view">
@@ -1078,6 +1108,7 @@ export function App() {
             totalSourceItems={sourceItems.length}
             selectedCount={selectedSourceCount}
             selectedItemIds={selectedSourceIdSet}
+            loading={loading || isSyncing !== null}
             onToggleSelect={toggleSourceSelection}
             onSelectRange={selectSourceRange}
             onSelectAllVisible={selectFilteredItems}
@@ -1089,6 +1120,7 @@ export function App() {
             title={`Destination reference — ${destinationAccount?.username ?? "Not connected"}`}
             snapshot={destinationSnapshot}
             items={destinationItems}
+            loading={loading || isSyncing !== null}
           />
 
           <section className="canvas-section">
@@ -1247,10 +1279,19 @@ export function App() {
             )}
 
             {!preview && (
-              <div className="empty-block">
-                Use the source table to choose releases, then generate a preview here. This step
-                will summarize what gets copied or moved, highlight duplicates, and show any
-                conflicts you need to clear before launch.
+              <div className={`empty-block${isGeneratingPreview ? " preview-loading" : ""}`}>
+                {isGeneratingPreview ? (
+                  <>
+                    <span className="preview-loading-label">Checking selections against destination…</span>
+                    <div className="preview-loading-bars">
+                      <span className="skeleton-cell skeleton-cell-long" />
+                      <span className="skeleton-cell skeleton-cell-mid" />
+                      <span className="skeleton-cell skeleton-cell-short" />
+                    </div>
+                  </>
+                ) : (
+                  "Use the source table to choose releases, then generate a preview here. This step will summarize what gets copied or moved, highlight duplicates, and show any conflicts you need to clear before launch."
+                )}
               </div>
             )}
           </section>
@@ -1380,6 +1421,7 @@ function AccountCard({
   role,
   account,
   itemCount,
+  syncing = false,
   onConnect,
   onSync,
   onDisconnect,
@@ -1387,6 +1429,7 @@ function AccountCard({
   role: "source" | "destination";
   account?: ConnectedAccount;
   itemCount: number;
+  syncing?: boolean;
   onConnect(role: "source" | "destination"): void;
   onSync(accountId: string): void;
   onDisconnect(accountId: string): void;
@@ -1414,10 +1457,10 @@ function AccountCard({
           : "Connected, not yet synced"}
       </p>
       <div className="inline-button-row">
-        <button className="btn btn-primary" onClick={() => onSync(account.id)}>
-          Sync collection
+        <button className="btn btn-primary" disabled={syncing} onClick={() => onSync(account.id)}>
+          {syncing ? "Syncing…" : "Sync collection"}
         </button>
-        <button className="btn btn-ghost" onClick={() => onDisconnect(account.id)}>
+        <button className="btn btn-ghost" disabled={syncing} onClick={() => onDisconnect(account.id)}>
           Disconnect
         </button>
       </div>
@@ -1530,6 +1573,7 @@ const SourceSelectionSection = memo(function SourceSelectionSection({
   totalSourceItems,
   selectedCount,
   selectedItemIds,
+  loading,
   onToggleSelect,
   onSelectRange,
   onSelectAllVisible,
@@ -1542,6 +1586,7 @@ const SourceSelectionSection = memo(function SourceSelectionSection({
   totalSourceItems: number;
   selectedCount: number;
   selectedItemIds: Set<string>;
+  loading: boolean;
   onToggleSelect(itemId: string): void;
   onSelectRange(itemIds: string[]): void;
   onSelectAllVisible(): void;
@@ -1672,11 +1717,26 @@ const SourceSelectionSection = memo(function SourceSelectionSection({
           </thead>
           <tbody>
             {!snapshot && (
-              <tr>
-                <td colSpan={8} className="empty-cell">
-                  Sync the source account to populate the local snapshot.
-                </td>
-              </tr>
+              loading ? (
+                Array.from({ length: 8 }, (_, i) => (
+                  <tr key={i} className="skeleton-row">
+                    <td />
+                    <td><span className="skeleton-cell skeleton-cell-long" /></td>
+                    <td><span className="skeleton-cell skeleton-cell-long" /></td>
+                    <td><span className="skeleton-cell skeleton-cell-mid" /></td>
+                    <td><span className="skeleton-cell skeleton-cell-mid" /></td>
+                    <td><span className="skeleton-cell skeleton-cell-mid" /></td>
+                    <td><span className="skeleton-cell skeleton-cell-mid" /></td>
+                    <td><span className="skeleton-cell skeleton-cell-short" /></td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={8} className="empty-cell">
+                    Sync the source account to populate the local snapshot.
+                  </td>
+                </tr>
+              )
             )}
             {snapshot && items.length === 0 && (
               <tr>
@@ -1737,10 +1797,12 @@ const SnapshotSection = memo(function SnapshotSection({
   title,
   snapshot,
   items,
+  loading,
 }: {
   title: string;
   snapshot: CollectionSnapshot | null;
   items: CollectionItemSnapshot[];
+  loading: boolean;
 }) {
   const [sortColumn, setSortColumn] = useState<SnapshotSortColumn | null>(null);
   const [sortDirection, setSortDirection] = useState<SnapshotSortDirection>("asc");
@@ -1819,11 +1881,24 @@ const SnapshotSection = memo(function SnapshotSection({
           </thead>
           <tbody>
             {items.length === 0 && (
-              <tr>
-                <td colSpan={6} className="empty-cell">
-                  Sync this account to populate the local snapshot.
-                </td>
-              </tr>
+              loading ? (
+                Array.from({ length: 6 }, (_, i) => (
+                  <tr key={i} className="skeleton-row">
+                    <td><span className="skeleton-cell skeleton-cell-long" /></td>
+                    <td><span className="skeleton-cell skeleton-cell-long" /></td>
+                    <td><span className="skeleton-cell skeleton-cell-short" /></td>
+                    <td><span className="skeleton-cell skeleton-cell-mid" /></td>
+                    <td><span className="skeleton-cell skeleton-cell-mid" /></td>
+                    <td><span className="skeleton-cell skeleton-cell-short" /></td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="empty-cell">
+                    Sync this account to populate the local snapshot.
+                  </td>
+                </tr>
+              )
             )}
             {sortedItems.map((item) => (
               <tr key={item.id}>

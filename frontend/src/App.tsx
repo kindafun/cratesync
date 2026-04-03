@@ -1109,7 +1109,7 @@ export function App() {
               <div className="filter-builder">
                 <div className="filter-builder-header">
                   <div>
-                    <div className="field-label">Optional filters</div>
+                    <div className="section-label">Optional filters</div>
                     <p className="filter-builder-copy">
                       Add only the filters you want to use, then choose releases from the source
                       table.

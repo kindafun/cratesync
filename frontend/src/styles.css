@@ -1,6 +1,7 @@
 :root {
-  font-family: "Bricolage Grotesque", sans-serif;
+  font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
   font-optical-sizing: auto;
+  font-kerning: normal;
   color: #f0ead8;
   background: #0c0b09;
 
@@ -25,8 +26,8 @@
   --color-overlay: rgba(0, 0, 0, 0.035);
 
   /* Typography */
-  --font-ui: "Bricolage Grotesque", sans-serif;
-  --font-display: "Instrument Serif", Georgia, serif;
+  --font-ui: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "IBM Plex Serif", Georgia, serif;
 
   --text-label: 0.625rem;
   --text-meta: 0.75rem;
@@ -41,8 +42,8 @@
   --line-height-tight: 1.05;
   --line-height-body: 1.65;
   --line-height-relaxed: 1.7;
-  --tracking-label: 0.22em;
-  --tracking-table: 0.18em;
+  --tracking-label: 0.2em;
+  --tracking-table: 0.14em;
 
   /* Spacing */
   --space-2xs: 0.25rem;
@@ -293,8 +294,8 @@ p {
 .stat-value,
 .conflict-card h3 {
   font-family: var(--font-display);
-  font-weight: 400;
-  letter-spacing: -0.02em;
+  font-weight: 500;
+  letter-spacing: -0.04em;
 }
 
 .hero-title {
@@ -310,11 +311,19 @@ p {
   margin-bottom: 0.75rem;
 }
 
+.left-hero {
+  margin-bottom: var(--space-lg);
+}
+
 .lead-copy {
   max-width: 28rem;
   color: var(--color-muted);
   font-size: var(--text-body);
   line-height: var(--line-height-relaxed);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .error-banner {
@@ -384,7 +393,7 @@ p {
 
 .credit-card:last-child {
   border-bottom: none;
-  padding-bottom: 0;
+  padding-bottom: var(--space-md);
 }
 
 .credit-card-empty {
@@ -477,7 +486,7 @@ p {
 }
 
 .planner-footer .stat-block-small .stat-label {
-  font-size: 0.58rem;
+  font-size: 0.65rem;
 }
 
 .planner-actions {
@@ -492,6 +501,7 @@ p {
 .filter-builder {
   display: grid;
   gap: var(--stack-md);
+  margin-top: var(--space-sm);
 }
 
 .filter-builder-copy,
@@ -524,6 +534,7 @@ p {
 .saved-views-menu {
   width: 100%;
   max-width: 18rem;
+  margin-top: var(--space-md);
 }
 
 .saved-views-menu summary {
@@ -1100,7 +1111,7 @@ select:focus {
 
 .review-banner h3 {
   font-family: var(--font-display);
-  font-weight: 400;
+  font-weight: 500;
   font-size: var(--text-title-sm);
   margin: 0.3rem 0 0.45rem;
 }
@@ -1217,7 +1228,10 @@ select:focus {
   letter-spacing: 0.08em;
 }
 
-.empty-block.compact,
+.empty-block.compact {
+  text-align: left;
+}
+
 .empty-cell {
   text-align: center;
 }
@@ -1389,7 +1403,7 @@ select:focus {
   font-family: var(--font-display);
   font-size: var(--text-title-sm);
   color: var(--color-ink);
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .error-boundary-message {

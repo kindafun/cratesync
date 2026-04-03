@@ -103,6 +103,15 @@ Latest continuation on this branch:
 - Planner footer counters now use the compact `StatBlock small` treatment and CSS overrides for inline bookkeeping proportions.
 - Empty source-filter copy was tightened to: "No filters active — all source releases are in scope."
 - Empty account-card heading copy was adjusted to "Authorize {role} account".
+- Typography exploration pass: replaced `Bricolage Grotesque` + `Instrument Serif` with `IBM Plex Sans` + `IBM Plex Serif` across the app and design lab. Display serif now uses weight 500 with tighter negative tracking so headings and stat numerals read more like catalog plates against the square grid, while Plex Sans makes dense labels and tables feel more mechanical than the previous rounded grotesque.
+
+Left rail spacing, hierarchy, and formatting pass (critique-driven):
+- `.left-hero` gets `margin-bottom: var(--space-lg)` to reduce title-screen overhead on repeat use. `.lead-copy` is clipped to 2 visible lines via `-webkit-line-clamp` — full text stays in the DOM.
+- `.credit-card:last-child` `padding-bottom` restored from `0` to `var(--space-md)` so the destination card has consistent bottom air before the STEP 1 section divider.
+- `.saved-views-menu` gets `margin-top: var(--space-md)` to anchor it visually to the planner body rather than the section header.
+- `Optional filters` label class changed from `field-label` to `section-label` (TE orange, uppercase, tracked) to distinguish the sub-section boundary from plain field labels above it. `.filter-builder` gets `margin-top: var(--space-sm)` for additional breathing room from the Workflow Mode toggle.
+- Planner footer stat-label raised from `0.58rem` to `0.65rem` for legibility.
+- `.empty-block.compact` text-align changed to `left` (split from `.empty-cell` which stays `center`) — the centred paragraph looked misaligned in a left-aligned single-column panel.
 
 ---
 
@@ -112,6 +121,7 @@ Latest continuation on this branch:
 - The 2px section dividers create a strong visual grid rhythm across both columns.
 - Four-sided table cell borders make the data feel like a proper ledger. Sticky header with `--color-th-bg` reads as structurally distinct from the body.
 - TE orange on cream is high-contrast and punchy without being harsh.
+- `IBM Plex Serif` + `IBM Plex Sans` better matches the technical ledger direction than the previous softer grotesque/serif pairing: labels feel tighter and more machined, while headings still keep a Discogs-adjacent editorial register.
 - Square buttons feel deliberate — the `.btn:active` scale transform now reads as a mechanical stamp press.
 - Progressive disclosure is functionally correct: source selection open, destination hidden, review/console open.
 - The accent-weighted Review divider creates a stronger "pre-launch checkpoint" moment than the generic 2px rule.
@@ -134,7 +144,7 @@ cd backend && uvicorn app.main:app --reload  # port 8421
 
 No new packages. Backend unchanged.
 
-Validation run after the latest continuation:
+Validation run after the latest continuation (left rail spacing/hierarchy pass, 2026-04-03):
 
 ```bash
 npm run build --prefix frontend

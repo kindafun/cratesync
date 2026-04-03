@@ -335,6 +335,13 @@ p {
   margin-top: var(--section-gap);
 }
 
+.rail-section:first-child,
+.canvas-section:first-child {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
 .editorial-title {
   font-size: var(--text-title-sm);
   margin: var(--inline-gap-sm) 0 var(--space-md);

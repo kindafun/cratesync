@@ -8,6 +8,17 @@ export function formatDateTime(value?: string | null): string {
   return new Date(value).toLocaleString();
 }
 
+export function formatSyncDateTime(value?: string | null): string {
+  if (!value) return "—";
+  return new Date(value).toLocaleString(undefined, {
+    month: "numeric",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function formatJobStatus(status: string): string {
   return status.replace(/_/g, " ");
 }
@@ -15,13 +26,19 @@ export function formatJobStatus(status: string): string {
 export function statusTone(status: string): string {
   if (status.includes("fail")) return "error";
   if (status.includes("skip") || status.includes("awaiting")) return "warning";
-  if (status.includes("copied") || status.includes("deleted") || status.includes("rolled")) {
+  if (
+    status.includes("copied") ||
+    status.includes("deleted") ||
+    status.includes("rolled")
+  ) {
     return "success";
   }
   return "default";
 }
 
-export function renderCapabilities(metadata: Record<string, unknown>): string[] {
+export function renderCapabilities(
+  metadata: Record<string, unknown>,
+): string[] {
   return Object.entries(metadata).map(([key, value]) => {
     const normalizedKey = key.replace(/_/g, " ");
     if (typeof value === "boolean") {

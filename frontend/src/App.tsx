@@ -1,10 +1,22 @@
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { JobConsoleSection } from "./components/JobConsoleSection";
 import { ReviewSection } from "./components/ReviewSection";
 import { SnapshotSection } from "./components/SnapshotSection";
 import { SourceSelectionSection } from "./components/SourceSelectionSection";
-import { Field, FilterBlock, MultiValueSelect, StatBlock } from "./components/ui";
+import {
+  Field,
+  FilterBlock,
+  MultiValueSelect,
+  StatBlock,
+} from "./components/ui";
 import { API_ORIGINS, api } from "./lib/api";
 import {
   EMPTY_FILTERS,
@@ -19,7 +31,7 @@ import {
   sanitizeStringMap,
   type FilterKey,
 } from "./lib/filters";
-import { formatDateTime, formatJobStatus } from "./lib/format";
+import { formatJobStatus, formatSyncDateTime } from "./lib/format";
 import { renderOAuthPopup, type OAuthCompleteMessage } from "./lib/oauth";
 import type {
   CollectionItemSnapshot,
@@ -49,20 +61,31 @@ export function App() {
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [jobDetail, setJobDetail] = useState<JobDetailResponse | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-  const [sourceSnapshot, setSourceSnapshot] = useState<CollectionSnapshot | null>(null);
+  const [sourceSnapshot, setSourceSnapshot] =
+    useState<CollectionSnapshot | null>(null);
   const [sourceItems, setSourceItems] = useState<CollectionItemSnapshot[]>([]);
-  const [destinationSnapshot, setDestinationSnapshot] = useState<CollectionSnapshot | null>(null);
-  const [destinationItems, setDestinationItems] = useState<CollectionItemSnapshot[]>([]);
+  const [destinationSnapshot, setDestinationSnapshot] =
+    useState<CollectionSnapshot | null>(null);
+  const [destinationItems, setDestinationItems] = useState<
+    CollectionItemSnapshot[]
+  >([]);
   const [status, setStatus] = useState("Connecting to local backend…");
   const [loading, setLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState<string | null>(null);
-  const [syncProgress, setSyncProgress] = useState<{ fetched: number; total: number | null } | null>(null);
+  const [syncProgress, setSyncProgress] = useState<{
+    fetched: number;
+    total: number | null;
+  } | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [presetName, setPresetName] = useState("");
   const [selectedPresetId, setSelectedPresetId] = useState("");
-  const [lastPreviewSignature, setLastPreviewSignature] = useState<string | null>(null);
+  const [lastPreviewSignature, setLastPreviewSignature] = useState<
+    string | null
+  >(null);
   const [nextFilterToAdd, setNextFilterToAdd] = useState<FilterKey | "">("");
-  const [reviewTableMode, setReviewTableMode] = useState<"selected" | "all">("selected");
+  const [reviewTableMode, setReviewTableMode] = useState<"selected" | "all">(
+    "selected",
+  );
   const [retryFn, setRetryFn] = useState<(() => void) | null>(null);
   const [accountsCollapsed, setAccountsCollapsed] = useState(false);
   const [plannerCollapsed, setPlannerCollapsed] = useState(false);
@@ -84,14 +107,19 @@ export function App() {
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
-  const [selectedSourceItemIds, setSelectedSourceItemIds] = useState<string[]>([]);
-  const [folderMappingOverrides, setFolderMappingOverrides] = useState<Record<string, number>>({});
-  const [customFieldMappingOverrides, setCustomFieldMappingOverrides] = useState<
-    Record<string, string>
+  const [selectedSourceItemIds, setSelectedSourceItemIds] = useState<string[]>(
+    [],
+  );
+  const [folderMappingOverrides, setFolderMappingOverrides] = useState<
+    Record<string, number>
   >({});
+  const [customFieldMappingOverrides, setCustomFieldMappingOverrides] =
+    useState<Record<string, string>>({});
 
   const sourceAccount = accounts.find((account) => account.role === "source");
-  const destinationAccount = accounts.find((account) => account.role === "destination");
+  const destinationAccount = accounts.find(
+    (account) => account.role === "destination",
+  );
 
   const filters = useMemo(
     () =>
@@ -141,7 +169,9 @@ export function App() {
       name: planName.trim() || "Untitled plan",
       filters,
       folder_mapping_overrides: folderMappingOverrides,
-      custom_field_mapping_overrides: sanitizeStringMap(customFieldMappingOverrides),
+      custom_field_mapping_overrides: sanitizeStringMap(
+        customFieldMappingOverrides,
+      ),
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -156,8 +186,13 @@ export function App() {
       customFieldMappingOverrides,
     ],
   );
-  const currentPlanSignature = useMemo(() => JSON.stringify(currentPlan), [currentPlan]);
-  const previewIsStale = Boolean(preview && lastPreviewSignature !== currentPlanSignature);
+  const currentPlanSignature = useMemo(
+    () => JSON.stringify(currentPlan),
+    [currentPlan],
+  );
+  const previewIsStale = Boolean(
+    preview && lastPreviewSignature !== currentPlanSignature,
+  );
 
   const previewSelectedIds = useMemo(
     () => new Set(preview?.selected_items.map((item) => item.id) ?? []),
@@ -167,7 +202,10 @@ export function App() {
     () => new Set(preview?.duplicate_release_ids ?? []),
     [preview],
   );
-  const selectedSourceIdSet = useMemo(() => new Set(selectedSourceItemIds), [selectedSourceItemIds]);
+  const selectedSourceIdSet = useMemo(
+    () => new Set(selectedSourceItemIds),
+    [selectedSourceItemIds],
+  );
   const filteredSourceItems = useMemo(
     () => filterSourceItems(sourceItems, filters),
     [sourceItems, filters],
@@ -187,15 +225,35 @@ export function App() {
     !destinationAccount ||
     !sourceSnapshot;
 
-  const folderOptions = useMemo(() => deriveFolderOptions(sourceItems), [sourceItems]);
-  const genreOptions = useMemo(() => deriveStringOptions(sourceItems, "genres"), [sourceItems]);
-  const labelOptions = useMemo(() => deriveStringOptions(sourceItems, "labels"), [sourceItems]);
-  const formatOptions = useMemo(() => deriveStringOptions(sourceItems, "formats"), [sourceItems]);
-  const styleOptions = useMemo(() => deriveStringOptions(sourceItems, "styles"), [sourceItems]);
-  const destinationFolderLookup = useMemo(() => deriveFolderLookup(destinationItems), [destinationItems]);
+  const folderOptions = useMemo(
+    () => deriveFolderOptions(sourceItems),
+    [sourceItems],
+  );
+  const genreOptions = useMemo(
+    () => deriveStringOptions(sourceItems, "genres"),
+    [sourceItems],
+  );
+  const labelOptions = useMemo(
+    () => deriveStringOptions(sourceItems, "labels"),
+    [sourceItems],
+  );
+  const formatOptions = useMemo(
+    () => deriveStringOptions(sourceItems, "formats"),
+    [sourceItems],
+  );
+  const styleOptions = useMemo(
+    () => deriveStringOptions(sourceItems, "styles"),
+    [sourceItems],
+  );
+  const destinationFolderLookup = useMemo(
+    () => deriveFolderLookup(destinationItems),
+    [destinationItems],
+  );
   const recentJobs = jobs.slice(0, 8);
   const previewConflicts = preview?.blocking_conflicts ?? [];
-  const folderConflicts = previewConflicts.filter((conflict) => conflict.type === "folder_mapping");
+  const folderConflicts = previewConflicts.filter(
+    (conflict) => conflict.type === "folder_mapping",
+  );
   const customFieldConflicts = previewConflicts.filter(
     (conflict) => conflict.type === "custom_field_mapping",
   );
@@ -203,14 +261,24 @@ export function App() {
     () =>
       FILTER_OPTIONS.filter((option) => {
         if (activeFilterKeys.includes(option.key)) return false;
-        if (option.key === "specific_date" && activeFilterKeys.includes("date_range")) return false;
-        if (option.key === "date_range" && activeFilterKeys.includes("specific_date")) return false;
+        if (
+          option.key === "specific_date" &&
+          activeFilterKeys.includes("date_range")
+        )
+          return false;
+        if (
+          option.key === "date_range" &&
+          activeFilterKeys.includes("specific_date")
+        )
+          return false;
         return true;
       }),
     [activeFilterKeys],
   );
   const reviewItems =
-    reviewTableMode === "selected" ? preview?.selected_items ?? [] : sourceItems;
+    reviewTableMode === "selected"
+      ? (preview?.selected_items ?? [])
+      : sourceItems;
   const reviewState = deriveReviewState({
     preview,
     previewIsStale,
@@ -235,7 +303,9 @@ export function App() {
 
   useEffect(() => {
     const validSourceIds = new Set(sourceItems.map((item) => item.id));
-    setSelectedSourceItemIds((current) => current.filter((itemId) => validSourceIds.has(itemId)));
+    setSelectedSourceItemIds((current) =>
+      current.filter((itemId) => validSourceIds.has(itemId)),
+    );
   }, [sourceItems]);
 
   async function refreshWorkspace() {
@@ -281,13 +351,15 @@ export function App() {
       const nextSelectedJobId =
         selectedJobId && jobList.some((job) => job.id === selectedJobId)
           ? selectedJobId
-          : jobList[0]?.id ?? null;
+          : (jobList[0]?.id ?? null);
       setSelectedJobId(nextSelectedJobId);
       if (!nextSelectedJobId) {
         setJobDetail(null);
       }
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Failed to load state.");
+      setStatus(
+        error instanceof Error ? error.message : "Failed to load state.",
+      );
       setRetryFn(() => () => void refreshWorkspace());
     } finally {
       setLoading(false);
@@ -298,11 +370,16 @@ export function App() {
     try {
       const nextPresets = await api.listSelectionPresets(accountId);
       setPresets(nextPresets);
-      if (selectedPresetId && !nextPresets.some((preset) => preset.id === selectedPresetId)) {
+      if (
+        selectedPresetId &&
+        !nextPresets.some((preset) => preset.id === selectedPresetId)
+      ) {
         setSelectedPresetId("");
       }
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Failed to load presets.");
+      setStatus(
+        error instanceof Error ? error.message : "Failed to load presets.",
+      );
     }
   }
 
@@ -313,7 +390,9 @@ export function App() {
         setJobDetail(detail);
       });
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Failed to load job detail.");
+      setStatus(
+        error instanceof Error ? error.message : "Failed to load job detail.",
+      );
     }
   }
 
@@ -332,7 +411,11 @@ export function App() {
         return;
       }
       if ((event.metaKey || event.ctrlKey) && event.key === "g") {
-        if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+        if (
+          event.target instanceof HTMLInputElement ||
+          event.target instanceof HTMLTextAreaElement
+        )
+          return;
         event.preventDefault();
         void handlePreviewRef.current();
       }
@@ -387,7 +470,8 @@ export function App() {
   }, [selectedJobId]);
 
   useEffect(() => {
-    if (!jobDetail || !ACTIVE_JOB_STATUSES.includes(jobDetail.job.status)) return;
+    if (!jobDetail || !ACTIVE_JOB_STATUSES.includes(jobDetail.job.status))
+      return;
     const timer = window.setInterval(async () => {
       try {
         const [nextDetail, nextJobs] = await Promise.all([
@@ -399,14 +483,22 @@ export function App() {
           setJobs(nextJobs);
         });
       } catch (error) {
-        setStatus(error instanceof Error ? error.message : "Failed to refresh active job.");
+        setStatus(
+          error instanceof Error
+            ? error.message
+            : "Failed to refresh active job.",
+        );
       }
     }, 2500);
     return () => window.clearInterval(timer);
   }, [jobDetail?.job.id, jobDetail?.job.status]);
 
   async function handleConnect(role: "source" | "destination") {
-    const popup = window.open("", `discogs-oauth-${role}`, "popup=yes,width=960,height=720");
+    const popup = window.open(
+      "",
+      `discogs-oauth-${role}`,
+      "popup=yes,width=960,height=720",
+    );
     if (!popup) {
       setStatus("Popup blocked. Allow popups for this app and try again.");
       return;
@@ -421,9 +513,12 @@ export function App() {
     try {
       const response = await api.startOAuth(role);
       popup.location.replace(response.authorization_url);
-      setStatus(`OAuth started for ${role}. Finish the callback flow in the opened window.`);
+      setStatus(
+        `OAuth started for ${role}. Finish the callback flow in the opened window.`,
+      );
     } catch (error) {
-      const message = error instanceof Error ? error.message : "OAuth start failed.";
+      const message =
+        error instanceof Error ? error.message : "OAuth start failed.";
       renderOAuthPopup(
         popup,
         "Could not start Discogs OAuth",
@@ -447,7 +542,10 @@ export function App() {
           throw new Error(progress.error ?? "Sync failed.");
         }
         if (progress.status === "running") {
-          setSyncProgress({ fetched: progress.fetched ?? 0, total: progress.total ?? null });
+          setSyncProgress({
+            fetched: progress.fetched ?? 0,
+            total: progress.total ?? null,
+          });
         }
         if (progress.status === "done") break;
       }
@@ -521,7 +619,9 @@ export function App() {
       const nextJobs = await api.listJobs();
       setJobs(nextJobs);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Job creation failed.");
+      setStatus(
+        error instanceof Error ? error.message : "Job creation failed.",
+      );
     }
   }
 
@@ -532,7 +632,9 @@ export function App() {
       setStatus("Delete phase started.");
       setJobs(await api.listJobs());
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Delete confirmation failed.");
+      setStatus(
+        error instanceof Error ? error.message : "Delete confirmation failed.",
+      );
     }
   }
 
@@ -550,7 +652,9 @@ export function App() {
   async function handleExport(jobId: string) {
     try {
       const result = await api.exportJob(jobId);
-      setStatus(`Reports written to ${result.csv_path} and ${result.json_path}.`);
+      setStatus(
+        `Reports written to ${result.csv_path} and ${result.json_path}.`,
+      );
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Export failed.");
     }
@@ -572,9 +676,13 @@ export function App() {
       setPresets([]);
       setSelectedPresetId("");
       await refreshWorkspace();
-      setStatus("Local cache, job history, and stored connections were cleared.");
+      setStatus(
+        "Local cache, job history, and stored connections were cleared.",
+      );
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Local data clear failed.");
+      setStatus(
+        error instanceof Error ? error.message : "Local data clear failed.",
+      );
     }
   }
 
@@ -643,7 +751,9 @@ export function App() {
         if (key === "date_range" && value === "specific_date") return false;
         return true;
       });
-      return withoutConflicts.includes(key) ? withoutConflicts : [...withoutConflicts, key];
+      return withoutConflicts.includes(key)
+        ? withoutConflicts
+        : [...withoutConflicts, key];
     });
 
     if (key === "specific_date") {
@@ -684,7 +794,9 @@ export function App() {
   }, []);
 
   const selectFilteredItems = useCallback(() => {
-    setSelectedSourceItemIds((current) => appendUnique(current, filteredSourceItemIds));
+    setSelectedSourceItemIds((current) =>
+      appendUnique(current, filteredSourceItemIds),
+    );
   }, [filteredSourceItemIds]);
 
   const selectSourceRange = useCallback((itemIds: string[]) => {
@@ -693,14 +805,19 @@ export function App() {
 
   const deselectFilteredItems = useCallback(() => {
     const visibleIds = new Set(filteredSourceItemIds);
-    setSelectedSourceItemIds((current) => current.filter((itemId) => !visibleIds.has(itemId)));
+    setSelectedSourceItemIds((current) =>
+      current.filter((itemId) => !visibleIds.has(itemId)),
+    );
   }, [filteredSourceItemIds]);
 
   const clearSelectedItems = useCallback(() => {
     setSelectedSourceItemIds([]);
   }, []);
 
-  function setFolderOverride(sourceFolderId: string, destinationFolderId: number | null) {
+  function setFolderOverride(
+    sourceFolderId: string,
+    destinationFolderId: number | null,
+  ) {
     setFolderMappingOverrides((current) => {
       const next = { ...current };
       if (!destinationFolderId) {
@@ -943,7 +1060,9 @@ export function App() {
               value={selectedFolderIds.map(String)}
               onChange={(event) =>
                 setSelectedFolderIds(
-                  Array.from(event.currentTarget.selectedOptions, (option) => Number(option.value)),
+                  Array.from(event.currentTarget.selectedOptions, (option) =>
+                    Number(option.value),
+                  ),
                 )
               }
             >
@@ -964,12 +1083,17 @@ export function App() {
         <span className="app-badge">CrateSync · Local v0.1</span>
         <div className="topbar-actions">
           <span className="hero-status">
-            <span className={`status-dot${loading ? " status-dot-busy" : ""}`} />
+            <span
+              className={`status-dot${loading ? " status-dot-busy" : ""}`}
+            />
             {loading
               ? "Refreshing workspace"
               : `Backend online${accounts.length > 0 ? ` · ${accounts.length} account${accounts.length !== 1 ? "s" : ""}` : ""}`}
           </span>
-          <button className="text-btn text-btn-danger" onClick={() => void handleClearLocalData()}>
+          <button
+            className="text-btn text-btn-danger"
+            onClick={() => void handleClearLocalData()}
+          >
             Clear local data
           </button>
         </div>
@@ -977,14 +1101,6 @@ export function App() {
 
       <section className="shell-grid">
         <aside className="shell-left">
-          <div className="left-hero">
-            <h1 className="hero-title">Migration control</h1>
-            <p className="lead-copy">
-              Filter the source view only when needed, explicitly pick the releases to migrate, and
-              use the review step to confirm exactly what will happen before launch.
-            </p>
-          </div>
-
           <section className="rail-section">
             <div
               className="rail-section-header"
@@ -992,40 +1108,54 @@ export function App() {
               tabIndex={0}
               aria-expanded={!accountsCollapsed}
               onClick={() => setAccountsCollapsed((c) => !c)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setAccountsCollapsed((c) => !c); }}}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setAccountsCollapsed((c) => !c);
+                }
+              }}
             >
               <h2 className="section-label">Accounts</h2>
-              <span className={`section-collapse-icon${accountsCollapsed ? " collapsed" : ""}`} aria-hidden="true" />
+              <span
+                className={`section-collapse-icon${accountsCollapsed ? " collapsed" : ""}`}
+                aria-hidden="true"
+              />
             </div>
             {!accountsCollapsed && (
-            <>
-            {retryFn && (
-              <div className="error-banner">
-                <span>{status}</span>
-                <button className="btn btn-ghost btn-sm" onClick={retryFn}>Try again</button>
-              </div>
-            )}
-            <AccountCard
-              role="source"
-              account={sourceAccount}
-              itemCount={sourceSnapshot?.total_items ?? 0}
-              syncing={isSyncing === sourceAccount?.id}
-              syncProgress={isSyncing === sourceAccount?.id ? syncProgress : null}
-              onConnect={handleConnect}
-              onSync={handleSync}
-              onDisconnect={handleDisconnect}
-            />
-            <AccountCard
-              role="destination"
-              account={destinationAccount}
-              itemCount={destinationSnapshot?.total_items ?? 0}
-              syncing={isSyncing === destinationAccount?.id}
-              syncProgress={isSyncing === destinationAccount?.id ? syncProgress : null}
-              onConnect={handleConnect}
-              onSync={handleSync}
-              onDisconnect={handleDisconnect}
-            />
-            </>
+              <>
+                {retryFn && (
+                  <div className="error-banner">
+                    <span>{status}</span>
+                    <button className="btn btn-ghost btn-sm" onClick={retryFn}>
+                      Try again
+                    </button>
+                  </div>
+                )}
+                <AccountCard
+                  role="source"
+                  account={sourceAccount}
+                  itemCount={sourceSnapshot?.total_items ?? 0}
+                  syncing={isSyncing === sourceAccount?.id}
+                  syncProgress={
+                    isSyncing === sourceAccount?.id ? syncProgress : null
+                  }
+                  onConnect={handleConnect}
+                  onSync={handleSync}
+                  onDisconnect={handleDisconnect}
+                />
+                <AccountCard
+                  role="destination"
+                  account={destinationAccount}
+                  itemCount={destinationSnapshot?.total_items ?? 0}
+                  syncing={isSyncing === destinationAccount?.id}
+                  syncProgress={
+                    isSyncing === destinationAccount?.id ? syncProgress : null
+                  }
+                  onConnect={handleConnect}
+                  onSync={handleSync}
+                  onDisconnect={handleDisconnect}
+                />
+              </>
             )}
           </section>
 
@@ -1036,129 +1166,161 @@ export function App() {
               tabIndex={0}
               aria-expanded={!plannerCollapsed}
               onClick={() => setPlannerCollapsed((c) => !c)}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setPlannerCollapsed((c) => !c); }}}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setPlannerCollapsed((c) => !c);
+                }
+              }}
             >
               <div>
                 <div className="section-label">Step 1</div>
                 <h2 className="editorial-title">Build the source view</h2>
               </div>
-              <span className={`section-collapse-icon${plannerCollapsed ? " collapsed" : ""}`} aria-hidden="true" />
+              <span
+                className={`section-collapse-icon${plannerCollapsed ? " collapsed" : ""}`}
+                aria-hidden="true"
+              />
             </div>
 
             <details className="saved-views-menu" ref={savedViewsRef}>
-                <summary>Saved views</summary>
-                <div className="saved-views-panel">
-                  <Field label="Open saved view">
-                    <select
-                      value={selectedPresetId}
-                      disabled={!sourceAccount || presets.length === 0}
-                      onChange={(event) => handlePresetSelection(event.target.value)}
+              <summary>Saved views</summary>
+              <div className="saved-views-panel">
+                <Field label="Open saved view">
+                  <select
+                    value={selectedPresetId}
+                    disabled={!sourceAccount || presets.length === 0}
+                    onChange={(event) =>
+                      handlePresetSelection(event.target.value)
+                    }
+                  >
+                    <option value="">Select a saved view</option>
+                    {presets.map((preset) => (
+                      <option key={preset.id} value={preset.id}>
+                        {preset.name}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Save current filters">
+                  <div className="inline-action">
+                    <input
+                      type="text"
+                      placeholder="Night session split"
+                      value={presetName}
+                      onChange={(event) => setPresetName(event.target.value)}
+                    />
+                    <button
+                      className="btn btn-ghost"
+                      onClick={() => void handleSavePreset()}
                     >
-                      <option value="">Select a saved view</option>
-                      {presets.map((preset) => (
-                        <option key={preset.id} value={preset.id}>
-                          {preset.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Save current filters">
-                    <div className="inline-action">
-                      <input
-                        type="text"
-                        placeholder="Night session split"
-                        value={presetName}
-                        onChange={(event) => setPresetName(event.target.value)}
-                      />
-                      <button className="btn btn-ghost" onClick={() => void handleSavePreset()}>
-                        Save
-                      </button>
-                    </div>
-                  </Field>
-                </div>
+                      Save
+                    </button>
+                  </div>
+                </Field>
+              </div>
             </details>
 
             {!plannerCollapsed && (
-            <>
-            <div className="field-stack">
-              <Field label="Plan name">
-                <input
-                  type="text"
-                  value={planName}
-                  onChange={(event) => setPlanName(event.target.value)}
-                />
-              </Field>
+              <>
+                <div className="field-stack">
+                  <Field label="Plan name">
+                    <input
+                      type="text"
+                      value={planName}
+                      onChange={(event) => setPlanName(event.target.value)}
+                    />
+                  </Field>
 
-              <Field label="Workflow mode">
-                <div className="toggle-group">
-                  <button
-                    className={`toggle-option${workflowMode === "copy" ? " active" : ""}`}
-                    onClick={() => setWorkflowMode("copy")}
-                  >
-                    Copy only
-                  </button>
-                  <button
-                    className={`toggle-option${workflowMode === "move" ? " active" : ""}`}
-                    onClick={() => setWorkflowMode("move")}
-                  >
-                    Two-phase move
-                  </button>
-                </div>
-              </Field>
+                  <Field label="Workflow mode">
+                    <div className="toggle-group">
+                      <button
+                        className={`toggle-option${workflowMode === "copy" ? " active" : ""}`}
+                        onClick={() => setWorkflowMode("copy")}
+                      >
+                        Copy only
+                      </button>
+                      <button
+                        className={`toggle-option${workflowMode === "move" ? " active" : ""}`}
+                        onClick={() => setWorkflowMode("move")}
+                      >
+                        Two-phase move
+                      </button>
+                    </div>
+                  </Field>
 
-              <div className="filter-builder">
-                <div className="filter-builder-header">
-                  <div>
-                    <div className="section-label">Optional filters</div>
-                    <p className="filter-builder-copy">
-                      Add only the filters you want to use, then choose releases from the source
-                      table.
-                    </p>
+                  <div className="filter-builder">
+                    <div className="filter-builder-header">
+                      <div>
+                        <div className="section-label">Optional filters</div>
+                        <p className="filter-builder-copy">
+                          Add only the filters you want to use, then choose
+                          releases from the source table.
+                        </p>
+                      </div>
+                    </div>
+
+                    {activeFilterKeys.length === 0 && (
+                      <div className="empty-block compact">
+                        No filters active — all source releases are in scope.
+                        Add only the search or metadata fields you need.
+                      </div>
+                    )}
+
+                    <div className="filter-list">
+                      {activeFilterKeys.map(renderFilterBlock)}
+                    </div>
+
+                    {availableFilterOptions.length > 0 && (
+                      <div className="filter-add-row">
+                        <select
+                          aria-label="Select filter to add"
+                          value={nextFilterToAdd}
+                          onChange={(event) =>
+                            setNextFilterToAdd(event.target.value as FilterKey)
+                          }
+                        >
+                          {availableFilterOptions.map((option) => (
+                            <option key={option.key} value={option.key}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          className="btn btn-ghost"
+                          disabled={!nextFilterToAdd}
+                          onClick={() =>
+                            nextFilterToAdd && addFilter(nextFilterToAdd)
+                          }
+                        >
+                          Add filter
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {activeFilterKeys.length === 0 && (
-                  <div className="empty-block compact">
-                    No filters active — all source releases are in scope. Add only the search or
-                    metadata fields you need.
+                <div className="planner-footer">
+                  <div className="stats-line">
+                    <StatBlock
+                      label="Selected releases"
+                      value={selectedSourceCount}
+                      small
+                    />
+                    <StatBlock
+                      label="Visible after filters"
+                      value={filteredSourceItems.length}
+                      small
+                    />
+                    <StatBlock
+                      label="Source total"
+                      value={sourceItems.length}
+                      muted
+                      small
+                    />
                   </div>
-                )}
-
-                <div className="filter-list">{activeFilterKeys.map(renderFilterBlock)}</div>
-
-                {availableFilterOptions.length > 0 && (
-                  <div className="filter-add-row">
-                    <select
-                      aria-label="Select filter to add"
-                      value={nextFilterToAdd}
-                      onChange={(event) => setNextFilterToAdd(event.target.value as FilterKey)}
-                    >
-                      {availableFilterOptions.map((option) => (
-                        <option key={option.key} value={option.key}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      className="btn btn-ghost"
-                      disabled={!nextFilterToAdd}
-                      onClick={() => nextFilterToAdd && addFilter(nextFilterToAdd)}
-                    >
-                      Add filter
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="planner-footer">
-              <div className="stats-line">
-                <StatBlock label="Selected releases" value={selectedSourceCount} small />
-                <StatBlock label="Visible after filters" value={filteredSourceItems.length} small />
-                <StatBlock label="Source total" value={sourceItems.length} muted small />
-              </div>
-            </div>
-            </>
+                </div>
+              </>
             )}
           </section>
         </aside>
@@ -1248,8 +1410,12 @@ function AccountCard({
     return (
       <article className="credit-card credit-card-empty">
         <span className={`role-chip role-${role}`}>{role}</span>
-        <div className="credit-name credit-name-empty">Authorize {role} account</div>
-        <p className="credit-meta">Connect the {role} Discogs account to populate local snapshots.</p>
+        <div className="credit-name credit-name-empty">
+          Authorize {role} account
+        </div>
+        <p className="credit-meta">
+          Connect the {role} Discogs account to populate local snapshots.
+        </p>
         <button className="btn btn-primary" onClick={() => onConnect(role)}>
           Connect account
         </button>
@@ -1261,20 +1427,39 @@ function AccountCard({
     <article className="credit-card">
       <span className={`role-chip role-${role}`}>{role}</span>
       <div className="credit-name">{account.username}</div>
-      <p className="credit-meta">
-        {syncing
-          ? syncProgress
-            ? `Fetching ${syncProgress.fetched.toLocaleString()} / ${syncProgress.total != null ? syncProgress.total.toLocaleString() : "…"} releases…`
-            : "Syncing…"
-          : account.last_synced_at
-            ? `Synced ${formatDateTime(account.last_synced_at)} · ${itemCount} items`
-            : "Connected, not yet synced"}
-      </p>
+      <div className="account-status">
+        {syncing ? (
+          <span className="credit-meta">
+            {syncProgress
+              ? `Fetching ${syncProgress.fetched.toLocaleString()} / ${syncProgress.total != null ? syncProgress.total.toLocaleString() : "…"} releases…`
+              : "Syncing…"}
+          </span>
+        ) : account.last_synced_at ? (
+          <>
+            <span className="credit-meta">
+              Synced {formatSyncDateTime(account.last_synced_at)}
+            </span>
+            <span className="credit-count">
+              {itemCount.toLocaleString()} items
+            </span>
+          </>
+        ) : (
+          <span className="credit-meta">Connected, not yet synced</span>
+        )}
+      </div>
       <div className="inline-button-row">
-        <button className="btn btn-primary" disabled={syncing} onClick={() => onSync(account.id)}>
+        <button
+          className="btn btn-primary"
+          disabled={syncing}
+          onClick={() => onSync(account.id)}
+        >
           {syncing ? "Syncing…" : "Sync collection"}
         </button>
-        <button className="btn btn-ghost" disabled={syncing} onClick={() => onDisconnect(account.id)}>
+        <button
+          className="btn btn-ghost"
+          disabled={syncing}
+          onClick={() => onDisconnect(account.id)}
+        >
           Disconnect
         </button>
       </div>
@@ -1301,28 +1486,32 @@ function deriveReviewState({
     return {
       tone: "default",
       title: "Connect and sync both accounts",
-      message: "The review step will unlock once both source and destination snapshots are available.",
+      message:
+        "The review step will unlock once both source and destination snapshots are available.",
     } as const;
   }
   if (selectedSourceCount === 0) {
     return {
       tone: "warning",
       title: "Select at least one release",
-      message: "Use the source table checkboxes or bulk-select all filtered rows before generating a preview.",
+      message:
+        "Use the source table checkboxes or bulk-select all filtered rows before generating a preview.",
     } as const;
   }
   if (!preview) {
     return {
       tone: "default",
       title: "Generate a preview",
-      message: "Validate duplicates, folder mappings, and destination capabilities before launching the job.",
+      message:
+        "Validate duplicates, folder mappings, and destination capabilities before launching the job.",
     } as const;
   }
   if (previewIsStale) {
     return {
       tone: "warning",
       title: "Preview is stale",
-      message: "Your search, filters, selections, or workflow changed. Generate a fresh preview before launch.",
+      message:
+        "Your search, filters, selections, or workflow changed. Generate a fresh preview before launch.",
     } as const;
   }
   if (preview.blocking_conflicts.length > 0) {
@@ -1335,6 +1524,7 @@ function deriveReviewState({
   return {
     tone: "ready",
     title: "Ready to launch",
-    message: "The selected releases have been reviewed. Launch the job when you are satisfied with this preview.",
+    message:
+      "The selected releases have been reviewed. Launch the job when you are satisfied with this preview.",
   } as const;
 }

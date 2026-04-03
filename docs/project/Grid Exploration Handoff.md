@@ -135,6 +135,7 @@ Hero removal and AccountCard redesign:
 - AccountCard (connected state) restructured: the single `.credit-meta` line that crammed sync timestamp and item count together is split into two sibling elements inside a new `.account-status` flex row. The sync timestamp stays muted; the item count gets its own `.credit-count` class (body size, ink color, weight 600) so it reads as data rather than log noise.
 - Datetime format upgraded: `formatDateTime` (full locale string with seconds) replaced by new `formatSyncDateTime` helper that drops seconds precision — output is `M/D/YYYY, H:MM AM/PM`.
 - `.credit-card` gains `display: flex; flex-direction: column; gap: var(--stack-sm)` so all child spacing is controlled by the container. The explicit `margin` on `.credit-name` is removed.
+- Orphaned section dividers fixed: removing the left-hero left the first `.rail-section` and first `.canvas-section` with a floating 2px `border-top` and nothing above it. Added `:first-child` overrides to zero the border, padding-top, and margin-top on the first section in each container.
 
 ---
 

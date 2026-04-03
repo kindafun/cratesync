@@ -158,6 +158,24 @@ Hero removal and AccountCard redesign:
 - `.btn` and chip radii are currently all square because `--radius-pill` is `0px`. The backlog note says button corners should become `--radius-sm` while chip-style tags stay round, which conflicts with this branch's stricter zero-radius exploration. Decide whether the no-radius pillar stays absolute or becomes more selective.
 - Consider whether the amber-to-orange swap should be applied back to `main` independently of the grid exploration. The two changes are separable.
 
+Canvas header alignment and collapse affordance pass (2026-04-03):
+
+- `.canvas-header` `align-items` changed from `flex-end` to `center` — the label+h2 stack is taller than the meta text or chevron, so `flex-end` was pushing the right-side content down to the h2 baseline rather than centering it.
+- Added `.canvas-header-right` flex wrapper grouping the `header-note` and `section-collapse-icon` in all four canvas components (`SourceSelectionSection`, `SnapshotSection`, `ReviewSection`, `JobConsoleSection`). This eliminates the three-way `space-between` layout where meta text ended up stranded in the center gap, and ensures the count + chevron always appear as a unified right-side block.
+- Collapse chevron border-color upgraded from `--color-muted` to `--color-rule-strong` so it rests at a readable weight without hover.
+- `.canvas-header.is-toggle:hover` now turns the chevron TE orange and dims the h2 to muted — replaces the blanket `opacity: 0.85` which was too subtle.
+
+Cognitive load reduction — icons and account card differentiation (2026-04-03):
+
+- Installed `lucide-react` (line-based, MIT, tree-shakeable). 10 icon placements:
+  - **App.tsx buttons:** `RefreshCw` (Sync collection), `Unlink` (Disconnect), `Link` (Connect account), `Plus` (Add filter), `Trash2` (Clear local data)
+  - **Workflow toggle:** `Copy` (Copy only), `ArrowRightLeft` (Two-phase move)
+  - **Saved views summary:** `Bookmark`
+  - **ReviewSection.tsx:** `ScanEye` (Generate preview), `Play` (Launch job)
+- `.toggle-option` upgraded to `inline-flex; align-items: center; gap: 0.4rem` so icons and labels sit inline.
+- `.text-btn` upgraded to `inline-flex; align-items: center; gap: 0.4rem` (was block, which broke icon/text alignment in the topbar danger button).
+- Account card source/destination stripe: `.credit-card` now carries `border-left: 3px solid transparent` and `padding-left: var(--space-xs)` as baseline so layout is consistent across connected and empty states. Role-specific rules override the color only: `.credit-card:has(.role-source)` → `--color-success` (green), `.credit-card:has(.role-destination)` → `--color-accent` (orange). The transparent baseline + padding means the stripe area is always reserved, preventing layout shift between states.
+
 ---
 
 ## How to Run
@@ -168,9 +186,9 @@ cd frontend && npm run dev      # port 5173
 cd backend && uvicorn app.main:app --reload  # port 8421
 ```
 
-No new packages. Backend unchanged.
+New packages: `lucide-react` added to `frontend/`. Backend unchanged.
 
-Validation run after the latest continuation (left rail spacing/hierarchy pass, 2026-04-03):
+Validation run after latest continuation (icons + card stripe pass, 2026-04-03):
 
 ```bash
 npm run build --prefix frontend

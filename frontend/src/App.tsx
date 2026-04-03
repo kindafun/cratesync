@@ -6,6 +6,16 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  ArrowRightLeft,
+  Bookmark,
+  Copy,
+  Link,
+  Plus,
+  RefreshCw,
+  Trash2,
+  Unlink,
+} from "lucide-react";
 
 import { JobConsoleSection } from "./components/JobConsoleSection";
 import { ReviewSection } from "./components/ReviewSection";
@@ -1094,6 +1104,7 @@ export function App() {
             className="text-btn text-btn-danger"
             onClick={() => void handleClearLocalData()}
           >
+            <Trash2 size={13} />
             Clear local data
           </button>
         </div>
@@ -1184,7 +1195,10 @@ export function App() {
             </div>
 
             <details className="saved-views-menu" ref={savedViewsRef}>
-              <summary>Saved views</summary>
+              <summary>
+                <Bookmark size={13} />
+                Saved views
+              </summary>
               <div className="saved-views-panel">
                 <Field label="Open saved view">
                   <select
@@ -1238,12 +1252,14 @@ export function App() {
                         className={`toggle-option${workflowMode === "copy" ? " active" : ""}`}
                         onClick={() => setWorkflowMode("copy")}
                       >
+                        <Copy size={13} />
                         Copy only
                       </button>
                       <button
                         className={`toggle-option${workflowMode === "move" ? " active" : ""}`}
                         onClick={() => setWorkflowMode("move")}
                       >
+                        <ArrowRightLeft size={13} />
                         Two-phase move
                       </button>
                     </div>
@@ -1293,6 +1309,7 @@ export function App() {
                             nextFilterToAdd && addFilter(nextFilterToAdd)
                           }
                         >
+                          <Plus size={14} />
                           Add filter
                         </button>
                       </div>
@@ -1417,6 +1434,7 @@ function AccountCard({
           Connect the {role} Discogs account to populate local snapshots.
         </p>
         <button className="btn btn-primary" onClick={() => onConnect(role)}>
+          <Link size={14} />
           Connect account
         </button>
       </article>
@@ -1453,6 +1471,7 @@ function AccountCard({
           disabled={syncing}
           onClick={() => onSync(account.id)}
         >
+          <RefreshCw size={14} />
           {syncing ? "Syncing…" : "Sync collection"}
         </button>
         <button
@@ -1460,6 +1479,7 @@ function AccountCard({
           disabled={syncing}
           onClick={() => onDisconnect(account.id)}
         >
+          <Unlink size={14} />
           Disconnect
         </button>
       </div>

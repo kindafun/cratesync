@@ -239,6 +239,9 @@ p {
 }
 
 .text-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   border: var(--border-subtle);
   background: none;
   color: var(--color-muted);
@@ -371,7 +374,8 @@ p {
   display: flex;
   flex-direction: column;
   gap: var(--stack-sm);
-  padding: var(--space-md) 0;
+  padding: var(--space-md) 0 var(--space-md) var(--space-xs);
+  border-left: 3px solid transparent;
   border-bottom: var(--border-subtle);
 }
 
@@ -422,6 +426,14 @@ p {
   color: var(--color-accent);
   border-color: rgba(240, 82, 42, 0.25);
   background: rgba(240, 82, 42, 0.09);
+}
+
+.credit-card:has(.role-source) {
+  border-left-color: var(--color-success);
+}
+
+.credit-card:has(.role-destination) {
+  border-left-color: var(--color-accent);
 }
 
 .credit-name {
@@ -641,6 +653,10 @@ select:focus {
 
 .toggle-option {
   flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   border: none;
   background: transparent;
   color: var(--color-muted);
@@ -772,10 +788,17 @@ select:focus {
 
 .canvas-header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: var(--inline-gap-lg);
   margin-bottom: var(--stack-md);
+}
+
+.canvas-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--inline-gap-md);
+  flex-shrink: 0;
 }
 
 .canvas-section-review {
@@ -1341,11 +1364,11 @@ select:focus {
 
 /* Progressive disclosure */
 .section-collapse-icon {
-  width: 0.5rem;
-  height: 0.5rem;
+  width: 0.55rem;
+  height: 0.55rem;
   flex-shrink: 0;
-  border-right: 1.5px solid var(--color-muted);
-  border-bottom: 1.5px solid var(--color-muted);
+  border-right: 1.5px solid var(--color-rule-strong);
+  border-bottom: 1.5px solid var(--color-rule-strong);
   transform: rotate(45deg);
   transition: transform var(--duration-base) ease;
 }
@@ -1374,8 +1397,13 @@ select:focus {
   user-select: none;
 }
 
-.canvas-header.is-toggle:hover {
-  opacity: 0.85;
+.canvas-header.is-toggle:hover .section-collapse-icon {
+  border-color: var(--color-accent);
+}
+
+.canvas-header.is-toggle:hover h2 {
+  color: var(--color-muted);
+  transition: color var(--duration-base) ease;
 }
 
 /* Utility */

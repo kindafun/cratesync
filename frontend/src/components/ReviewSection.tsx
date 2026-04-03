@@ -1,6 +1,12 @@
+import { Play, ScanEye } from "lucide-react";
 import { useState, type KeyboardEvent } from "react";
 import { formatDate, renderCapabilities } from "../lib/format";
-import type { CollectionItemSnapshot, PreviewConflict, PreviewResponse, WorkflowMode } from "../lib/types";
+import type {
+  CollectionItemSnapshot,
+  PreviewConflict,
+  PreviewResponse,
+  WorkflowMode,
+} from "../lib/types";
 import { StatBlock } from "./ui";
 
 type ReviewTone = "default" | "warning" | "ready";
@@ -49,7 +55,10 @@ export function ReviewSection({
   destinationFolderLookup: Record<number, string>;
   folderMappingOverrides: Record<string, number>;
   customFieldMappingOverrides: Record<string, string>;
-  onFolderOverride(sourceFolderId: string, destinationFolderId: number | null): void;
+  onFolderOverride(
+    sourceFolderId: string,
+    destinationFolderId: number | null,
+  ): void;
   onCustomFieldOverride(fieldName: string, destinationField: string): void;
   reviewTableMode: "selected" | "all";
   onReviewTableModeChange(mode: "selected" | "all"): void;
@@ -82,7 +91,9 @@ export function ReviewSection({
   }
 
   return (
-    <section className={`canvas-section canvas-section-review${collapsed ? " is-collapsed" : ""}`}>
+    <section
+      className={`canvas-section canvas-section-review${collapsed ? " is-collapsed" : ""}`}
+    >
       <div
         className="canvas-header is-toggle"
         role="button"
@@ -95,185 +106,243 @@ export function ReviewSection({
           <div className="section-label">Step 3</div>
           <h2>Review and launch</h2>
         </div>
-        <div className="toolbar-actions" onClick={(e) => e.stopPropagation()}>
-          <button className="btn btn-ghost" disabled={isGeneratingPreview} onClick={onGeneratePreview}>
-            {isGeneratingPreview ? "Checking…" : "Generate preview"}
-          </button>
-          <button
-            className="btn btn-primary"
-            disabled={launchBlocked}
-            onClick={onLaunchJob}
-          >
-            Launch job
-          </button>
+        <div className="canvas-header-right">
+          <div className="toolbar-actions" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="btn btn-ghost"
+              disabled={isGeneratingPreview}
+              onClick={onGeneratePreview}
+            >
+              <ScanEye size={14} />
+              {isGeneratingPreview ? "Checking…" : "Generate preview"}
+            </button>
+            <button
+              className="btn btn-primary"
+              disabled={launchBlocked}
+              onClick={onLaunchJob}
+            >
+              <Play size={14} />
+              Launch job
+            </button>
+          </div>
+          <span
+            className={`section-collapse-icon${collapsed ? " collapsed" : ""}`}
+            aria-hidden="true"
+          />
         </div>
-        <span className={`section-collapse-icon${collapsed ? " collapsed" : ""}`} aria-hidden="true" />
       </div>
 
       {!collapsed && (
-      <>
-      <div className={`review-banner review-banner-${reviewState.tone}`}>
-        <div className="section-label">Next action</div>
-        <h3>{reviewState.title}</h3>
-        <p>{reviewState.message}</p>
-      </div>
-
-      <div className="summary-strip">
-        <StatBlock label="Chosen releases" value={selectedSourceCount} />
-        <StatBlock label="Preview included" value={preview?.selected_count ?? 0} />
-        <StatBlock label="Duplicates" value={preview?.duplicate_release_ids.length ?? 0} muted />
-      </div>
-
-      {preview && (
         <>
-          <div className="review-summary">
-            <span>Workflow: {workflowMode}</span>
-            <span>
-              {preview.selected_count} included · {preview.retained_count} not included
-            </span>
-            <span>{preview.blocking_conflicts.length} blocking {preview.blocking_conflicts.length === 1 ? "issue" : "issues"}</span>
+          <div className={`review-banner review-banner-${reviewState.tone}`}>
+            <div className="section-label">Next action</div>
+            <h3>{reviewState.title}</h3>
+            <p>{reviewState.message}</p>
           </div>
 
-          {preview.warnings.length > 0 && (
-            <div className="message-list">
-              {preview.warnings.map((warning) => (
-                <div key={warning.code} className="message message-warning">
-                  {warning.message}
+          <div className="summary-strip">
+            <StatBlock label="Chosen releases" value={selectedSourceCount} />
+            <StatBlock
+              label="Preview included"
+              value={preview?.selected_count ?? 0}
+            />
+            <StatBlock
+              label="Duplicates"
+              value={preview?.duplicate_release_ids.length ?? 0}
+              muted
+            />
+          </div>
+
+          {preview && (
+            <>
+              <div className="review-summary">
+                <span>Workflow: {workflowMode}</span>
+                <span>
+                  {preview.selected_count} included · {preview.retained_count}{" "}
+                  not included
+                </span>
+                <span>
+                  {preview.blocking_conflicts.length} blocking{" "}
+                  {preview.blocking_conflicts.length === 1 ? "issue" : "issues"}
+                </span>
+              </div>
+
+              {preview.warnings.length > 0 && (
+                <div className="message-list">
+                  {preview.warnings.map((warning) => (
+                    <div key={warning.code} className="message message-warning">
+                      {warning.message}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+              )}
 
-          {preview.blocking_conflicts.length > 0 && (
-            <div className="conflict-grid">
-              {folderConflicts.map((conflict) => (
-                <FolderConflictCard
-                  key={`folder-${String(conflict.payload.source_folder_id)}`}
-                  conflict={conflict}
-                  destinationFolderLookup={destinationFolderLookup}
-                  selectedValue={
-                    folderMappingOverrides[String(conflict.payload.source_folder_id)] ?? null
-                  }
-                  onChange={onFolderOverride}
-                />
-              ))}
-              {customFieldConflicts.map((conflict) => (
-                <CustomFieldConflictCard
-                  key={`field-${String(conflict.payload.field_name)}`}
-                  conflict={conflict}
-                  value={
-                    customFieldMappingOverrides[String(conflict.payload.field_name)] ?? ""
-                  }
-                  onChange={onCustomFieldOverride}
-                />
-              ))}
-            </div>
-          )}
+              {preview.blocking_conflicts.length > 0 && (
+                <div className="conflict-grid">
+                  {folderConflicts.map((conflict) => (
+                    <FolderConflictCard
+                      key={`folder-${String(conflict.payload.source_folder_id)}`}
+                      conflict={conflict}
+                      destinationFolderLookup={destinationFolderLookup}
+                      selectedValue={
+                        folderMappingOverrides[
+                          String(conflict.payload.source_folder_id)
+                        ] ?? null
+                      }
+                      onChange={onFolderOverride}
+                    />
+                  ))}
+                  {customFieldConflicts.map((conflict) => (
+                    <CustomFieldConflictCard
+                      key={`field-${String(conflict.payload.field_name)}`}
+                      conflict={conflict}
+                      value={
+                        customFieldMappingOverrides[
+                          String(conflict.payload.field_name)
+                        ] ?? ""
+                      }
+                      onChange={onCustomFieldOverride}
+                    />
+                  ))}
+                </div>
+              )}
 
-          <div className="capability-row">
-            {renderCapabilities(preview.metadata_capabilities).map((capability) => (
-              <span key={capability} className="capability-chip">
-                {capability}
-              </span>
-            ))}
-          </div>
-
-          <div
-            className="review-table-header is-toggle"
-            role="button"
-            tabIndex={0}
-            aria-expanded={!tableCollapsed}
-            onClick={handleTableToggle}
-            onKeyDown={handleTableHeaderKeyDown}
-          >
-            <h3 className="section-label">Included release review</h3>
-            <div className="history-strip" onClick={(e) => e.stopPropagation()}>
-              <button
-                className={`history-pill${reviewTableMode === "selected" ? " active" : ""}`}
-                onClick={() => onReviewTableModeChange("selected")}
-              >
-                Selected only
-              </button>
-              <button
-                className={`history-pill${reviewTableMode === "all" ? " active" : ""}`}
-                onClick={() => onReviewTableModeChange("all")}
-              >
-                All source rows
-              </button>
-            </div>
-            <span className={`section-collapse-icon${tableCollapsed ? " collapsed" : ""}`} aria-hidden="true" />
-          </div>
-
-          {!tableCollapsed && (
-          <div className="table-wrap table-wrap-tall">
-            <table className="data-table review-table">
-              <thead>
-                <tr>
-                  <th>Artist</th>
-                  <th>Title</th>
-                  <th>Source folder</th>
-                  <th>Release</th>
-                  <th>Added</th>
-                  <th>Review state</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reviewItems.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="empty-cell">
-                      No rows available for this review mode.
-                    </td>
-                  </tr>
+              <div className="capability-row">
+                {renderCapabilities(preview.metadata_capabilities).map(
+                  (capability) => (
+                    <span key={capability} className="capability-chip">
+                      {capability}
+                    </span>
+                  ),
                 )}
-                {reviewItems.map((item) => {
-                  const isPreviewSelected = previewSelectedIds.has(item.id);
-                  const isExplicitlySelected = selectedSourceIdSet.has(item.id);
-                  const isDuplicate = duplicateReleaseIds.has(item.release_id);
-                  return (
-                    <tr
-                      key={item.id}
-                      className={isPreviewSelected ? "row-selected" : undefined}
-                    >
-                      <td>{item.artist}</td>
-                      <td>{item.title}</td>
-                      <td>{item.folder_name ?? `Folder ${item.folder_id}`}</td>
-                      <td>{item.release_id}</td>
-                      <td>{formatDate(item.date_added)}</td>
-                      <td>
-                        <div className="preview-state">
-                          <span className={`state-pill${isPreviewSelected ? " active" : ""}`}>
-                            {isPreviewSelected ? "Included" : isExplicitlySelected ? "Chosen" : "Not chosen"}
-                          </span>
-                          {isDuplicate && <span className="state-pill warning">Duplicate</span>}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+              </div>
+
+              <div
+                className="review-table-header is-toggle"
+                role="button"
+                tabIndex={0}
+                aria-expanded={!tableCollapsed}
+                onClick={handleTableToggle}
+                onKeyDown={handleTableHeaderKeyDown}
+              >
+                <h3 className="section-label">Included release review</h3>
+                <div
+                  className="history-strip"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    className={`history-pill${reviewTableMode === "selected" ? " active" : ""}`}
+                    onClick={() => onReviewTableModeChange("selected")}
+                  >
+                    Selected only
+                  </button>
+                  <button
+                    className={`history-pill${reviewTableMode === "all" ? " active" : ""}`}
+                    onClick={() => onReviewTableModeChange("all")}
+                  >
+                    All source rows
+                  </button>
+                </div>
+                <span
+                  className={`section-collapse-icon${tableCollapsed ? " collapsed" : ""}`}
+                  aria-hidden="true"
+                />
+              </div>
+
+              {!tableCollapsed && (
+                <div className="table-wrap table-wrap-tall">
+                  <table className="data-table review-table">
+                    <thead>
+                      <tr>
+                        <th>Artist</th>
+                        <th>Title</th>
+                        <th>Source folder</th>
+                        <th>Release</th>
+                        <th>Added</th>
+                        <th>Review state</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reviewItems.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="empty-cell">
+                            No rows available for this review mode.
+                          </td>
+                        </tr>
+                      )}
+                      {reviewItems.map((item) => {
+                        const isPreviewSelected = previewSelectedIds.has(
+                          item.id,
+                        );
+                        const isExplicitlySelected = selectedSourceIdSet.has(
+                          item.id,
+                        );
+                        const isDuplicate = duplicateReleaseIds.has(
+                          item.release_id,
+                        );
+                        return (
+                          <tr
+                            key={item.id}
+                            className={
+                              isPreviewSelected ? "row-selected" : undefined
+                            }
+                          >
+                            <td>{item.artist}</td>
+                            <td>{item.title}</td>
+                            <td>
+                              {item.folder_name ?? `Folder ${item.folder_id}`}
+                            </td>
+                            <td>{item.release_id}</td>
+                            <td>{formatDate(item.date_added)}</td>
+                            <td>
+                              <div className="preview-state">
+                                <span
+                                  className={`state-pill${isPreviewSelected ? " active" : ""}`}
+                                >
+                                  {isPreviewSelected
+                                    ? "Included"
+                                    : isExplicitlySelected
+                                      ? "Chosen"
+                                      : "Not chosen"}
+                                </span>
+                                {isDuplicate && (
+                                  <span className="state-pill warning">
+                                    Duplicate
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
+
+          {!preview && (
+            <div
+              className={`empty-block${isGeneratingPreview ? " preview-loading" : ""}`}
+            >
+              {isGeneratingPreview ? (
+                <>
+                  <span className="preview-loading-label">
+                    Checking selections against destination…
+                  </span>
+                  <div className="preview-loading-bars">
+                    <span className="skeleton-cell skeleton-cell-long" />
+                    <span className="skeleton-cell skeleton-cell-mid" />
+                    <span className="skeleton-cell skeleton-cell-short" />
+                  </div>
+                </>
+              ) : (
+                "Use the source table to choose releases, then generate a preview here. This step will summarize what gets copied or moved, highlight duplicates, and show any conflicts you need to clear before launch."
+              )}
+            </div>
           )}
         </>
-      )}
-
-      {!preview && (
-        <div className={`empty-block${isGeneratingPreview ? " preview-loading" : ""}`}>
-          {isGeneratingPreview ? (
-            <>
-              <span className="preview-loading-label">Checking selections against destination…</span>
-              <div className="preview-loading-bars">
-                <span className="skeleton-cell skeleton-cell-long" />
-                <span className="skeleton-cell skeleton-cell-mid" />
-                <span className="skeleton-cell skeleton-cell-short" />
-              </div>
-            </>
-          ) : (
-            "Use the source table to choose releases, then generate a preview here. This step will summarize what gets copied or moved, highlight duplicates, and show any conflicts you need to clear before launch."
-          )}
-        </div>
-      )}
-      </>
       )}
     </section>
   );
@@ -292,7 +361,9 @@ function FolderConflictCard({
 }) {
   const sourceFolderId = String(conflict.payload.source_folder_id ?? "");
   const folderName = String(conflict.payload.folder_name ?? "Unknown folder");
-  const destinationFolderIds = Array.isArray(conflict.payload.destination_folder_ids)
+  const destinationFolderIds = Array.isArray(
+    conflict.payload.destination_folder_ids,
+  )
     ? conflict.payload.destination_folder_ids.map((value) => Number(value))
     : [];
 
@@ -305,7 +376,10 @@ function FolderConflictCard({
         aria-label={`Map ${folderName} to destination folder`}
         value={selectedValue ? String(selectedValue) : ""}
         onChange={(event) =>
-          onChange(sourceFolderId, event.target.value ? Number(event.target.value) : null)
+          onChange(
+            sourceFolderId,
+            event.target.value ? Number(event.target.value) : null,
+          )
         }
       >
         <option value="">Choose destination folder</option>
@@ -343,7 +417,10 @@ function CustomFieldConflictCard({
           value={value}
           onChange={(event) => onChange(fieldName, event.target.value)}
         />
-        <button className="btn btn-ghost" onClick={() => onChange(fieldName, fieldName)}>
+        <button
+          className="btn btn-ghost"
+          onClick={() => onChange(fieldName, fieldName)}
+        >
           Use same name
         </button>
       </div>

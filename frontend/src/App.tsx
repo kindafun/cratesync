@@ -11,7 +11,6 @@ import {
   Bookmark,
   Copy,
   Link,
-  Plus,
   RefreshCw,
   Trash2,
   Unlink,
@@ -21,12 +20,7 @@ import { JobConsoleSection } from "./components/JobConsoleSection";
 import { ReviewSection } from "./components/ReviewSection";
 import { SnapshotSection } from "./components/SnapshotSection";
 import { SourceSelectionSection } from "./components/SourceSelectionSection";
-import {
-  Field,
-  FilterBlock,
-  MultiValueSelect,
-  StatBlock,
-} from "./components/ui";
+import { Field, FilterBlock, PillSelect, StatBlock } from "./components/ui";
 import { API_ORIGINS, api } from "./lib/api";
 import {
   EMPTY_FILTERS,
@@ -92,7 +86,6 @@ export function App() {
   const [lastPreviewSignature, setLastPreviewSignature] = useState<
     string | null
   >(null);
-  const [nextFilterToAdd, setNextFilterToAdd] = useState<FilterKey | "">("");
   const [reviewTableMode, setReviewTableMode] = useState<"selected" | "all">(
     "selected",
   );
@@ -108,10 +101,6 @@ export function App() {
   const [dateTo, setDateTo] = useState("");
   const [artistQuery, setArtistQuery] = useState("");
   const [titleQuery, setTitleQuery] = useState("");
-  const [labelQuery, setLabelQuery] = useState("");
-  const [genreQuery, setGenreQuery] = useState("");
-  const [formatQuery, setFormatQuery] = useState("");
-  const [styleQuery, setStyleQuery] = useState("");
   const [selectedFolderIds, setSelectedFolderIds] = useState<number[]>([]);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
@@ -140,10 +129,6 @@ export function App() {
         dateTo,
         artistQuery,
         titleQuery,
-        labelQuery,
-        genreQuery,
-        formatQuery,
-        styleQuery,
         selectedFolderIds,
         selectedGenres,
         selectedLabels,
@@ -157,10 +142,6 @@ export function App() {
       dateTo,
       artistQuery,
       titleQuery,
-      labelQuery,
-      genreQuery,
-      formatQuery,
-      styleQuery,
       selectedFolderIds,
       selectedGenres,
       selectedLabels,
@@ -297,19 +278,6 @@ export function App() {
     destinationAccount,
     sourceSnapshot,
   });
-
-  useEffect(() => {
-    if (!nextFilterToAdd && availableFilterOptions[0]) {
-      setNextFilterToAdd(availableFilterOptions[0].key);
-      return;
-    }
-    if (
-      nextFilterToAdd &&
-      !availableFilterOptions.some((option) => option.key === nextFilterToAdd)
-    ) {
-      setNextFilterToAdd(availableFilterOptions[0]?.key ?? "");
-    }
-  }, [availableFilterOptions, nextFilterToAdd]);
 
   useEffect(() => {
     const validSourceIds = new Set(sourceItems.map((item) => item.id));
@@ -732,10 +700,6 @@ export function App() {
     setDateTo(loadedState.dateTo);
     setArtistQuery(loadedState.artistQuery);
     setTitleQuery(loadedState.titleQuery);
-    setLabelQuery(loadedState.labelQuery);
-    setGenreQuery(loadedState.genreQuery);
-    setFormatQuery(loadedState.formatQuery);
-    setStyleQuery(loadedState.styleQuery);
     setSelectedFolderIds(preset.filters.folder_ids ?? []);
     setSelectedGenres(preset.filters.genres ?? []);
     setSelectedLabels(preset.filters.labels ?? []);
@@ -784,10 +748,6 @@ export function App() {
     }
     if (key === "artist_search") setArtistQuery("");
     if (key === "title_search") setTitleQuery("");
-    if (key === "label_search") setLabelQuery("");
-    if (key === "genre_search") setGenreQuery("");
-    if (key === "format_search") setFormatQuery("");
-    if (key === "style_search") setStyleQuery("");
     if (key === "genres") setSelectedGenres([]);
     if (key === "labels") setSelectedLabels([]);
     if (key === "formats") setSelectedFormats([]);
@@ -853,7 +813,6 @@ export function App() {
           <FilterBlock
             key={key}
             label="Specific date"
-            description="Keep releases added on one exact day."
             onRemove={() => removeFilter(key)}
           >
             <input
@@ -869,7 +828,6 @@ export function App() {
           <FilterBlock
             key={key}
             label="Date range"
-            description="Keep releases added within a start and end window."
             onRemove={() => removeFilter(key)}
           >
             <div className="field-grid">
@@ -894,8 +852,7 @@ export function App() {
         return (
           <FilterBlock
             key={key}
-            label="Artist search"
-            description="Match artist names without affecting title or label fields."
+            label="Artist"
             onRemove={() => removeFilter(key)}
           >
             <input
@@ -911,8 +868,7 @@ export function App() {
         return (
           <FilterBlock
             key={key}
-            label="Title search"
-            description="Search release titles only."
+            label="Title"
             onRemove={() => removeFilter(key)}
           >
             <input
@@ -924,83 +880,14 @@ export function App() {
             />
           </FilterBlock>
         );
-      case "label_search":
-        return (
-          <FilterBlock
-            key={key}
-            label="Label search"
-            description="Search label names without mixing them with artist or title."
-            onRemove={() => removeFilter(key)}
-          >
-            <input
-              type="text"
-              aria-label="Label name"
-              placeholder="e.g. Warp"
-              value={labelQuery}
-              onChange={(event) => setLabelQuery(event.target.value)}
-            />
-          </FilterBlock>
-        );
-      case "genre_search":
-        return (
-          <FilterBlock
-            key={key}
-            label="Genre search"
-            description="Search genre values directly."
-            onRemove={() => removeFilter(key)}
-          >
-            <input
-              type="text"
-              aria-label="Genre"
-              placeholder="e.g. Electronic"
-              value={genreQuery}
-              onChange={(event) => setGenreQuery(event.target.value)}
-            />
-          </FilterBlock>
-        );
-      case "format_search":
-        return (
-          <FilterBlock
-            key={key}
-            label="Format search"
-            description="Search Discogs format values."
-            onRemove={() => removeFilter(key)}
-          >
-            <input
-              type="text"
-              aria-label="Format"
-              placeholder="e.g. Vinyl"
-              value={formatQuery}
-              onChange={(event) => setFormatQuery(event.target.value)}
-            />
-          </FilterBlock>
-        );
-      case "style_search":
-        return (
-          <FilterBlock
-            key={key}
-            label="Style search"
-            description="Search style values independently from genres."
-            onRemove={() => removeFilter(key)}
-          >
-            <input
-              type="text"
-              aria-label="Style"
-              placeholder="e.g. Deep House"
-              value={styleQuery}
-              onChange={(event) => setStyleQuery(event.target.value)}
-            />
-          </FilterBlock>
-        );
       case "genres":
         return (
           <FilterBlock
             key={key}
             label="Genres"
-            description="Narrow the source snapshot by genre."
             onRemove={() => removeFilter(key)}
           >
-            <MultiValueSelect
+            <PillSelect
               options={genreOptions}
               values={selectedGenres}
               onChange={setSelectedGenres}
@@ -1013,10 +900,9 @@ export function App() {
           <FilterBlock
             key={key}
             label="Labels"
-            description="Limit the list to selected labels."
             onRemove={() => removeFilter(key)}
           >
-            <MultiValueSelect
+            <PillSelect
               options={labelOptions}
               values={selectedLabels}
               onChange={setSelectedLabels}
@@ -1029,10 +915,9 @@ export function App() {
           <FilterBlock
             key={key}
             label="Formats"
-            description="Filter the source list by Discogs formats."
             onRemove={() => removeFilter(key)}
           >
-            <MultiValueSelect
+            <PillSelect
               options={formatOptions}
               values={selectedFormats}
               onChange={setSelectedFormats}
@@ -1045,10 +930,9 @@ export function App() {
           <FilterBlock
             key={key}
             label="Styles"
-            description="Use Discogs styles as an optional drill-down."
             onRemove={() => removeFilter(key)}
           >
-            <MultiValueSelect
+            <PillSelect
               options={styleOptions}
               values={selectedStyles}
               onChange={setSelectedStyles}
@@ -1061,27 +945,22 @@ export function App() {
           <FilterBlock
             key={key}
             label="Folders"
-            description="Advanced: narrow the source list by folder."
             onRemove={() => removeFilter(key)}
           >
-            <select
-              multiple
-              aria-label="Filter by folder"
-              value={selectedFolderIds.map(String)}
-              onChange={(event) =>
+            <PillSelect
+              options={folderOptions.map((o) => o.label)}
+              values={folderOptions
+                .filter((o) => selectedFolderIds.includes(o.id))
+                .map((o) => o.label)}
+              onChange={(labels) =>
                 setSelectedFolderIds(
-                  Array.from(event.currentTarget.selectedOptions, (option) =>
-                    Number(option.value),
-                  ),
+                  folderOptions
+                    .filter((o) => labels.includes(o.label))
+                    .map((o) => o.id),
                 )
               }
-            >
-              {folderOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              ariaLabel="Filter by folder"
+            />
           </FilterBlock>
         );
     }
@@ -1305,51 +1184,22 @@ export function App() {
                   </details>
                 )}
                 <div className="filter-builder">
-                  <div className="filter-builder-header">
-                    <div>
-                      <div className="section-label">Optional filters</div>
-                      <p className="filter-builder-copy">
-                        Narrow your snapshot — add only the fields you need.
-                      </p>
-                    </div>
-                  </div>
-
-                  {activeFilterKeys.length === 0 && (
-                    <div className="empty-block compact">
-                      No filters active — all snapshot releases are visible. Add
-                      only the search or metadata fields you need.
-                    </div>
-                  )}
-
                   <div className="filter-list">
                     {activeFilterKeys.map(renderFilterBlock)}
                   </div>
 
                   {availableFilterOptions.length > 0 && (
-                    <div className="filter-add-row">
-                      <select
-                        aria-label="Select filter to add"
-                        value={nextFilterToAdd}
-                        onChange={(event) =>
-                          setNextFilterToAdd(event.target.value as FilterKey)
-                        }
-                      >
-                        {availableFilterOptions.map((option) => (
-                          <option key={option.key} value={option.key}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <button
-                        className="btn btn-ghost"
-                        disabled={!nextFilterToAdd}
-                        onClick={() =>
-                          nextFilterToAdd && addFilter(nextFilterToAdd)
-                        }
-                      >
-                        <Plus size={14} />
-                        Add filter
-                      </button>
+                    <div className="filter-chips">
+                      <span className="section-label">Add filter</span>
+                      {availableFilterOptions.map((option) => (
+                        <button
+                          key={option.key}
+                          className="filter-chip"
+                          onClick={() => addFilter(option.key)}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
                     </div>
                   )}
                 </div>

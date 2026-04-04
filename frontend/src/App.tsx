@@ -1194,58 +1194,9 @@ export function App() {
               />
             </div>
 
-            <details className="saved-views-menu" ref={savedViewsRef}>
-              <summary>
-                <Bookmark size={13} />
-                Saved views
-              </summary>
-              <div className="saved-views-panel">
-                <Field label="Open saved view">
-                  <select
-                    value={selectedPresetId}
-                    disabled={!sourceAccount || presets.length === 0}
-                    onChange={(event) =>
-                      handlePresetSelection(event.target.value)
-                    }
-                  >
-                    <option value="">Select a saved view</option>
-                    {presets.map((preset) => (
-                      <option key={preset.id} value={preset.id}>
-                        {preset.name}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-                <Field label="Save current filters">
-                  <div className="inline-action">
-                    <input
-                      type="text"
-                      placeholder="Night session split"
-                      value={presetName}
-                      onChange={(event) => setPresetName(event.target.value)}
-                    />
-                    <button
-                      className="btn btn-ghost"
-                      onClick={() => void handleSavePreset()}
-                    >
-                      Save
-                    </button>
-                  </div>
-                </Field>
-              </div>
-            </details>
-
             {!plannerCollapsed && (
               <>
                 <div className="field-stack">
-                  <Field label="Plan name">
-                    <input
-                      type="text"
-                      value={planName}
-                      onChange={(event) => setPlanName(event.target.value)}
-                    />
-                  </Field>
-
                   <Field label="Workflow mode">
                     <div className="toggle-group">
                       <button
@@ -1265,56 +1216,13 @@ export function App() {
                     </div>
                   </Field>
 
-                  <div className="filter-builder">
-                    <div className="filter-builder-header">
-                      <div>
-                        <div className="section-label">Optional filters</div>
-                        <p className="filter-builder-copy">
-                          Add only the filters you want to use, then choose
-                          releases from the source table.
-                        </p>
-                      </div>
-                    </div>
-
-                    {activeFilterKeys.length === 0 && (
-                      <div className="empty-block compact">
-                        No filters active — all source releases are in scope.
-                        Add only the search or metadata fields you need.
-                      </div>
-                    )}
-
-                    <div className="filter-list">
-                      {activeFilterKeys.map(renderFilterBlock)}
-                    </div>
-
-                    {availableFilterOptions.length > 0 && (
-                      <div className="filter-add-row">
-                        <select
-                          aria-label="Select filter to add"
-                          value={nextFilterToAdd}
-                          onChange={(event) =>
-                            setNextFilterToAdd(event.target.value as FilterKey)
-                          }
-                        >
-                          {availableFilterOptions.map((option) => (
-                            <option key={option.key} value={option.key}>
-                              {option.label}
-                            </option>
-                          ))}
-                        </select>
-                        <button
-                          className="btn btn-ghost"
-                          disabled={!nextFilterToAdd}
-                          onClick={() =>
-                            nextFilterToAdd && addFilter(nextFilterToAdd)
-                          }
-                        >
-                          <Plus size={14} />
-                          Add filter
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                  <Field label="Plan name">
+                    <input
+                      type="text"
+                      value={planName}
+                      onChange={(event) => setPlanName(event.target.value)}
+                    />
+                  </Field>
                 </div>
 
                 <div className="planner-footer">
@@ -1322,11 +1230,6 @@ export function App() {
                     <StatBlock
                       label="Selected releases"
                       value={selectedSourceCount}
-                      small
-                    />
-                    <StatBlock
-                      label="Visible after filters"
-                      value={filteredSourceItems.length}
                       small
                     />
                     <StatBlock
@@ -1356,6 +1259,102 @@ export function App() {
             onSelectAllVisible={selectFilteredItems}
             onDeselectVisible={deselectFilteredItems}
             onClearSelection={clearSelectedItems}
+            filterControls={
+              <>
+                {presets.length > 0 && (
+                  <details className="saved-views-menu" ref={savedViewsRef}>
+                    <summary>
+                      <Bookmark size={13} />
+                      Saved views
+                    </summary>
+                    <div className="saved-views-panel">
+                      <Field label="Open saved view">
+                        <select
+                          value={selectedPresetId}
+                          onChange={(event) =>
+                            handlePresetSelection(event.target.value)
+                          }
+                        >
+                          <option value="">Select a saved view</option>
+                          {presets.map((preset) => (
+                            <option key={preset.id} value={preset.id}>
+                              {preset.name}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Save current filters">
+                        <div className="inline-action">
+                          <input
+                            type="text"
+                            placeholder="Night session split"
+                            value={presetName}
+                            onChange={(event) =>
+                              setPresetName(event.target.value)
+                            }
+                          />
+                          <button
+                            className="btn btn-ghost"
+                            onClick={() => void handleSavePreset()}
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </Field>
+                    </div>
+                  </details>
+                )}
+                <div className="filter-builder">
+                  <div className="filter-builder-header">
+                    <div>
+                      <div className="section-label">Optional filters</div>
+                      <p className="filter-builder-copy">
+                        Narrow your snapshot — add only the fields you need.
+                      </p>
+                    </div>
+                  </div>
+
+                  {activeFilterKeys.length === 0 && (
+                    <div className="empty-block compact">
+                      No filters active — all snapshot releases are visible. Add
+                      only the search or metadata fields you need.
+                    </div>
+                  )}
+
+                  <div className="filter-list">
+                    {activeFilterKeys.map(renderFilterBlock)}
+                  </div>
+
+                  {availableFilterOptions.length > 0 && (
+                    <div className="filter-add-row">
+                      <select
+                        aria-label="Select filter to add"
+                        value={nextFilterToAdd}
+                        onChange={(event) =>
+                          setNextFilterToAdd(event.target.value as FilterKey)
+                        }
+                      >
+                        {availableFilterOptions.map((option) => (
+                          <option key={option.key} value={option.key}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        className="btn btn-ghost"
+                        disabled={!nextFilterToAdd}
+                        onClick={() =>
+                          nextFilterToAdd && addFilter(nextFilterToAdd)
+                        }
+                      >
+                        <Plus size={14} />
+                        Add filter
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            }
           />
 
           <SnapshotSection

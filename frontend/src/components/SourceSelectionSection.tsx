@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent,
+  type ReactNode,
 } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
@@ -39,6 +40,7 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
   onSelectAllVisible,
   onDeselectVisible,
   onClearSelection,
+  filterControls,
 }: {
   title: string;
   snapshot: CollectionSnapshot | null;
@@ -52,6 +54,7 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
   onSelectAllVisible(): void;
   onDeselectVisible(): void;
   onClearSelection(): void;
+  filterControls?: ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [sortColumn, setSortColumn] = useState<SnapshotSortColumn | null>(null);
@@ -174,6 +177,9 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
 
       {!collapsed && (
         <>
+          {filterControls && (
+            <div className="source-filter-zone">{filterControls}</div>
+          )}
           <div className="selection-toolbar">
             <div className="snapshot-controls">
               <div className="header-note">

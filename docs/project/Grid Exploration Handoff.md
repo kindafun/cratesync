@@ -17,7 +17,7 @@ A full design direction exploration. Four pillars were implemented together:
 
 2. **No rounded corners** — All `border-radius` tokens set to `0px`. Every button, input, chip, pill, card, and table wrapper is square. Two intentional exceptions: the scrollbar thumb (browser chrome) and the status dot (semantic circle indicator).
 
-3. **Progressive disclosure** — Every major section in both panels is collapsible. Left rail: Accounts and Step 1 (planner). Right canvas: Source Selection, Destination Reference, Review and Launch, Job Console. Review section has a second-level inner collapse on the release review table. The saved views `<details>` element stays accessible even when the planner body is collapsed.
+3. **Progressive disclosure** — Every major section in both panels is collapsible. Left rail: Accounts and Step 1 (planner). Right canvas: Source Selection, Destination Reference, Review and Launch, Job Console. Review section has a second-level inner collapse on the release review table.
 
 4. **TE-inspired light palette** — Full light mode swap inspired by Teenage Engineering's off-white/orange aesthetic. Warm cream background, near-black text, TE orange accent replacing the previous dark amber theme.
 
@@ -107,7 +107,7 @@ Added `useState(false)` collapsed state. Section **starts open**.
 
 ### `frontend/src/App.tsx`
 
-Added `accountsCollapsed` and `plannerCollapsed` state. Rail sections in `shell-left` are now collapsible via `rail-section-header`. The saved views `<details>` sits **outside** the planner collapse body so it remains accessible when the filter builder is hidden.
+Added `accountsCollapsed` and `plannerCollapsed` state. Rail sections in `shell-left` are now collapsible via `rail-section-header`.
 
 Latest continuation on this branch:
 
@@ -193,3 +193,11 @@ Validation run after latest continuation (icons + card stripe pass, 2026-04-03):
 ```bash
 npm run build --prefix frontend
 ```
+
+Step 1 hierarchy and filter relocation pass (2026-04-03):
+
+- **Step 1 is now job configuration only** — Workflow mode toggle leads (primary decision), Plan name follows (metadata). Filter builder and saved views removed from the left rail entirely.
+- **Filters relocated to Step 2** — The optional filter builder now renders inside `SourceSelectionSection` via a new `filterControls?: ReactNode` render slot, above the toolbar and table. This makes the cause→effect relationship direct: filters sit above the rows they narrow. Copy updated from "choose releases from the source table" to "Narrow your snapshot — add only the fields you need."
+- **Saved views hidden until useful** — The `<details>` saved-views panel now only renders when `presets.length > 0`. New users see nothing; it appears only once presets exist. The previously-disabled select on an empty preset list is gone.
+- **Native select chevron fixed** — `.filter-add-row select` now uses `appearance: none` with a custom inline SVG chevron (`background-image`) matching the muted color and weight of the sort chevrons in the table headers.
+- **`.source-filter-zone`** — New CSS wrapper class providing bottom padding and a divider border separating the filter zone from the selection toolbar.

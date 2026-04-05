@@ -26,10 +26,10 @@ const AMBER = "#d89840";
 const RED   = "#c04040";
 
 const s: Record<string, React.CSSProperties> = {
-  root: { fontFamily: "'Bricolage Grotesque', sans-serif", background: BG, color: INK, minHeight: "100vh", display: "flex", flexDirection: "column" },
+  root: { fontFamily: "var(--font-ui)", background: BG, color: INK, minHeight: "100vh", display: "flex", flexDirection: "column" },
   topBar: { background: PANEL, borderBottom: `1px solid ${BORD}`, padding: "0.6rem 1.25rem", display: "flex", alignItems: "center", justifyContent: "space-between" },
   appEye: { fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: BLUE },
-  appTitle: { fontFamily: "'Instrument Serif', serif", fontSize: "1rem", fontWeight: 400, letterSpacing: "-0.01em", color: INK },
+  appTitle: { fontFamily: "var(--font-display)", fontSize: "1rem", fontWeight: 500, letterSpacing: "-0.04em", color: INK },
   statusRow: { display: "flex", gap: "0.75rem", alignItems: "center" },
   statusChip: { fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" as const, padding: "0.18rem 0.55rem", background: GREENLT, color: GREEN, border: `1px solid ${GREEN}`, borderRadius: "2px" },
   ghostBtn: { fontSize: "0.7rem", background: "transparent", border: `1px solid ${BORD}`, color: MUTED, padding: "0.25rem 0.65rem", borderRadius: "3px", cursor: "pointer" },
@@ -51,7 +51,7 @@ const s: Record<string, React.CSSProperties> = {
   // Stage internals
   stageHead: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.85rem", paddingBottom: "0.5rem", borderBottom: `1px solid ${BORD}` },
   stageNum: { width: 20, height: 20, borderRadius: "50%", background: BLUE, color: "#030810", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem", fontWeight: 800 },
-  stageTitle: { fontFamily: "'Instrument Serif', serif", fontSize: "1.1rem", fontWeight: 400, letterSpacing: "-0.01em", color: INK },
+  stageTitle: { fontFamily: "var(--font-display)", fontSize: "1.1rem", fontWeight: 500, letterSpacing: "-0.04em", color: INK },
   stageDesc: { fontSize: "0.68rem", color: MUTED, marginBottom: "0.85rem" },
 
   // Account card
@@ -77,13 +77,13 @@ const s: Record<string, React.CSSProperties> = {
   // Stats
   statsGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1px", background: BORD, border: `1px solid ${BORD}`, borderRadius: "3px", overflow: "hidden", marginTop: "0.75rem" },
   statCell: { background: PANEL, padding: "0.6rem 0.65rem" },
-  statNum: { fontFamily: "'Instrument Serif', serif", fontSize: "1.7rem", fontWeight: 400, lineHeight: 1, color: INK, display: "block" },
+  statNum: { fontFamily: "var(--font-display)", fontSize: "1.7rem", fontWeight: 500, lineHeight: 1, color: INK, display: "block" },
   statLbl: { fontSize: "0.55rem", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase" as const, color: MUTED },
 
   // Job console band (full width)
   jobBand: { background: PANEL, borderTop: `1px solid ${BORD}`, padding: "0.85rem 1.25rem" },
   jobBandHead: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.6rem" },
-  jobBandTitle: { fontFamily: "'Instrument Serif', serif", fontSize: "1.1rem", fontWeight: 400, color: INK, display: "flex", alignItems: "center", gap: "0.65rem" },
+  jobBandTitle: { fontFamily: "var(--font-display)", fontSize: "1.1rem", fontWeight: 500, letterSpacing: "-0.04em", color: INK, display: "flex", alignItems: "center", gap: "0.65rem" },
   jobBadge: { fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase" as const, padding: "0.18rem 0.5rem", background: BLUELT, color: BLUE, border: `1px solid ${BLUE}`, borderRadius: "2px" },
   jobCols: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1px", background: BORD, border: `1px solid ${BORD}`, borderRadius: "3px", overflow: "hidden" },
   jobCol: { background: PANEL, padding: "0.5rem 0.75rem" },

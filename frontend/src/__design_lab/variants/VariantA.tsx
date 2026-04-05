@@ -20,9 +20,9 @@ const MUTED = "#6b625a";
 const AMBER = "#8a6c00";
 
 const s: Record<string, React.CSSProperties> = {
-  root: { fontFamily: "'Bricolage Grotesque', sans-serif", background: BG, color: TEXT, minHeight: "100vh", display: "flex", flexDirection: "column" },
+  root: { fontFamily: "var(--font-ui)", background: BG, color: TEXT, minHeight: "100vh", display: "flex", flexDirection: "column" },
   header: { background: PANEL, borderBottom: `1px solid ${BORDER}`, padding: "0.7rem 1.25rem", display: "flex", alignItems: "center", justifyContent: "space-between" },
-  headerTitle: { fontFamily: "'Instrument Serif', serif", fontSize: "1.25rem", fontWeight: 400, letterSpacing: "-0.01em", margin: 0 },
+  headerTitle: { fontFamily: "var(--font-display)", fontSize: "1.25rem", fontWeight: 500, letterSpacing: "-0.04em", margin: 0 },
   headerMeta: { fontSize: "0.7rem", textTransform: "uppercase" as const, letterSpacing: "0.18em", color: MUTED, fontWeight: 700 },
   body: { display: "flex", flex: 1, gap: 0 },
   sidebar: { width: "240px", flexShrink: 0, background: PANEL, borderRight: `1px solid ${BORDER}`, padding: "1rem" },
@@ -44,14 +44,14 @@ const s: Record<string, React.CSSProperties> = {
   toggleOpt: (active: boolean) => ({ flex: 1, padding: "0.3rem 0.5rem", border: "none", cursor: "pointer", fontWeight: active ? 700 : 400, background: active ? G : "white", color: active ? "white" : MUTED, textAlign: "center" as const }),
   statRow: { display: "flex", gap: 0, border: `1px solid ${BORDER}`, borderRadius: "2px", marginTop: "0.5rem" },
   stat: { flex: 1, padding: "0.5rem", borderRight: `1px solid ${BORDER}`, textAlign: "center" as const },
-  statNum: { fontFamily: "'Instrument Serif', serif", fontSize: "1.4rem", fontWeight: 400, display: "block", lineHeight: 1 },
+  statNum: { fontFamily: "var(--font-display)", fontSize: "1.4rem", fontWeight: 500, display: "block", lineHeight: 1 },
   statLabel: { fontSize: "0.58rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.15em", color: MUTED },
   tableWrap: { border: `1px solid ${BORDER}`, borderRadius: "2px", overflow: "auto" },
   table: { width: "100%", borderCollapse: "collapse" as const, fontSize: "0.76rem" },
   th: { padding: "0.45rem 0.7rem", borderBottom: `1px solid ${BORDER}`, textAlign: "left" as const, fontSize: "0.6rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.16em", color: AMBER, background: "#f0ebe0", whiteSpace: "nowrap" as const },
   td: { padding: "0.42rem 0.7rem", borderBottom: `1px solid #e8e0d2`, color: TEXT, whiteSpace: "nowrap" as const },
   panelHead: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.6rem" },
-  panelH2: { fontFamily: "'Instrument Serif', serif", fontSize: "1.1rem", fontWeight: 400, margin: 0 },
+  panelH2: { fontFamily: "var(--font-display)", fontSize: "1.1rem", fontWeight: 500, letterSpacing: "-0.04em", margin: 0 },
   metaRight: { fontSize: "0.72rem", color: MUTED },
   jobStatus: { display: "inline-flex", alignItems: "center", gap: "0.4rem", fontSize: "0.65rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.14em", padding: "0.2rem 0.55rem", borderRadius: "2px", background: GLight, color: G, border: `1px solid ${G}` },
   eventFeed: { border: `1px solid ${BORDER}`, borderRadius: "2px", marginTop: "0.6rem", maxHeight: "8rem", overflowY: "auto" as const },
@@ -168,7 +168,7 @@ export function VariantA() {
                 <button style={s.btnSm}>Export</button>
               </div>
             </div>
-            <div style={{ fontFamily: "'Instrument Serif', serif", fontSize: "1rem", marginBottom: "0.5rem", color: MUTED }}>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: "1rem", fontWeight: 500, letterSpacing: "-0.04em", marginBottom: "0.5rem", color: MUTED }}>
               {jobDetail.job.name}
               <span style={{ marginLeft: "1rem", fontSize: "0.78rem", color: TEXT }}>
                 {jobDetail.job.summary.copied}/{jobDetail.job.summary.total} copied · {jobDetail.job.summary.failed} failed

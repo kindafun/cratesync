@@ -3,7 +3,7 @@
  * Variant D: "Liner Notes"
  *
  * Rationale: Typography is the hero. Radically asymmetric — section headings
- * at 5-6rem in Instrument Serif with minimal supporting chrome. Reads like
+ * at 5-6rem in IBM Plex Serif with minimal supporting chrome. Reads like
  * album credits or an art catalog. Maximum contrast between display text and
  * dense data rows. The connected account names are celebrated like artist credits.
  * Dark with warm cream type on near-black.
@@ -20,7 +20,7 @@ const GREEN= "#5ab87a";
 const RED  = "#c44832";
 
 const s: Record<string, React.CSSProperties> = {
-  root: { fontFamily: "'Bricolage Grotesque', sans-serif", background: BG, color: INK, minHeight: "100vh" },
+  root: { fontFamily: "var(--font-ui)", background: BG, color: INK, minHeight: "100vh" },
   topBar: { display: "flex", justifyContent: "space-between", alignItems: "baseline", padding: "1.5rem 2rem 0.75rem", borderBottom: `1px solid ${RULE}` },
   topEye: { fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: AMBER },
   topActions: { display: "flex", gap: "0.75rem", alignItems: "center" },
@@ -35,18 +35,18 @@ const s: Record<string, React.CSSProperties> = {
   rightCol: { padding: "2rem 2rem 2rem 2.5rem" },
 
   // Big display text
-  displayHeading: { fontFamily: "'Instrument Serif', serif", fontSize: "clamp(2.5rem, 5vw, 5rem)", fontWeight: 400, lineHeight: 1.0, letterSpacing: "-0.03em", margin: "0 0 1.5rem", color: INK },
-  displaySub: { fontFamily: "'Instrument Serif', serif", fontStyle: "italic", color: AMBER },
+  displayHeading: { fontFamily: "var(--font-display)", fontSize: "clamp(2.5rem, 5vw, 5rem)", fontWeight: 500, lineHeight: 1.0, letterSpacing: "-0.05em", margin: "0 0 1.5rem", color: INK },
+  displaySub: { fontFamily: "var(--font-display)", fontStyle: "italic", color: AMBER },
 
   // Account credits style
   creditBlock: { marginBottom: "2rem" },
   creditLabel: { fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: AMBER, marginBottom: "0.5rem", display: "block" },
-  creditName: { fontFamily: "'Instrument Serif', serif", fontSize: "1.6rem", fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1.1, color: INK, marginBottom: "0.2rem" },
+  creditName: { fontFamily: "var(--font-display)", fontSize: "1.6rem", fontWeight: 500, letterSpacing: "-0.04em", lineHeight: 1.1, color: INK, marginBottom: "0.2rem" },
   creditMeta: { fontSize: "0.72rem", color: MUTED },
 
   // Form section
   formSection: { borderTop: `1px solid ${RULE}`, paddingTop: "1.5rem", marginTop: "1.5rem" },
-  formHead: { fontFamily: "'Instrument Serif', serif", fontSize: "1.2rem", fontWeight: 400, letterSpacing: "-0.01em", marginBottom: "1rem", color: INK },
+  formHead: { fontFamily: "var(--font-display)", fontSize: "1.2rem", fontWeight: 500, letterSpacing: "-0.04em", marginBottom: "1rem", color: INK },
   fieldRow: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "0.75rem" },
   fieldLabel: { fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" as const, color: MUTED, display: "block", marginBottom: "0.25rem" },
   input: { width: "100%", background: "#14120f", border: `1px solid ${RULE}`, borderRadius: "3px", color: INK, padding: "0.5rem 0.65rem", fontSize: "0.82rem" },
@@ -57,18 +57,18 @@ const s: Record<string, React.CSSProperties> = {
   // Stats as inline data
   statsLine: { display: "flex", gap: "2rem", borderTop: `1px solid ${RULE}`, paddingTop: "1rem", marginTop: "1rem" },
   statItem: {},
-  statNum: { fontFamily: "'Instrument Serif', serif", fontSize: "2rem", fontWeight: 400, lineHeight: 1, color: INK, display: "block" },
+  statNum: { fontFamily: "var(--font-display)", fontSize: "2rem", fontWeight: 500, lineHeight: 1, color: INK, display: "block" },
   statLabel: { fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase" as const, color: MUTED },
 
   // Right col sections
-  sectionHead: { fontFamily: "'Instrument Serif', serif", fontSize: "1.5rem", fontWeight: 400, letterSpacing: "-0.015em", marginBottom: "0.75rem", color: INK, borderBottom: `1px solid ${RULE}`, paddingBottom: "0.5rem" },
+  sectionHead: { fontFamily: "var(--font-display)", fontSize: "1.5rem", fontWeight: 500, letterSpacing: "-0.04em", marginBottom: "0.75rem", color: INK, borderBottom: `1px solid ${RULE}`, paddingBottom: "0.5rem" },
   table: { width: "100%", borderCollapse: "collapse" as const, fontSize: "0.76rem" },
   th: { padding: "0.4rem 0.65rem", borderBottom: `1px solid ${RULE}`, textAlign: "left" as const, fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" as const, color: AMBER, whiteSpace: "nowrap" as const },
   td: { padding: "0.38rem 0.65rem", borderBottom: `1px solid rgba(40,36,32,0.7)`, color: INK, whiteSpace: "nowrap" as const },
 
   // Job section
   jobSection: { marginTop: "2rem", paddingTop: "1.5rem", borderTop: `1px solid ${RULE}` },
-  jobName: { fontFamily: "'Instrument Serif', serif", fontSize: "1.2rem", fontWeight: 400, letterSpacing: "-0.01em", display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.6rem" },
+  jobName: { fontFamily: "var(--font-display)", fontSize: "1.2rem", fontWeight: 500, letterSpacing: "-0.04em", display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.6rem" },
   jobBadge: { fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" as const, padding: "0.18rem 0.5rem", background: "rgba(212, 160, 80, 0.12)", color: AMBER, border: `1px solid ${AMBER}`, borderRadius: "2px" },
   evFeed: { maxHeight: "8rem", overflowY: "auto" as const, border: `1px solid ${RULE}`, borderRadius: "3px", marginBottom: "0.75rem" },
   evRow: (lv: string): React.CSSProperties => ({ display: "grid", gridTemplateColumns: "3px 1fr", fontSize: "0.73rem", borderBottom: `1px solid rgba(40,36,32,0.5)` }),

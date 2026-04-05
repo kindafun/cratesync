@@ -32,10 +32,10 @@ const label = (text: string): React.CSSProperties => ({
 });
 
 const s: Record<string, React.CSSProperties> = {
-  root: { fontFamily: "'Bricolage Grotesque', sans-serif", background: BG, color: TEXT, minHeight: "100vh", display: "flex", flexDirection: "column" },
+  root: { fontFamily: "var(--font-ui)", background: BG, color: TEXT, minHeight: "100vh", display: "flex", flexDirection: "column" },
   topBar: { background: PANEL, borderBottom: `1px solid ${BORDER}`, padding: "0.55rem 1rem", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem" },
   topId: { fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.28em", textTransform: "uppercase" as const, color: COPPER },
-  topName: { fontFamily: "'Instrument Serif', serif", fontSize: "1.05rem", fontWeight: 400, letterSpacing: "-0.01em", color: TEXT },
+  topName: { fontFamily: "var(--font-display)", fontSize: "1.05rem", fontWeight: 500, letterSpacing: "-0.04em", color: TEXT },
   statusChip: { fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase" as const, padding: "0.18rem 0.5rem", background: GREENLIGHT, color: GREEN, border: `1px solid ${GREEN}`, borderRadius: "2px" },
   grid: { display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "auto auto", gap: "1px", flex: 1, background: BORDER },
   cell: { background: PANEL, padding: "0.85rem" },
@@ -56,7 +56,7 @@ const s: Record<string, React.CSSProperties> = {
   tOpt: (active: boolean) => ({ flex: 1, padding: "0.35rem", border: "none", cursor: "pointer", fontSize: "0.72rem", fontWeight: active ? 700 : 400, background: active ? COPPERLIGHT : "transparent", color: active ? COPPER : MUTED, letterSpacing: "0.04em", textAlign: "center" as const }),
   statsRow: { display: "flex", gap: 0, borderTop: `1px solid ${BORDER}`, marginTop: "0.75rem" },
   statBox: { flex: 1, padding: "0.5rem 0.65rem", borderRight: `1px solid ${BORDER}` },
-  statNum: { fontFamily: "'Instrument Serif', serif", fontSize: "1.6rem", fontWeight: 400, lineHeight: 1, color: TEXT, display: "block" },
+  statNum: { fontFamily: "var(--font-display)", fontSize: "1.6rem", fontWeight: 500, lineHeight: 1, color: TEXT, display: "block" },
   statLbl: { fontSize: "0.55rem", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" as const, color: MUTED, display: "block" },
   table: { width: "100%", borderCollapse: "collapse" as const, fontSize: "0.72rem" },
   th: { padding: "0.35rem 0.5rem", borderBottom: `1px solid ${BORDER}`, textAlign: "left" as const, fontSize: "0.55rem", fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.18em", color: COPPER, whiteSpace: "nowrap" as const },
@@ -66,7 +66,7 @@ const s: Record<string, React.CSSProperties> = {
   evStripe: (lv: string) => ({ background: lv === "info" ? `${GREEN}88` : lv === "warning" ? `${COPPER}88` : `${RED}88` }),
   evText: (lv: string) => ({ padding: "0.35rem 0.6rem", color: lv === "info" ? MUTED : lv === "warning" ? COPPER : RED }),
   jobHeader: { display: "flex", alignItems: "baseline", gap: "0.75rem", marginBottom: "0.5rem" },
-  jobName: { fontFamily: "'Instrument Serif', serif", fontSize: "1.05rem", fontWeight: 400, color: TEXT },
+  jobName: { fontFamily: "var(--font-display)", fontSize: "1.05rem", fontWeight: 500, letterSpacing: "-0.04em", color: TEXT },
   jobBadge: { fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase" as const, padding: "0.18rem 0.5rem", background: COPPERLIGHT, color: COPPER, border: `1px solid ${COPPER}`, borderRadius: "2px" },
 };
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import subprocess
 from pathlib import Path
 
 from ..config import settings
@@ -41,5 +42,6 @@ class ExportService:
         with json_path.open("w", encoding="utf-8") as handle:
             json.dump(detail.model_dump(mode="json"), handle, indent=2)
 
+        subprocess.Popen(["open", "-R", str(csv_path)])
         return csv_path, json_path
 

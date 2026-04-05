@@ -1,6 +1,12 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
-export function Field({ label, children }: { label: string; children: ReactNode }) {
+export function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
   return (
     <label className="field">
       <span className="field-label">{label}</span>
@@ -30,32 +36,31 @@ export function StatBlock({
 
 export function FilterBlock({
   label,
-  description,
   children,
   onRemove,
 }: {
   label: string;
-  description: string;
   children: ReactNode;
   onRemove(): void;
 }) {
   return (
-    <article className="filter-block">
-      <div className="filter-block-header">
-        <div>
-          <div className="field-label">{label}</div>
-          <p className="filter-block-copy">{description}</p>
-        </div>
-        <button className="text-btn filter-remove" onClick={onRemove}>
-          Remove
+    <div className="filter-row">
+      <div className="filter-row-header">
+        <span className="field-label">{label}</span>
+        <button
+          className="filter-remove-btn"
+          onClick={onRemove}
+          aria-label={`Remove ${label} filter`}
+        >
+          ×
         </button>
       </div>
       {children}
-    </article>
+    </div>
   );
 }
 
-export function MultiValueSelect({
+export function PillSelect({
   options,
   values,
   onChange,
@@ -66,24 +71,58 @@ export function MultiValueSelect({
   onChange(values: string[]): void;
   ariaLabel?: string;
 }) {
+  const [search, setSearch] = useState("");
+
   if (options.length === 0) {
-    return <div className="empty-block compact">No values available in the synced source snapshot.</div>;
+    return (
+      <div className="empty-block compact">
+        No values available in the synced source snapshot.
+      </div>
+    );
+  }
+
+  const query = search.trim().toLowerCase();
+  const selected = new Set(values);
+
+  const selectedOptions = options.filter((o) => selected.has(o));
+  const unselectedOptions = options.filter(
+    (o) => !selected.has(o) && (!query || o.toLowerCase().includes(query)),
+  );
+  const visible = [...selectedOptions, ...unselectedOptions];
+
+  function toggle(option: string) {
+    if (selected.has(option)) {
+      onChange(values.filter((v) => v !== option));
+    } else {
+      onChange([...values, option]);
+    }
   }
 
   return (
-    <select
-      multiple
-      aria-label={ariaLabel}
-      value={values}
-      onChange={(event) =>
-        onChange(Array.from(event.currentTarget.selectedOptions, (option) => option.value))
-      }
-    >
-      {options.map((option) => (
-        <option key={option} value={option}>
-          {option}
-        </option>
-      ))}
-    </select>
+    <div className="pill-select" role="group" aria-label={ariaLabel}>
+      {options.length > 6 && (
+        <input
+          className="pill-select-search"
+          type="text"
+          placeholder="Filter…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          aria-label="Filter options"
+        />
+      )}
+      <div className="pill-options">
+        {visible.map((option) => (
+          <button
+            key={option}
+            type="button"
+            className={`pill-option${selected.has(option) ? " selected" : ""}`}
+            onClick={() => toggle(option)}
+            aria-pressed={selected.has(option)}
+          >
+            {option}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

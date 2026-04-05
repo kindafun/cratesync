@@ -1,10 +1,26 @@
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  ArrowRightLeft,
+  Bookmark,
+  Copy,
+  Link,
+  RefreshCw,
+  Trash2,
+  Unlink,
+} from "lucide-react";
 
 import { JobConsoleSection } from "./components/JobConsoleSection";
 import { ReviewSection } from "./components/ReviewSection";
 import { SnapshotSection } from "./components/SnapshotSection";
 import { SourceSelectionSection } from "./components/SourceSelectionSection";
-import { Field, FilterBlock, MultiValueSelect, StatBlock } from "./components/ui";
+import { Field, FilterBlock, PillSelect, StatBlock } from "./components/ui";
 import { API_ORIGINS, api } from "./lib/api";
 import {
   EMPTY_FILTERS,
@@ -19,7 +35,7 @@ import {
   sanitizeStringMap,
   type FilterKey,
 } from "./lib/filters";
-import { formatDateTime, formatJobStatus } from "./lib/format";
+import { formatJobStatus, formatSyncDateTime } from "./lib/format";
 import { renderOAuthPopup, type OAuthCompleteMessage } from "./lib/oauth";
 import type {
   CollectionItemSnapshot,
@@ -49,21 +65,34 @@ export function App() {
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [jobDetail, setJobDetail] = useState<JobDetailResponse | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-  const [sourceSnapshot, setSourceSnapshot] = useState<CollectionSnapshot | null>(null);
+  const [sourceSnapshot, setSourceSnapshot] =
+    useState<CollectionSnapshot | null>(null);
   const [sourceItems, setSourceItems] = useState<CollectionItemSnapshot[]>([]);
-  const [destinationSnapshot, setDestinationSnapshot] = useState<CollectionSnapshot | null>(null);
-  const [destinationItems, setDestinationItems] = useState<CollectionItemSnapshot[]>([]);
+  const [destinationSnapshot, setDestinationSnapshot] =
+    useState<CollectionSnapshot | null>(null);
+  const [destinationItems, setDestinationItems] = useState<
+    CollectionItemSnapshot[]
+  >([]);
   const [status, setStatus] = useState("Connecting to local backend…");
   const [loading, setLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState<string | null>(null);
-  const [syncProgress, setSyncProgress] = useState<{ fetched: number; total: number | null } | null>(null);
+  const [syncProgress, setSyncProgress] = useState<{
+    fetched: number;
+    total: number | null;
+  } | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const [isCreatingJob, setIsCreatingJob] = useState(false);
   const [presetName, setPresetName] = useState("");
   const [selectedPresetId, setSelectedPresetId] = useState("");
-  const [lastPreviewSignature, setLastPreviewSignature] = useState<string | null>(null);
-  const [nextFilterToAdd, setNextFilterToAdd] = useState<FilterKey | "">("");
-  const [reviewTableMode, setReviewTableMode] = useState<"selected" | "all">("selected");
+  const [lastPreviewSignature, setLastPreviewSignature] = useState<
+    string | null
+  >(null);
+  const [reviewTableMode, setReviewTableMode] = useState<"selected" | "all">(
+    "selected",
+  );
   const [retryFn, setRetryFn] = useState<(() => void) | null>(null);
+  const [accountsCollapsed, setAccountsCollapsed] = useState(false);
+  const [plannerCollapsed, setPlannerCollapsed] = useState(false);
 
   const [planName, setPlanName] = useState("Digital archive split");
   const [workflowMode, setWorkflowMode] = useState<WorkflowMode>("copy");
@@ -73,23 +102,24 @@ export function App() {
   const [dateTo, setDateTo] = useState("");
   const [artistQuery, setArtistQuery] = useState("");
   const [titleQuery, setTitleQuery] = useState("");
-  const [labelQuery, setLabelQuery] = useState("");
-  const [genreQuery, setGenreQuery] = useState("");
-  const [formatQuery, setFormatQuery] = useState("");
-  const [styleQuery, setStyleQuery] = useState("");
   const [selectedFolderIds, setSelectedFolderIds] = useState<number[]>([]);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedLabels, setSelectedLabels] = useState<string[]>([]);
   const [selectedFormats, setSelectedFormats] = useState<string[]>([]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
-  const [selectedSourceItemIds, setSelectedSourceItemIds] = useState<string[]>([]);
-  const [folderMappingOverrides, setFolderMappingOverrides] = useState<Record<string, number>>({});
-  const [customFieldMappingOverrides, setCustomFieldMappingOverrides] = useState<
-    Record<string, string>
+  const [selectedSourceItemIds, setSelectedSourceItemIds] = useState<string[]>(
+    [],
+  );
+  const [folderMappingOverrides, setFolderMappingOverrides] = useState<
+    Record<string, number>
   >({});
+  const [customFieldMappingOverrides, setCustomFieldMappingOverrides] =
+    useState<Record<string, string>>({});
 
   const sourceAccount = accounts.find((account) => account.role === "source");
-  const destinationAccount = accounts.find((account) => account.role === "destination");
+  const destinationAccount = accounts.find(
+    (account) => account.role === "destination",
+  );
 
   const filters = useMemo(
     () =>
@@ -100,10 +130,6 @@ export function App() {
         dateTo,
         artistQuery,
         titleQuery,
-        labelQuery,
-        genreQuery,
-        formatQuery,
-        styleQuery,
         selectedFolderIds,
         selectedGenres,
         selectedLabels,
@@ -117,10 +143,6 @@ export function App() {
       dateTo,
       artistQuery,
       titleQuery,
-      labelQuery,
-      genreQuery,
-      formatQuery,
-      styleQuery,
       selectedFolderIds,
       selectedGenres,
       selectedLabels,
@@ -139,7 +161,9 @@ export function App() {
       name: planName.trim() || "Untitled plan",
       filters,
       folder_mapping_overrides: folderMappingOverrides,
-      custom_field_mapping_overrides: sanitizeStringMap(customFieldMappingOverrides),
+      custom_field_mapping_overrides: sanitizeStringMap(
+        customFieldMappingOverrides,
+      ),
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
@@ -154,8 +178,13 @@ export function App() {
       customFieldMappingOverrides,
     ],
   );
-  const currentPlanSignature = useMemo(() => JSON.stringify(currentPlan), [currentPlan]);
-  const previewIsStale = Boolean(preview && lastPreviewSignature !== currentPlanSignature);
+  const currentPlanSignature = useMemo(
+    () => JSON.stringify(currentPlan),
+    [currentPlan],
+  );
+  const previewIsStale = Boolean(
+    preview && lastPreviewSignature !== currentPlanSignature,
+  );
 
   const previewSelectedIds = useMemo(
     () => new Set(preview?.selected_items.map((item) => item.id) ?? []),
@@ -165,7 +194,10 @@ export function App() {
     () => new Set(preview?.duplicate_release_ids ?? []),
     [preview],
   );
-  const selectedSourceIdSet = useMemo(() => new Set(selectedSourceItemIds), [selectedSourceItemIds]);
+  const selectedSourceIdSet = useMemo(
+    () => new Set(selectedSourceItemIds),
+    [selectedSourceItemIds],
+  );
   const filteredSourceItems = useMemo(
     () => filterSourceItems(sourceItems, filters),
     [sourceItems, filters],
@@ -185,15 +217,35 @@ export function App() {
     !destinationAccount ||
     !sourceSnapshot;
 
-  const folderOptions = useMemo(() => deriveFolderOptions(sourceItems), [sourceItems]);
-  const genreOptions = useMemo(() => deriveStringOptions(sourceItems, "genres"), [sourceItems]);
-  const labelOptions = useMemo(() => deriveStringOptions(sourceItems, "labels"), [sourceItems]);
-  const formatOptions = useMemo(() => deriveStringOptions(sourceItems, "formats"), [sourceItems]);
-  const styleOptions = useMemo(() => deriveStringOptions(sourceItems, "styles"), [sourceItems]);
-  const destinationFolderLookup = useMemo(() => deriveFolderLookup(destinationItems), [destinationItems]);
-  const recentJobs = jobs.slice(0, 8);
+  const folderOptions = useMemo(
+    () => deriveFolderOptions(sourceItems),
+    [sourceItems],
+  );
+  const genreOptions = useMemo(
+    () => deriveStringOptions(sourceItems, "genres"),
+    [sourceItems],
+  );
+  const labelOptions = useMemo(
+    () => deriveStringOptions(sourceItems, "labels"),
+    [sourceItems],
+  );
+  const formatOptions = useMemo(
+    () => deriveStringOptions(sourceItems, "formats"),
+    [sourceItems],
+  );
+  const styleOptions = useMemo(
+    () => deriveStringOptions(sourceItems, "styles"),
+    [sourceItems],
+  );
+  const destinationFolderLookup = useMemo(
+    () => deriveFolderLookup(destinationItems),
+    [destinationItems],
+  );
+  const recentJobs = jobs.filter((j) => j.status !== "draft").slice(0, 8);
   const previewConflicts = preview?.blocking_conflicts ?? [];
-  const folderConflicts = previewConflicts.filter((conflict) => conflict.type === "folder_mapping");
+  const folderConflicts = previewConflicts.filter(
+    (conflict) => conflict.type === "folder_mapping",
+  );
   const customFieldConflicts = previewConflicts.filter(
     (conflict) => conflict.type === "custom_field_mapping",
   );
@@ -201,14 +253,24 @@ export function App() {
     () =>
       FILTER_OPTIONS.filter((option) => {
         if (activeFilterKeys.includes(option.key)) return false;
-        if (option.key === "specific_date" && activeFilterKeys.includes("date_range")) return false;
-        if (option.key === "date_range" && activeFilterKeys.includes("specific_date")) return false;
+        if (
+          option.key === "specific_date" &&
+          activeFilterKeys.includes("date_range")
+        )
+          return false;
+        if (
+          option.key === "date_range" &&
+          activeFilterKeys.includes("specific_date")
+        )
+          return false;
         return true;
       }),
     [activeFilterKeys],
   );
   const reviewItems =
-    reviewTableMode === "selected" ? preview?.selected_items ?? [] : sourceItems;
+    reviewTableMode === "selected"
+      ? (preview?.selected_items ?? [])
+      : sourceItems;
   const reviewState = deriveReviewState({
     preview,
     previewIsStale,
@@ -219,21 +281,10 @@ export function App() {
   });
 
   useEffect(() => {
-    if (!nextFilterToAdd && availableFilterOptions[0]) {
-      setNextFilterToAdd(availableFilterOptions[0].key);
-      return;
-    }
-    if (
-      nextFilterToAdd &&
-      !availableFilterOptions.some((option) => option.key === nextFilterToAdd)
-    ) {
-      setNextFilterToAdd(availableFilterOptions[0]?.key ?? "");
-    }
-  }, [availableFilterOptions, nextFilterToAdd]);
-
-  useEffect(() => {
     const validSourceIds = new Set(sourceItems.map((item) => item.id));
-    setSelectedSourceItemIds((current) => current.filter((itemId) => validSourceIds.has(itemId)));
+    setSelectedSourceItemIds((current) =>
+      current.filter((itemId) => validSourceIds.has(itemId)),
+    );
   }, [sourceItems]);
 
   async function refreshWorkspace() {
@@ -279,13 +330,15 @@ export function App() {
       const nextSelectedJobId =
         selectedJobId && jobList.some((job) => job.id === selectedJobId)
           ? selectedJobId
-          : jobList[0]?.id ?? null;
+          : (jobList[0]?.id ?? null);
       setSelectedJobId(nextSelectedJobId);
       if (!nextSelectedJobId) {
         setJobDetail(null);
       }
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Failed to load state.");
+      setStatus(
+        error instanceof Error ? error.message : "Failed to load state.",
+      );
       setRetryFn(() => () => void refreshWorkspace());
     } finally {
       setLoading(false);
@@ -296,11 +349,16 @@ export function App() {
     try {
       const nextPresets = await api.listSelectionPresets(accountId);
       setPresets(nextPresets);
-      if (selectedPresetId && !nextPresets.some((preset) => preset.id === selectedPresetId)) {
+      if (
+        selectedPresetId &&
+        !nextPresets.some((preset) => preset.id === selectedPresetId)
+      ) {
         setSelectedPresetId("");
       }
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Failed to load presets.");
+      setStatus(
+        error instanceof Error ? error.message : "Failed to load presets.",
+      );
     }
   }
 
@@ -311,7 +369,9 @@ export function App() {
         setJobDetail(detail);
       });
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Failed to load job detail.");
+      setStatus(
+        error instanceof Error ? error.message : "Failed to load job detail.",
+      );
     }
   }
 
@@ -330,7 +390,11 @@ export function App() {
         return;
       }
       if ((event.metaKey || event.ctrlKey) && event.key === "g") {
-        if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+        if (
+          event.target instanceof HTMLInputElement ||
+          event.target instanceof HTMLTextAreaElement
+        )
+          return;
         event.preventDefault();
         void handlePreviewRef.current();
       }
@@ -385,7 +449,8 @@ export function App() {
   }, [selectedJobId]);
 
   useEffect(() => {
-    if (!jobDetail || !ACTIVE_JOB_STATUSES.includes(jobDetail.job.status)) return;
+    if (!jobDetail || !ACTIVE_JOB_STATUSES.includes(jobDetail.job.status))
+      return;
     const timer = window.setInterval(async () => {
       try {
         const [nextDetail, nextJobs] = await Promise.all([
@@ -397,14 +462,22 @@ export function App() {
           setJobs(nextJobs);
         });
       } catch (error) {
-        setStatus(error instanceof Error ? error.message : "Failed to refresh active job.");
+        setStatus(
+          error instanceof Error
+            ? error.message
+            : "Failed to refresh active job.",
+        );
       }
     }, 2500);
     return () => window.clearInterval(timer);
   }, [jobDetail?.job.id, jobDetail?.job.status]);
 
   async function handleConnect(role: "source" | "destination") {
-    const popup = window.open("", `discogs-oauth-${role}`, "popup=yes,width=960,height=720");
+    const popup = window.open(
+      "",
+      `discogs-oauth-${role}`,
+      "popup=yes,width=960,height=720",
+    );
     if (!popup) {
       setStatus("Popup blocked. Allow popups for this app and try again.");
       return;
@@ -419,9 +492,12 @@ export function App() {
     try {
       const response = await api.startOAuth(role);
       popup.location.replace(response.authorization_url);
-      setStatus(`OAuth started for ${role}. Finish the callback flow in the opened window.`);
+      setStatus(
+        `OAuth started for ${role}. Finish the callback flow in the opened window.`,
+      );
     } catch (error) {
-      const message = error instanceof Error ? error.message : "OAuth start failed.";
+      const message =
+        error instanceof Error ? error.message : "OAuth start failed.";
       renderOAuthPopup(
         popup,
         "Could not start Discogs OAuth",
@@ -445,7 +521,10 @@ export function App() {
           throw new Error(progress.error ?? "Sync failed.");
         }
         if (progress.status === "running") {
-          setSyncProgress({ fetched: progress.fetched ?? 0, total: progress.total ?? null });
+          setSyncProgress({
+            fetched: progress.fetched ?? 0,
+            total: progress.total ?? null,
+          });
         }
         if (progress.status === "done") break;
       }
@@ -510,16 +589,21 @@ export function App() {
   }
 
   async function handleCreateJob() {
-    if (launchBlocked) return;
+    if (launchBlocked || isCreatingJob) return;
+    setIsCreatingJob(true);
     try {
       const detail = await api.createJob({ plan: currentPlan });
       setJobDetail(detail);
       setSelectedJobId(detail.job.id);
-      setStatus(`Job ${detail.job.id} created.`);
+      setStatus(`Job started.`);
       const nextJobs = await api.listJobs();
       setJobs(nextJobs);
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Job creation failed.");
+      setStatus(
+        error instanceof Error ? error.message : "Job creation failed.",
+      );
+    } finally {
+      setIsCreatingJob(false);
     }
   }
 
@@ -530,7 +614,9 @@ export function App() {
       setStatus("Delete phase started.");
       setJobs(await api.listJobs());
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Delete confirmation failed.");
+      setStatus(
+        error instanceof Error ? error.message : "Delete confirmation failed.",
+      );
     }
   }
 
@@ -548,13 +634,19 @@ export function App() {
   async function handleExport(jobId: string) {
     try {
       const result = await api.exportJob(jobId);
-      setStatus(`Reports written to ${result.csv_path} and ${result.json_path}.`);
+      setStatus("Reports exported — folder opened in Finder.");
+      void result;
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Export failed.");
     }
   }
 
   async function handleClearLocalData() {
+    const confirmed = window.confirm(
+      "Clear local data, connected-account tokens, saved presets, and job history from this machine?",
+    );
+    if (!confirmed) return;
+
     try {
       await api.clearLocalData();
       setPreview(null);
@@ -565,9 +657,13 @@ export function App() {
       setPresets([]);
       setSelectedPresetId("");
       await refreshWorkspace();
-      setStatus("Local cache, job history, and stored connections were cleared.");
+      setStatus(
+        "Local cache, job history, and stored connections were cleared.",
+      );
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Local data clear failed.");
+      setStatus(
+        error instanceof Error ? error.message : "Local data clear failed.",
+      );
     }
   }
 
@@ -607,10 +703,6 @@ export function App() {
     setDateTo(loadedState.dateTo);
     setArtistQuery(loadedState.artistQuery);
     setTitleQuery(loadedState.titleQuery);
-    setLabelQuery(loadedState.labelQuery);
-    setGenreQuery(loadedState.genreQuery);
-    setFormatQuery(loadedState.formatQuery);
-    setStyleQuery(loadedState.styleQuery);
     setSelectedFolderIds(preset.filters.folder_ids ?? []);
     setSelectedGenres(preset.filters.genres ?? []);
     setSelectedLabels(preset.filters.labels ?? []);
@@ -636,7 +728,9 @@ export function App() {
         if (key === "date_range" && value === "specific_date") return false;
         return true;
       });
-      return withoutConflicts.includes(key) ? withoutConflicts : [...withoutConflicts, key];
+      return withoutConflicts.includes(key)
+        ? withoutConflicts
+        : [...withoutConflicts, key];
     });
 
     if (key === "specific_date") {
@@ -657,10 +751,6 @@ export function App() {
     }
     if (key === "artist_search") setArtistQuery("");
     if (key === "title_search") setTitleQuery("");
-    if (key === "label_search") setLabelQuery("");
-    if (key === "genre_search") setGenreQuery("");
-    if (key === "format_search") setFormatQuery("");
-    if (key === "style_search") setStyleQuery("");
     if (key === "genres") setSelectedGenres([]);
     if (key === "labels") setSelectedLabels([]);
     if (key === "formats") setSelectedFormats([]);
@@ -677,7 +767,9 @@ export function App() {
   }, []);
 
   const selectFilteredItems = useCallback(() => {
-    setSelectedSourceItemIds((current) => appendUnique(current, filteredSourceItemIds));
+    setSelectedSourceItemIds((current) =>
+      appendUnique(current, filteredSourceItemIds),
+    );
   }, [filteredSourceItemIds]);
 
   const selectSourceRange = useCallback((itemIds: string[]) => {
@@ -686,14 +778,19 @@ export function App() {
 
   const deselectFilteredItems = useCallback(() => {
     const visibleIds = new Set(filteredSourceItemIds);
-    setSelectedSourceItemIds((current) => current.filter((itemId) => !visibleIds.has(itemId)));
+    setSelectedSourceItemIds((current) =>
+      current.filter((itemId) => !visibleIds.has(itemId)),
+    );
   }, [filteredSourceItemIds]);
 
   const clearSelectedItems = useCallback(() => {
     setSelectedSourceItemIds([]);
   }, []);
 
-  function setFolderOverride(sourceFolderId: string, destinationFolderId: number | null) {
+  function setFolderOverride(
+    sourceFolderId: string,
+    destinationFolderId: number | null,
+  ) {
     setFolderMappingOverrides((current) => {
       const next = { ...current };
       if (!destinationFolderId) {
@@ -719,7 +816,6 @@ export function App() {
           <FilterBlock
             key={key}
             label="Specific date"
-            description="Keep releases added on one exact day."
             onRemove={() => removeFilter(key)}
           >
             <input
@@ -735,7 +831,6 @@ export function App() {
           <FilterBlock
             key={key}
             label="Date range"
-            description="Keep releases added within a start and end window."
             onRemove={() => removeFilter(key)}
           >
             <div className="field-grid">
@@ -760,8 +855,7 @@ export function App() {
         return (
           <FilterBlock
             key={key}
-            label="Artist search"
-            description="Match artist names without affecting title or label fields."
+            label="Artist"
             onRemove={() => removeFilter(key)}
           >
             <input
@@ -777,8 +871,7 @@ export function App() {
         return (
           <FilterBlock
             key={key}
-            label="Title search"
-            description="Search release titles only."
+            label="Title"
             onRemove={() => removeFilter(key)}
           >
             <input
@@ -790,83 +883,14 @@ export function App() {
             />
           </FilterBlock>
         );
-      case "label_search":
-        return (
-          <FilterBlock
-            key={key}
-            label="Label search"
-            description="Search label names without mixing them with artist or title."
-            onRemove={() => removeFilter(key)}
-          >
-            <input
-              type="text"
-              aria-label="Label name"
-              placeholder="e.g. Warp"
-              value={labelQuery}
-              onChange={(event) => setLabelQuery(event.target.value)}
-            />
-          </FilterBlock>
-        );
-      case "genre_search":
-        return (
-          <FilterBlock
-            key={key}
-            label="Genre search"
-            description="Search genre values directly."
-            onRemove={() => removeFilter(key)}
-          >
-            <input
-              type="text"
-              aria-label="Genre"
-              placeholder="e.g. Electronic"
-              value={genreQuery}
-              onChange={(event) => setGenreQuery(event.target.value)}
-            />
-          </FilterBlock>
-        );
-      case "format_search":
-        return (
-          <FilterBlock
-            key={key}
-            label="Format search"
-            description="Search Discogs format values."
-            onRemove={() => removeFilter(key)}
-          >
-            <input
-              type="text"
-              aria-label="Format"
-              placeholder="e.g. Vinyl"
-              value={formatQuery}
-              onChange={(event) => setFormatQuery(event.target.value)}
-            />
-          </FilterBlock>
-        );
-      case "style_search":
-        return (
-          <FilterBlock
-            key={key}
-            label="Style search"
-            description="Search style values independently from genres."
-            onRemove={() => removeFilter(key)}
-          >
-            <input
-              type="text"
-              aria-label="Style"
-              placeholder="e.g. Deep House"
-              value={styleQuery}
-              onChange={(event) => setStyleQuery(event.target.value)}
-            />
-          </FilterBlock>
-        );
       case "genres":
         return (
           <FilterBlock
             key={key}
             label="Genres"
-            description="Narrow the source snapshot by genre."
             onRemove={() => removeFilter(key)}
           >
-            <MultiValueSelect
+            <PillSelect
               options={genreOptions}
               values={selectedGenres}
               onChange={setSelectedGenres}
@@ -879,10 +903,9 @@ export function App() {
           <FilterBlock
             key={key}
             label="Labels"
-            description="Limit the list to selected labels."
             onRemove={() => removeFilter(key)}
           >
-            <MultiValueSelect
+            <PillSelect
               options={labelOptions}
               values={selectedLabels}
               onChange={setSelectedLabels}
@@ -895,10 +918,9 @@ export function App() {
           <FilterBlock
             key={key}
             label="Formats"
-            description="Filter the source list by Discogs formats."
             onRemove={() => removeFilter(key)}
           >
-            <MultiValueSelect
+            <PillSelect
               options={formatOptions}
               values={selectedFormats}
               onChange={setSelectedFormats}
@@ -911,10 +933,9 @@ export function App() {
           <FilterBlock
             key={key}
             label="Styles"
-            description="Use Discogs styles as an optional drill-down."
             onRemove={() => removeFilter(key)}
           >
-            <MultiValueSelect
+            <PillSelect
               options={styleOptions}
               values={selectedStyles}
               onChange={setSelectedStyles}
@@ -927,25 +948,22 @@ export function App() {
           <FilterBlock
             key={key}
             label="Folders"
-            description="Advanced: narrow the source list by folder."
             onRemove={() => removeFilter(key)}
           >
-            <select
-              multiple
-              aria-label="Filter by folder"
-              value={selectedFolderIds.map(String)}
-              onChange={(event) =>
+            <PillSelect
+              options={folderOptions.map((o) => o.label)}
+              values={folderOptions
+                .filter((o) => selectedFolderIds.includes(o.id))
+                .map((o) => o.label)}
+              onChange={(labels) =>
                 setSelectedFolderIds(
-                  Array.from(event.currentTarget.selectedOptions, (option) => Number(option.value)),
+                  folderOptions
+                    .filter((o) => labels.includes(o.label))
+                    .map((o) => o.id),
                 )
               }
-            >
-              {folderOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              ariaLabel="Filter by folder"
+            />
           </FilterBlock>
         );
     }
@@ -957,12 +975,18 @@ export function App() {
         <span className="app-badge">CrateSync · Local v0.1</span>
         <div className="topbar-actions">
           <span className="hero-status">
-            <span className={`status-dot${loading ? " status-dot-busy" : ""}`} />
+            <span
+              className={`status-dot${loading ? " status-dot-busy" : ""}`}
+            />
             {loading
               ? "Refreshing workspace"
               : `Backend online${accounts.length > 0 ? ` · ${accounts.length} account${accounts.length !== 1 ? "s" : ""}` : ""}`}
           </span>
-          <button className="text-btn" onClick={() => void handleClearLocalData()}>
+          <button
+            className="text-btn text-btn-danger"
+            onClick={() => void handleClearLocalData()}
+          >
+            <Trash2 size={13} />
             Clear local data
           </button>
         </div>
@@ -970,163 +994,136 @@ export function App() {
 
       <section className="shell-grid">
         <aside className="shell-left">
-          <div className="left-hero">
-            <h1>CrateSync</h1>
-            <p className="lead-copy">
-              Filter the source view only when needed, explicitly pick the releases to migrate, and
-              use the review step to confirm exactly what will happen before launch.
-            </p>
-          </div>
-
           <section className="rail-section">
-            <h2 className="section-label">Accounts</h2>
-            {retryFn && (
-              <div className="error-banner">
-                <span>{status}</span>
-                <button className="btn btn-ghost btn-sm" onClick={retryFn}>Try again</button>
-              </div>
+            <div
+              className="rail-section-header"
+              role="button"
+              tabIndex={0}
+              aria-expanded={!accountsCollapsed}
+              onClick={() => setAccountsCollapsed((c) => !c)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setAccountsCollapsed((c) => !c);
+                }
+              }}
+            >
+              <h2 className="section-label">Accounts</h2>
+              <span
+                className={`section-collapse-icon${accountsCollapsed ? " collapsed" : ""}`}
+                aria-hidden="true"
+              />
+            </div>
+            {!accountsCollapsed && (
+              <>
+                {retryFn && (
+                  <div className="error-banner">
+                    <span>{status}</span>
+                    <button className="btn btn-ghost btn-sm" onClick={retryFn}>
+                      Try again
+                    </button>
+                  </div>
+                )}
+                <AccountCard
+                  role="source"
+                  account={sourceAccount}
+                  itemCount={sourceSnapshot?.total_items ?? 0}
+                  syncing={isSyncing === sourceAccount?.id}
+                  syncProgress={
+                    isSyncing === sourceAccount?.id ? syncProgress : null
+                  }
+                  onConnect={handleConnect}
+                  onSync={handleSync}
+                  onDisconnect={handleDisconnect}
+                />
+                <AccountCard
+                  role="destination"
+                  account={destinationAccount}
+                  itemCount={destinationSnapshot?.total_items ?? 0}
+                  syncing={isSyncing === destinationAccount?.id}
+                  syncProgress={
+                    isSyncing === destinationAccount?.id ? syncProgress : null
+                  }
+                  onConnect={handleConnect}
+                  onSync={handleSync}
+                  onDisconnect={handleDisconnect}
+                />
+              </>
             )}
-            <AccountCard
-              role="source"
-              account={sourceAccount}
-              itemCount={sourceSnapshot?.total_items ?? 0}
-              syncing={isSyncing === sourceAccount?.id}
-              syncProgress={isSyncing === sourceAccount?.id ? syncProgress : null}
-              onConnect={handleConnect}
-              onSync={handleSync}
-              onDisconnect={handleDisconnect}
-            />
-            <AccountCard
-              role="destination"
-              account={destinationAccount}
-              itemCount={destinationSnapshot?.total_items ?? 0}
-              syncing={isSyncing === destinationAccount?.id}
-              syncProgress={isSyncing === destinationAccount?.id ? syncProgress : null}
-              onConnect={handleConnect}
-              onSync={handleSync}
-              onDisconnect={handleDisconnect}
-            />
           </section>
 
           <section className="rail-section">
-            <div className="planner-header">
+            <div
+              className="rail-section-header"
+              role="button"
+              tabIndex={0}
+              aria-expanded={!plannerCollapsed}
+              onClick={() => setPlannerCollapsed((c) => !c)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setPlannerCollapsed((c) => !c);
+                }
+              }}
+            >
               <div>
                 <div className="section-label">Step 1</div>
                 <h2 className="editorial-title">Build the source view</h2>
               </div>
+              <span
+                className={`section-collapse-icon${plannerCollapsed ? " collapsed" : ""}`}
+                aria-hidden="true"
+              />
+            </div>
 
-              <details className="saved-views-menu" ref={savedViewsRef}>
-                <summary>Saved views</summary>
-                <div className="saved-views-panel">
-                  <Field label="Open saved view">
-                    <select
-                      value={selectedPresetId}
-                      disabled={!sourceAccount || presets.length === 0}
-                      onChange={(event) => handlePresetSelection(event.target.value)}
-                    >
-                      <option value="">Select a saved view</option>
-                      {presets.map((preset) => (
-                        <option key={preset.id} value={preset.id}>
-                          {preset.name}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field label="Save current filters">
-                    <div className="inline-action">
-                      <input
-                        type="text"
-                        placeholder="Night session split"
-                        value={presetName}
-                        onChange={(event) => setPresetName(event.target.value)}
-                      />
-                      <button className="btn btn-ghost" onClick={() => void handleSavePreset()}>
-                        Save
+            {!plannerCollapsed && (
+              <>
+                <div className="field-stack">
+                  <Field label="Workflow mode">
+                    <div className="toggle-group">
+                      <button
+                        className={`toggle-option${workflowMode === "copy" ? " active" : ""}`}
+                        onClick={() => setWorkflowMode("copy")}
+                      >
+                        <Copy size={13} />
+                        Copy only
+                      </button>
+                      <button
+                        className={`toggle-option${workflowMode === "move" ? " active" : ""}`}
+                        onClick={() => setWorkflowMode("move")}
+                      >
+                        <ArrowRightLeft size={13} />
+                        Two-phase move
                       </button>
                     </div>
                   </Field>
-                </div>
-              </details>
-            </div>
 
-            <div className="field-stack">
-              <Field label="Plan name">
-                <input
-                  type="text"
-                  value={planName}
-                  onChange={(event) => setPlanName(event.target.value)}
-                />
-              </Field>
-
-              <Field label="Workflow mode">
-                <div className="toggle-group">
-                  <button
-                    className={`toggle-option${workflowMode === "copy" ? " active" : ""}`}
-                    onClick={() => setWorkflowMode("copy")}
-                  >
-                    Copy only
-                  </button>
-                  <button
-                    className={`toggle-option${workflowMode === "move" ? " active" : ""}`}
-                    onClick={() => setWorkflowMode("move")}
-                  >
-                    Two-phase move
-                  </button>
-                </div>
-              </Field>
-
-              <div className="filter-builder">
-                <div className="filter-builder-header">
-                  <div>
-                    <div className="field-label">Optional filters</div>
-                    <p className="filter-builder-copy">
-                      Add only the filters you want to use, then choose releases from the source
-                      table.
-                    </p>
-                  </div>
+                  <Field label="Plan name">
+                    <input
+                      type="text"
+                      value={planName}
+                      onChange={(event) => setPlanName(event.target.value)}
+                    />
+                  </Field>
                 </div>
 
-                {activeFilterKeys.length === 0 && (
-                  <div className="empty-block compact">
-                    No optional filters enabled. Add only the search or metadata fields you want to
-                    narrow the source snapshot.
+                <div className="planner-footer">
+                  <div className="stats-line">
+                    <StatBlock
+                      label="Selected releases"
+                      value={selectedSourceCount}
+                      small
+                    />
+                    <StatBlock
+                      label="Source total"
+                      value={sourceItems.length}
+                      muted
+                      small
+                    />
                   </div>
-                )}
-
-                <div className="filter-list">{activeFilterKeys.map(renderFilterBlock)}</div>
-
-                {availableFilterOptions.length > 0 && (
-                  <div className="filter-add-row">
-                    <select
-                      aria-label="Select filter to add"
-                      value={nextFilterToAdd}
-                      onChange={(event) => setNextFilterToAdd(event.target.value as FilterKey)}
-                    >
-                      {availableFilterOptions.map((option) => (
-                        <option key={option.key} value={option.key}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                    <button
-                      className="btn btn-ghost"
-                      disabled={!nextFilterToAdd}
-                      onClick={() => nextFilterToAdd && addFilter(nextFilterToAdd)}
-                    >
-                      Add filter
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="planner-footer">
-              <div className="stats-line">
-                <StatBlock label="Selected releases" value={selectedSourceCount} />
-                <StatBlock label="Visible after filters" value={filteredSourceItems.length} />
-                <StatBlock label="Source total" value={sourceItems.length} muted />
-              </div>
-            </div>
+                </div>
+              </>
+            )}
           </section>
         </aside>
 
@@ -1144,6 +1141,73 @@ export function App() {
             onSelectAllVisible={selectFilteredItems}
             onDeselectVisible={deselectFilteredItems}
             onClearSelection={clearSelectedItems}
+            filterControls={
+              <>
+                {presets.length > 0 && (
+                  <details className="saved-views-menu" ref={savedViewsRef}>
+                    <summary>
+                      <Bookmark size={13} />
+                      Saved views
+                    </summary>
+                    <div className="saved-views-panel">
+                      <Field label="Open saved view">
+                        <select
+                          value={selectedPresetId}
+                          onChange={(event) =>
+                            handlePresetSelection(event.target.value)
+                          }
+                        >
+                          <option value="">Select a saved view</option>
+                          {presets.map((preset) => (
+                            <option key={preset.id} value={preset.id}>
+                              {preset.name}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                      <Field label="Save current filters">
+                        <div className="inline-action">
+                          <input
+                            type="text"
+                            placeholder="Night session split"
+                            value={presetName}
+                            onChange={(event) =>
+                              setPresetName(event.target.value)
+                            }
+                          />
+                          <button
+                            className="btn btn-ghost"
+                            onClick={() => void handleSavePreset()}
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </Field>
+                    </div>
+                  </details>
+                )}
+                <div className="filter-builder">
+                  <div className="filter-list">
+                    {activeFilterKeys.map(renderFilterBlock)}
+                  </div>
+
+                  {availableFilterOptions.length > 0 && (
+                    <div className="filter-chips">
+                      <span className="section-label">Add filter</span>
+                      {availableFilterOptions.map((option) => (
+                        <button
+                          key={option.key}
+                          className="filter-chip"
+                          onClick={() => addFilter(option.key)}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            }
           />
 
           <SnapshotSection
@@ -1156,12 +1220,12 @@ export function App() {
           <ReviewSection
             isGeneratingPreview={isGeneratingPreview}
             onGeneratePreview={() => void handlePreview()}
+            isCreatingJob={isCreatingJob}
             launchBlocked={launchBlocked}
             onLaunchJob={() => void handleCreateJob()}
             reviewState={reviewState}
             selectedSourceCount={selectedSourceCount}
             preview={preview}
-            workflowMode={workflowMode}
             previewSelectedIds={previewSelectedIds}
             duplicateReleaseIds={duplicateReleaseIds}
             folderConflicts={folderConflicts}
@@ -1215,9 +1279,14 @@ function AccountCard({
     return (
       <article className="credit-card credit-card-empty">
         <span className={`role-chip role-${role}`}>{role}</span>
-        <div className="credit-name">Authorize {role}</div>
-        <p className="credit-meta">Connect the {role} Discogs account to populate local snapshots.</p>
+        <div className="credit-name credit-name-empty">
+          Authorize {role} account
+        </div>
+        <p className="credit-meta">
+          Connect the {role} Discogs account to populate local snapshots.
+        </p>
         <button className="btn btn-primary" onClick={() => onConnect(role)}>
+          <Link size={14} />
           Connect account
         </button>
       </article>
@@ -1228,20 +1297,41 @@ function AccountCard({
     <article className="credit-card">
       <span className={`role-chip role-${role}`}>{role}</span>
       <div className="credit-name">{account.username}</div>
-      <p className="credit-meta">
-        {syncing
-          ? syncProgress
-            ? `Fetching ${syncProgress.fetched.toLocaleString()} / ${syncProgress.total != null ? syncProgress.total.toLocaleString() : "…"} releases…`
-            : "Syncing…"
-          : account.last_synced_at
-            ? `Synced ${formatDateTime(account.last_synced_at)} · ${itemCount} items`
-            : "Connected, not yet synced"}
-      </p>
+      <div className="account-status">
+        {syncing ? (
+          <span className="credit-meta">
+            {syncProgress
+              ? `Fetching ${syncProgress.fetched.toLocaleString()} / ${syncProgress.total != null ? syncProgress.total.toLocaleString() : "…"} releases…`
+              : "Syncing…"}
+          </span>
+        ) : account.last_synced_at ? (
+          <>
+            <span className="credit-meta">
+              Synced {formatSyncDateTime(account.last_synced_at)}
+            </span>
+            <span className="credit-count">
+              {itemCount.toLocaleString()} items
+            </span>
+          </>
+        ) : (
+          <span className="credit-meta">Connected, not yet synced</span>
+        )}
+      </div>
       <div className="inline-button-row">
-        <button className="btn btn-primary" disabled={syncing} onClick={() => onSync(account.id)}>
+        <button
+          className="btn btn-primary"
+          disabled={syncing}
+          onClick={() => onSync(account.id)}
+        >
+          <RefreshCw size={14} />
           {syncing ? "Syncing…" : "Sync collection"}
         </button>
-        <button className="btn btn-ghost" disabled={syncing} onClick={() => onDisconnect(account.id)}>
+        <button
+          className="btn btn-ghost"
+          disabled={syncing}
+          onClick={() => onDisconnect(account.id)}
+        >
+          <Unlink size={14} />
           Disconnect
         </button>
       </div>
@@ -1268,28 +1358,32 @@ function deriveReviewState({
     return {
       tone: "default",
       title: "Connect and sync both accounts",
-      message: "The review step will unlock once both source and destination snapshots are available.",
+      message:
+        "The review step will unlock once both source and destination snapshots are available.",
     } as const;
   }
   if (selectedSourceCount === 0) {
     return {
       tone: "warning",
       title: "Select at least one release",
-      message: "Use the source table checkboxes or bulk-select all filtered rows before generating a preview.",
+      message:
+        "Use the source table checkboxes or bulk-select all filtered rows before generating a preview.",
     } as const;
   }
   if (!preview) {
     return {
       tone: "default",
       title: "Generate a preview",
-      message: "Validate duplicates, folder mappings, and destination capabilities before launching the job.",
+      message:
+        "Validate duplicates, folder mappings, and destination capabilities before launching the job.",
     } as const;
   }
   if (previewIsStale) {
     return {
       tone: "warning",
       title: "Preview is stale",
-      message: "Your search, filters, selections, or workflow changed. Generate a fresh preview before launch.",
+      message:
+        "Your search, filters, selections, or workflow changed. Generate a fresh preview before launch.",
     } as const;
   }
   if (preview.blocking_conflicts.length > 0) {
@@ -1302,7 +1396,7 @@ function deriveReviewState({
   return {
     tone: "ready",
     title: "Ready to launch",
-    message: "The selected releases have been reviewed. Launch the job when you are satisfied with this preview.",
+    message:
+      "The selected releases have been reviewed. Launch the job when you are satisfied with this preview.",
   } as const;
 }
-

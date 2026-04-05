@@ -23,9 +23,9 @@ const GREENLT = "rgba(64, 168, 112, 0.12)";
 const RED   = "#d04428";
 
 const s: Record<string, React.CSSProperties> = {
-  root: { fontFamily: "'Bricolage Grotesque', sans-serif", background: BG, color: INK, minHeight: "100vh", display: "flex", flexDirection: "column" },
+  root: { fontFamily: "var(--font-ui)", background: BG, color: INK, minHeight: "100vh", display: "flex", flexDirection: "column" },
   topStrip: { background: C1, borderBottom: `1px solid ${BORD}`, padding: "0.6rem 1.25rem", display: "flex", alignItems: "center", justifyContent: "space-between" },
-  appTitle: { fontFamily: "'Instrument Serif', serif", fontSize: "1rem", fontWeight: 400, letterSpacing: "-0.01em", color: INK },
+  appTitle: { fontFamily: "var(--font-display)", fontSize: "1rem", fontWeight: 500, letterSpacing: "-0.04em", color: INK },
   appEyebrow: { fontSize: "0.6rem", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: AMBER, display: "block", marginBottom: "0.2rem" },
   statusDot: (ok: boolean) => ({ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "0.68rem", color: ok ? GREEN : RED }),
   dot: (ok: boolean) => ({ width: 6, height: 6, borderRadius: "50%", background: ok ? GREEN : RED }),
@@ -48,7 +48,7 @@ const s: Record<string, React.CSSProperties> = {
 
   // Monitor section (right col)
   monBlock: { marginBottom: "1.2rem" },
-  bigNum: { fontFamily: "'Instrument Serif', serif", fontSize: "2.8rem", fontWeight: 400, lineHeight: 1, color: INK, display: "block" },
+  bigNum: { fontFamily: "var(--font-display)", fontSize: "2.8rem", fontWeight: 500, lineHeight: 1, color: INK, display: "block" },
   bigNumLbl: { fontSize: "0.58rem", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase" as const, color: MUTED },
   meterTrack: { height: "6px", background: BORD, borderRadius: "3px", overflow: "hidden", marginTop: "0.5rem" },
   meterFill: (pct: number, color: string) => ({ height: "100%", width: `${pct}%`, background: color, transition: "width 0.3s ease", borderRadius: "3px" }),
@@ -64,7 +64,7 @@ const s: Record<string, React.CSSProperties> = {
   td: { padding: "0.36rem 0.65rem", borderBottom: `1px solid rgba(42,32,0,0.6)`, color: INK, whiteSpace: "nowrap" as const },
   tableWrap: { border: `1px solid ${BORD}`, borderRadius: "3px", overflow: "auto" },
   panelHead: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.6rem" },
-  panelH2: { fontFamily: "'Instrument Serif', serif", fontSize: "1.1rem", fontWeight: 400, margin: 0, color: INK, letterSpacing: "-0.01em" },
+  panelH2: { fontFamily: "var(--font-display)", fontSize: "1.1rem", fontWeight: 500, margin: 0, color: INK, letterSpacing: "-0.04em" },
 };
 
 const pct = Math.round((jobDetail.job.summary.copied / jobDetail.job.summary.total) * 100);
@@ -181,11 +181,11 @@ export function VariantC() {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginBottom: "1rem" }}>
             <div>
-              <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: "1.8rem", fontWeight: 400, lineHeight: 1, color: INK, display: "block" }}>{previewResult.retained_count}</span>
+              <span style={{ fontFamily: "var(--font-display)", fontSize: "1.8rem", fontWeight: 500, lineHeight: 1, color: INK, display: "block" }}>{previewResult.retained_count}</span>
               <span style={s.bigNumLbl}>retained</span>
             </div>
             <div>
-              <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: "1.8rem", fontWeight: 400, lineHeight: 1, color: MUTED, display: "block" }}>{previewResult.duplicate_release_ids.length}</span>
+              <span style={{ fontFamily: "var(--font-display)", fontSize: "1.8rem", fontWeight: 500, lineHeight: 1, color: MUTED, display: "block" }}>{previewResult.duplicate_release_ids.length}</span>
               <span style={s.bigNumLbl}>dupes</span>
             </div>
           </div>
@@ -194,7 +194,7 @@ export function VariantC() {
 
           <div style={{ marginBottom: "0.6rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.4rem" }}>
-              <span style={{ fontFamily: "'Instrument Serif', serif", fontSize: "0.95rem", fontWeight: 400 }}>{jobDetail.job.name}</span>
+              <span style={{ fontFamily: "var(--font-display)", fontSize: "0.95rem", fontWeight: 500, letterSpacing: "-0.04em" }}>{jobDetail.job.name}</span>
               <span style={s.jobBadge}>running</span>
             </div>
             <div style={{ fontSize: "0.72rem", color: MUTED, marginBottom: "0.5rem" }}>

@@ -37,12 +37,7 @@ class MigrationPlanner:
         custom_field_conflicts = MigrationPlanner._custom_field_conflicts(
             selected_items, request.custom_field_mapping_overrides
         )
-        warnings = [
-            PreviewWarning(
-                code="date_added_not_preserved",
-                message="Discogs does not let the app preserve original date_added values.",
-            )
-        ]
+        warnings: list[PreviewWarning] = []
         metadata_capabilities = {
             "supports_date_added_write": False,
             "supports_folder_recreation": True,

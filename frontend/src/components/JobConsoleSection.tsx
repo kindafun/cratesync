@@ -1,5 +1,10 @@
 import { useState, type KeyboardEvent } from "react";
-import { formatDateTime, formatJobStatus, statusTone } from "../lib/format";
+import {
+  formatDateTime,
+  formatJobStatus,
+  formatJobSummaryLabel,
+  statusTone,
+} from "../lib/format";
 import type { JobDetailResponse, MigrationJob } from "../lib/types";
 import { StatBlock } from "./ui";
 
@@ -125,27 +130,10 @@ export function JobConsoleSection({
                 {Object.entries(jobDetail.job.summary).map(([key, value]) => (
                   <StatBlock
                     key={key}
-                    label={key.replace(/_/g, " ")}
+                    label={formatJobSummaryLabel(key)}
                     value={value}
                     small
                   />
-                ))}
-              </div>
-
-              <div className="event-feed">
-                {jobDetail.events.length === 0 && (
-                  <div className="empty-block compact">
-                    No job events recorded yet.
-                  </div>
-                )}
-                {jobDetail.events.map((event) => (
-                  <div key={event.id} className={`event event-${event.level}`}>
-                    <div className="event-stripe" />
-                    <div className="event-body">
-                      <strong>{formatDateTime(event.created_at)}</strong>
-                      <span>{event.message}</span>
-                    </div>
-                  </div>
                 ))}
               </div>
 

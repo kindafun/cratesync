@@ -449,7 +449,6 @@ p {
 .credit-meta,
 .header-note,
 .job-meta,
-.review-summary,
 .empty-block,
 .empty-cell {
   color: var(--color-muted);
@@ -847,8 +846,7 @@ select:focus {
 }
 
 .stats-line,
-.summary-strip,
-.review-summary {
+.summary-strip {
   display: flex;
   gap: var(--stack-xl);
   flex-wrap: wrap;
@@ -1229,36 +1227,26 @@ select:focus {
   background: rgba(196, 42, 26, 0.07);
 }
 
-.review-banner {
-  border: var(--border-grid-strong);
-  border-radius: var(--radius-md);
-  padding: var(--space-md);
-  margin-bottom: var(--space-md);
-  background: color-mix(in srgb, var(--color-surface) 72%, transparent);
-}
-
-.review-banner h3 {
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: var(--text-title-sm);
-  margin: 0.3rem 0 0.45rem;
-}
-
-.review-banner p {
+.review-status {
+  border-left: 2px solid var(--color-rule-strong);
+  padding: 0.35rem 0 0.35rem var(--space-sm);
+  font-size: var(--text-body-dense);
   color: var(--color-muted);
-  font-size: var(--text-body);
+  margin-bottom: var(--space-md);
   line-height: var(--line-height-body);
 }
 
-.review-banner-warning {
-  border-color: rgba(240, 82, 42, 0.34);
-  background: rgba(240, 82, 42, 0.09);
+.review-status strong {
+  color: var(--color-ink);
+  font-weight: 500;
 }
 
-.review-banner-ready {
-  border-color: rgba(30, 122, 58, 0.34);
-  background: rgba(30, 122, 58, 0.1);
-  animation: banner-in 240ms ease-out both;
+.review-status-warning {
+  border-color: var(--color-accent);
+}
+
+.review-status-ready {
+  border-color: var(--color-success);
 }
 
 .conflict-card h3 {
@@ -1274,7 +1262,6 @@ select:focus {
 }
 
 .capability-row,
-.review-summary,
 .history-strip {
   margin-bottom: 0.9rem;
 }

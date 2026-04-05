@@ -202,6 +202,22 @@ Step 1 hierarchy and filter relocation pass (2026-04-03):
 - **Native select chevron fixed** — `.filter-add-row select` now uses `appearance: none` with a custom inline SVG chevron (`background-image`) matching the muted color and weight of the sort chevrons in the table headers.
 - **`.source-filter-zone`** — New CSS wrapper class providing bottom padding and a divider border separating the filter zone from the selection toolbar.
 
+Step 3 + Job Console UX overhaul (2026-04-04):
+
+- **Review banner → inline status line** — The padded `.review-banner` block (h3 title + paragraph) replaced with `.review-status`: a single slim left-border line rendering `{title} — {message}`. Border color tones: `--color-rule-strong` (default), `--color-accent` (warning), `--color-success` (ready). `.review-banner` CSS removed.
+- **`div.review-summary` removed** — The three inline spans (Workflow mode, included/retained counts, blocking issues count) were entirely redundant with the stat blocks above and the inline status. Element and all associated CSS selectors removed.
+- **Draft pill race-condition fixed** — `active_job_exists()` in `repository.py` now includes `'draft'` in its status filter, preventing a second job from being created during the async window between job creation and `running_copy` transition. Frontend: `isCreatingJob` state added to `App.tsx`; Launch button shows "Launching…" and disables immediately on click. Draft-status jobs filtered from `recentJobs` — only meaningful states appear in the history strip.
+- **Export reports → Reveal in Finder** — `ExportService.export_job()` now calls `subprocess.Popen(["open", "-R", str(csv_path)])` after writing files, opening the exports folder in Finder with the file selected. Status message updated to "Reports exported — folder opened in Finder."
+- **Job console event feed removed** — Phase events ("Copy phase started/finished") were server-side logging noise. `JobConsoleSection.tsx` now renders job toolbar → summary stats → results table only. The `event-feed` div and all its rendering code are removed.
+- **Job console stat labels improved** — `formatJobSummaryLabel()` added to `format.ts` with an explicit `JOB_ITEM_STATUS_LABELS` map. Stat block labels now read "Copied", "Skipped", "Awaiting delete", "Delete failed" etc. instead of raw Counter key strings.
+
+Step 3 microcopy and UX clarity pass (2026-04-04):
+
+- **Capability chips rewritten** — `renderCapabilities()` replaced with `renderCapabilityChips()` in `format.ts`. Returns structured `{ label, value, note? }` objects mapped from an explicit `CAPABILITY_DISPLAY` table. Chips now render as `"Date added · not preserved"`, `"Folders · recreated in destination"`, `"Custom fields · best effort"`, `"Duplicates · skipped and logged"` instead of raw underscore-converted key strings. Chips with explanatory notes expose them via `title` attribute (hover tooltip).
+- **"Job behavior" section label** — Added above the capability chip row to anchor the block in context.
+- **Unconditional `date_added_not_preserved` warning removed** — The backend warning fired on every single preview regardless of state, using the internal field name `date_added`. Now that the capability chip communicates the same constraint in plain language, the warning block and the `PreviewWarning` emission in `planner.py` are gone. `planner.py` now returns `warnings = []` (field preserved for future dynamic warnings).
+- **`CustomFieldConflictCard` copy improved** — Replaced the raw backend conflict message with static plain-language description: "This source field doesn't have a matching field in the destination. Enter the destination field name to map it, or use the same name." Input placeholder changed from `Destination field for {fieldName}` to `e.g. {fieldName}`.
+
 Filter UX overhaul (2026-04-03):
 
 - **13 → 9 filter types** — Dropped `genre_search`, `label_search`, `format_search`, `style_search`. Each of those was a redundant free-text variant of the exact-match multi-select for the same dimension. The exact-match filters (`genres`, `labels`, `formats`, `styles`) now subsume both roles via a built-in type-to-filter input. `FILTER_OPTIONS` reordered: actionable filters (Artist, Title, Genres, Labels, Formats, Styles, Folders) lead; date filters follow.

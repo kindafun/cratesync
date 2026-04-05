@@ -36,16 +36,56 @@ export function statusTone(status: string): string {
   return "default";
 }
 
-export function renderCapabilities(
+type CapabilityChip = { label: string; value: string; note?: string };
+
+const CAPABILITY_DISPLAY: Record<string, (v: unknown) => CapabilityChip> = {
+  supports_date_added_write: () => ({
+    label: "Date added",
+    value: "not preserved",
+    note: "Discogs doesn't allow writing original collection dates — items will show today's date in the destination.",
+  }),
+  supports_folder_recreation: () => ({
+    label: "Folders",
+    value: "recreated in destination",
+  }),
+  custom_fields_best_effort: () => ({
+    label: "Custom fields",
+    value: "best effort",
+    note: "Custom field values are written when the destination has a matching field name.",
+  }),
+  duplicate_policy: (v) => ({
+    label: "Duplicates",
+    value: v === "skip_and_log" ? "skipped and logged" : String(v),
+  }),
+};
+
+export function renderCapabilityChips(
   metadata: Record<string, unknown>,
-): string[] {
+): CapabilityChip[] {
   return Object.entries(metadata).map(([key, value]) => {
-    const normalizedKey = key.replace(/_/g, " ");
-    if (typeof value === "boolean") {
-      return `${normalizedKey}: ${value ? "yes" : "no"}`;
-    }
-    return `${normalizedKey}: ${String(value)}`;
+    const fn = CAPABILITY_DISPLAY[key];
+    if (fn) return fn(value);
+    const label = key.replace(/_/g, " ");
+    const val =
+      typeof value === "boolean" ? (value ? "yes" : "no") : String(value);
+    return { label, value: val };
   });
+}
+
+const JOB_ITEM_STATUS_LABELS: Record<string, string> = {
+  copied: "Copied",
+  skipped: "Skipped",
+  failed: "Failed",
+  pending: "Pending",
+  deleted: "Deleted",
+  rolled_back: "Rolled back",
+  awaiting_delete_confirmation: "Awaiting delete",
+  delete_failed: "Delete failed",
+  delete_skipped_drift: "Drift skipped",
+};
+
+export function formatJobSummaryLabel(key: string): string {
+  return JOB_ITEM_STATUS_LABELS[key] ?? key.replace(/_/g, " ");
 }
 
 export function toDateTimeLocalValue(value?: string | null): string {

@@ -81,6 +81,7 @@ export function App() {
     total: number | null;
   } | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const [isCreatingJob, setIsCreatingJob] = useState(false);
   const [presetName, setPresetName] = useState("");
   const [selectedPresetId, setSelectedPresetId] = useState("");
   const [lastPreviewSignature, setLastPreviewSignature] = useState<
@@ -240,7 +241,7 @@ export function App() {
     () => deriveFolderLookup(destinationItems),
     [destinationItems],
   );
-  const recentJobs = jobs.slice(0, 8);
+  const recentJobs = jobs.filter((j) => j.status !== "draft").slice(0, 8);
   const previewConflicts = preview?.blocking_conflicts ?? [];
   const folderConflicts = previewConflicts.filter(
     (conflict) => conflict.type === "folder_mapping",
@@ -588,18 +589,21 @@ export function App() {
   }
 
   async function handleCreateJob() {
-    if (launchBlocked) return;
+    if (launchBlocked || isCreatingJob) return;
+    setIsCreatingJob(true);
     try {
       const detail = await api.createJob({ plan: currentPlan });
       setJobDetail(detail);
       setSelectedJobId(detail.job.id);
-      setStatus(`Job ${detail.job.id} created.`);
+      setStatus(`Job started.`);
       const nextJobs = await api.listJobs();
       setJobs(nextJobs);
     } catch (error) {
       setStatus(
         error instanceof Error ? error.message : "Job creation failed.",
       );
+    } finally {
+      setIsCreatingJob(false);
     }
   }
 
@@ -630,9 +634,8 @@ export function App() {
   async function handleExport(jobId: string) {
     try {
       const result = await api.exportJob(jobId);
-      setStatus(
-        `Reports written to ${result.csv_path} and ${result.json_path}.`,
-      );
+      setStatus("Reports exported — folder opened in Finder.");
+      void result;
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Export failed.");
     }
@@ -1217,12 +1220,12 @@ export function App() {
           <ReviewSection
             isGeneratingPreview={isGeneratingPreview}
             onGeneratePreview={() => void handlePreview()}
+            isCreatingJob={isCreatingJob}
             launchBlocked={launchBlocked}
             onLaunchJob={() => void handleCreateJob()}
             reviewState={reviewState}
             selectedSourceCount={selectedSourceCount}
             preview={preview}
-            workflowMode={workflowMode}
             previewSelectedIds={previewSelectedIds}
             duplicateReleaseIds={duplicateReleaseIds}
             folderConflicts={folderConflicts}

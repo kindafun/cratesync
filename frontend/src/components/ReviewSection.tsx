@@ -1,11 +1,10 @@
 import { Play, ScanEye } from "lucide-react";
 import { useState, type KeyboardEvent } from "react";
-import { formatDate, renderCapabilities } from "../lib/format";
+import { formatDate, renderCapabilityChips } from "../lib/format";
 import type {
   CollectionItemSnapshot,
   PreviewConflict,
   PreviewResponse,
-  WorkflowMode,
 } from "../lib/types";
 import { StatBlock } from "./ui";
 
@@ -20,12 +19,12 @@ export type ReviewState = {
 export function ReviewSection({
   isGeneratingPreview,
   onGeneratePreview,
+  isCreatingJob,
   launchBlocked,
   onLaunchJob,
   reviewState,
   selectedSourceCount,
   preview,
-  workflowMode,
   previewSelectedIds,
   duplicateReleaseIds,
   folderConflicts,
@@ -42,12 +41,12 @@ export function ReviewSection({
 }: {
   isGeneratingPreview: boolean;
   onGeneratePreview(): void;
+  isCreatingJob: boolean;
   launchBlocked: boolean;
   onLaunchJob(): void;
   reviewState: ReviewState;
   selectedSourceCount: number;
   preview: PreviewResponse | null;
-  workflowMode: WorkflowMode;
   previewSelectedIds: Set<string>;
   duplicateReleaseIds: Set<number>;
   folderConflicts: PreviewConflict[];
@@ -118,11 +117,11 @@ export function ReviewSection({
             </button>
             <button
               className="btn btn-primary"
-              disabled={launchBlocked}
+              disabled={launchBlocked || isCreatingJob}
               onClick={onLaunchJob}
             >
               <Play size={14} />
-              Launch job
+              {isCreatingJob ? "Launching…" : "Launch job"}
             </button>
           </div>
           <span
@@ -134,10 +133,10 @@ export function ReviewSection({
 
       {!collapsed && (
         <>
-          <div className={`review-banner review-banner-${reviewState.tone}`}>
-            <div className="section-label">Next action</div>
-            <h3>{reviewState.title}</h3>
-            <p>{reviewState.message}</p>
+          <div className={`review-status review-status-${reviewState.tone}`}>
+            <strong>{reviewState.title}</strong>
+            {" — "}
+            {reviewState.message}
           </div>
 
           <div className="summary-strip">
@@ -155,28 +154,6 @@ export function ReviewSection({
 
           {preview && (
             <>
-              <div className="review-summary">
-                <span>Workflow: {workflowMode}</span>
-                <span>
-                  {preview.selected_count} included · {preview.retained_count}{" "}
-                  not included
-                </span>
-                <span>
-                  {preview.blocking_conflicts.length} blocking{" "}
-                  {preview.blocking_conflicts.length === 1 ? "issue" : "issues"}
-                </span>
-              </div>
-
-              {preview.warnings.length > 0 && (
-                <div className="message-list">
-                  {preview.warnings.map((warning) => (
-                    <div key={warning.code} className="message message-warning">
-                      {warning.message}
-                    </div>
-                  ))}
-                </div>
-              )}
-
               {preview.blocking_conflicts.length > 0 && (
                 <div className="conflict-grid">
                   {folderConflicts.map((conflict) => (
@@ -207,11 +184,16 @@ export function ReviewSection({
                 </div>
               )}
 
+              <div className="section-label">Job behavior</div>
               <div className="capability-row">
-                {renderCapabilities(preview.metadata_capabilities).map(
-                  (capability) => (
-                    <span key={capability} className="capability-chip">
-                      {capability}
+                {renderCapabilityChips(preview.metadata_capabilities).map(
+                  (chip) => (
+                    <span
+                      key={chip.label}
+                      className="capability-chip"
+                      title={chip.note}
+                    >
+                      {chip.label} · {chip.value}
                     </span>
                   ),
                 )}
@@ -408,12 +390,15 @@ function CustomFieldConflictCard({
     <article className="conflict-card">
       <div className="section-label">Custom field</div>
       <h3>{fieldName}</h3>
-      <p>{conflict.message}</p>
+      <p>
+        This source field doesn't have a matching field in the destination.
+        Enter the destination field name to map it, or use the same name.
+      </p>
       <div className="inline-action">
         <input
           type="text"
           aria-label={`Destination field name for ${fieldName}`}
-          placeholder={`Destination field for ${fieldName}`}
+          placeholder={`e.g. ${fieldName}`}
           value={value}
           onChange={(event) => onChange(fieldName, event.target.value)}
         />

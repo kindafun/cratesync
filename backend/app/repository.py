@@ -394,7 +394,7 @@ class Repository:
                 """
                 SELECT 1
                 FROM migration_jobs
-                WHERE status IN ('running_copy', 'awaiting_delete_confirmation', 'running_delete')
+                WHERE status IN ('draft', 'running_copy', 'awaiting_delete_confirmation', 'running_delete')
                 LIMIT 1
                 """
             ).fetchone()

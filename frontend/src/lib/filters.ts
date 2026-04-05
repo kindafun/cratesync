@@ -1,15 +1,16 @@
 import type { CollectionItemSnapshot, SelectionFilters } from "./types";
-import { toDateTimeLocalValue, toIsoDateTime, startOfDayIso, endOfDayIso } from "./format";
+import {
+  toDateTimeLocalValue,
+  toIsoDateTime,
+  startOfDayIso,
+  endOfDayIso,
+} from "./format";
 
 export type FilterKey =
   | "specific_date"
   | "date_range"
   | "artist_search"
   | "title_search"
-  | "label_search"
-  | "genre_search"
-  | "format_search"
-  | "style_search"
   | "genres"
   | "labels"
   | "formats"
@@ -17,19 +18,15 @@ export type FilterKey =
   | "folders";
 
 export const FILTER_OPTIONS: Array<{ key: FilterKey; label: string }> = [
-  { key: "specific_date", label: "Specific date" },
-  { key: "date_range", label: "Date range" },
-  { key: "artist_search", label: "Artist search" },
-  { key: "title_search", label: "Title search" },
-  { key: "label_search", label: "Label search" },
-  { key: "genre_search", label: "Genre search" },
-  { key: "format_search", label: "Format search" },
-  { key: "style_search", label: "Style search" },
+  { key: "artist_search", label: "Artist" },
+  { key: "title_search", label: "Title" },
   { key: "genres", label: "Genres" },
   { key: "labels", label: "Labels" },
   { key: "formats", label: "Formats" },
   { key: "styles", label: "Styles" },
   { key: "folders", label: "Folders" },
+  { key: "specific_date", label: "Specific date" },
+  { key: "date_range", label: "Date range" },
 ];
 
 export const EMPTY_FILTERS: SelectionFilters = {
@@ -61,10 +58,6 @@ export function buildFilters(input: {
   dateTo: string;
   artistQuery: string;
   titleQuery: string;
-  labelQuery: string;
-  genreQuery: string;
-  formatQuery: string;
-  styleQuery: string;
   selectedFolderIds: number[];
   selectedGenres: string[];
   selectedLabels: string[];
@@ -95,23 +88,25 @@ export function buildFilters(input: {
     title_query: input.activeFilterKeys.includes("title_search")
       ? input.titleQuery.trim() || null
       : null,
-    label_query: input.activeFilterKeys.includes("label_search")
-      ? input.labelQuery.trim() || null
-      : null,
-    genre_query: input.activeFilterKeys.includes("genre_search")
-      ? input.genreQuery.trim() || null
-      : null,
-    format_query: input.activeFilterKeys.includes("format_search")
-      ? input.formatQuery.trim() || null
-      : null,
-    style_query: input.activeFilterKeys.includes("style_search")
-      ? input.styleQuery.trim() || null
-      : null,
-    folder_ids: input.activeFilterKeys.includes("folders") ? input.selectedFolderIds : [],
-    genres: input.activeFilterKeys.includes("genres") ? input.selectedGenres : [],
-    labels: input.activeFilterKeys.includes("labels") ? input.selectedLabels : [],
-    formats: input.activeFilterKeys.includes("formats") ? input.selectedFormats : [],
-    styles: input.activeFilterKeys.includes("styles") ? input.selectedStyles : [],
+    label_query: null,
+    genre_query: null,
+    format_query: null,
+    style_query: null,
+    folder_ids: input.activeFilterKeys.includes("folders")
+      ? input.selectedFolderIds
+      : [],
+    genres: input.activeFilterKeys.includes("genres")
+      ? input.selectedGenres
+      : [],
+    labels: input.activeFilterKeys.includes("labels")
+      ? input.selectedLabels
+      : [],
+    formats: input.activeFilterKeys.includes("formats")
+      ? input.selectedFormats
+      : [],
+    styles: input.activeFilterKeys.includes("styles")
+      ? input.selectedStyles
+      : [],
     year_min: null,
     year_max: null,
     rating_min: null,
@@ -125,10 +120,18 @@ export function filterSourceItems(
   items: CollectionItemSnapshot[],
   filters: SelectionFilters,
 ): CollectionItemSnapshot[] {
-  const normalizedGenres = new Set(filters.genres.map((value) => value.toLowerCase()));
-  const normalizedLabels = new Set(filters.labels.map((value) => value.toLowerCase()));
-  const normalizedFormats = new Set(filters.formats.map((value) => value.toLowerCase()));
-  const normalizedStyles = new Set(filters.styles.map((value) => value.toLowerCase()));
+  const normalizedGenres = new Set(
+    filters.genres.map((value) => value.toLowerCase()),
+  );
+  const normalizedLabels = new Set(
+    filters.labels.map((value) => value.toLowerCase()),
+  );
+  const normalizedFormats = new Set(
+    filters.formats.map((value) => value.toLowerCase()),
+  );
+  const normalizedStyles = new Set(
+    filters.styles.map((value) => value.toLowerCase()),
+  );
   const artistQuery = filters.artist_query?.trim().toLowerCase();
   const titleQuery = filters.title_query?.trim().toLowerCase();
   const labelQuery = filters.label_query?.trim().toLowerCase();
@@ -141,7 +144,8 @@ export function filterSourceItems(
     if (filters.date_from) {
       if (
         !item.date_added ||
-        new Date(item.date_added).getTime() < new Date(filters.date_from).getTime()
+        new Date(item.date_added).getTime() <
+          new Date(filters.date_from).getTime()
       ) {
         return false;
       }
@@ -149,12 +153,16 @@ export function filterSourceItems(
     if (filters.date_to) {
       if (
         !item.date_added ||
-        new Date(item.date_added).getTime() > new Date(filters.date_to).getTime()
+        new Date(item.date_added).getTime() >
+          new Date(filters.date_to).getTime()
       ) {
         return false;
       }
     }
-    if (filters.folder_ids.length > 0 && !filters.folder_ids.includes(item.folder_id)) {
+    if (
+      filters.folder_ids.length > 0 &&
+      !filters.folder_ids.includes(item.folder_id)
+    ) {
       return false;
     }
     if (
@@ -187,16 +195,28 @@ export function filterSourceItems(
     if (titleQuery && !item.title.toLowerCase().includes(titleQuery)) {
       return false;
     }
-    if (labelQuery && !item.labels.some((value) => value.toLowerCase().includes(labelQuery))) {
+    if (
+      labelQuery &&
+      !item.labels.some((value) => value.toLowerCase().includes(labelQuery))
+    ) {
       return false;
     }
-    if (genreQuery && !item.genres.some((value) => value.toLowerCase().includes(genreQuery))) {
+    if (
+      genreQuery &&
+      !item.genres.some((value) => value.toLowerCase().includes(genreQuery))
+    ) {
       return false;
     }
-    if (formatQuery && !item.formats.some((value) => value.toLowerCase().includes(formatQuery))) {
+    if (
+      formatQuery &&
+      !item.formats.some((value) => value.toLowerCase().includes(formatQuery))
+    ) {
       return false;
     }
-    if (styleQuery && !item.styles.some((value) => value.toLowerCase().includes(styleQuery))) {
+    if (
+      styleQuery &&
+      !item.styles.some((value) => value.toLowerCase().includes(styleQuery))
+    ) {
       return false;
     }
     if (legacyQuery) {
@@ -233,7 +253,9 @@ export function deriveFolderOptions(
     .sort((left, right) => left.label.localeCompare(right.label));
 }
 
-export function deriveFolderLookup(items: CollectionItemSnapshot[]): Record<number, string> {
+export function deriveFolderLookup(
+  items: CollectionItemSnapshot[],
+): Record<number, string> {
   const lookup: Record<number, string> = {};
   for (const item of items) {
     lookup[item.folder_id] = item.folder_name ?? `Folder ${item.folder_id}`;
@@ -260,7 +282,10 @@ export function deriveLoadedFilterState(filters: SelectionFilters) {
   let dateFrom = "";
   let dateTo = "";
 
-  const derivedSpecificDate = tryDeriveSpecificDate(filters.date_from, filters.date_to);
+  const derivedSpecificDate = tryDeriveSpecificDate(
+    filters.date_from,
+    filters.date_to,
+  );
   if (derivedSpecificDate) {
     activeFilterKeys.push("specific_date");
     specificDate = derivedSpecificDate;
@@ -277,10 +302,6 @@ export function deriveLoadedFilterState(filters: SelectionFilters) {
   if ((filters.folder_ids ?? []).length > 0) activeFilterKeys.push("folders");
   if (filters.artist_query) activeFilterKeys.push("artist_search");
   if (filters.title_query) activeFilterKeys.push("title_search");
-  if (filters.label_query) activeFilterKeys.push("label_search");
-  if (filters.genre_query) activeFilterKeys.push("genre_search");
-  if (filters.format_query) activeFilterKeys.push("format_search");
-  if (filters.style_query) activeFilterKeys.push("style_search");
 
   return {
     activeFilterKeys,
@@ -289,14 +310,13 @@ export function deriveLoadedFilterState(filters: SelectionFilters) {
     dateTo,
     artistQuery: filters.artist_query ?? "",
     titleQuery: filters.title_query ?? "",
-    labelQuery: filters.label_query ?? "",
-    genreQuery: filters.genre_query ?? "",
-    formatQuery: filters.format_query ?? "",
-    styleQuery: filters.style_query ?? "",
   };
 }
 
-function tryDeriveSpecificDate(dateFrom?: string | null, dateTo?: string | null): string {
+function tryDeriveSpecificDate(
+  dateFrom?: string | null,
+  dateTo?: string | null,
+): string {
   if (!dateFrom || !dateTo) return "";
   const from = new Date(dateFrom);
   const to = new Date(dateTo);
@@ -308,7 +328,10 @@ function tryDeriveSpecificDate(dateFrom?: string | null, dateTo?: string | null)
   return sameDay ? from.toISOString().slice(0, 10) : "";
 }
 
-export function appendUnique(current: string[], nextValues: string[]): string[] {
+export function appendUnique(
+  current: string[],
+  nextValues: string[],
+): string[] {
   const seen = new Set(current);
   const merged = [...current];
   for (const value of nextValues) {
@@ -319,7 +342,9 @@ export function appendUnique(current: string[], nextValues: string[]): string[] 
   return merged;
 }
 
-export function sanitizeStringMap(values: Record<string, string>): Record<string, string> {
+export function sanitizeStringMap(
+  values: Record<string, string>,
+): Record<string, string> {
   const next: Record<string, string> = {};
   for (const [key, value] of Object.entries(values)) {
     const trimmed = value.trim();

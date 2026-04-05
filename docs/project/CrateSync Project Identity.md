@@ -28,7 +28,7 @@ Six components extracted in sessions 5–6 are active and imported:
 
 - Frontend: React 19, TypeScript 5.8, Vite 7 — no UI library, pure CSS with custom design tokens
 - Backend: FastAPI on `127.0.0.1:8421`
-- Fonts: Bricolage Grotesque (UI) + Instrument Serif (display/headings)
+- Fonts: IBM Plex Sans (UI) + IBM Plex Serif (display/headings) on the active grid-exploration branch
 
 ## Sync architecture (session 6)
 

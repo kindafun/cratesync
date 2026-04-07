@@ -304,7 +304,8 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
                   <tr>
                     <td
                       colSpan={8}
-                      style={{ height: paddingTop, padding: 0, border: "none" }}
+                      className="virt-spacer"
+                      style={{ height: paddingTop }}
                     />
                   </tr>
                 )}
@@ -347,11 +348,8 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
                   <tr>
                     <td
                       colSpan={8}
-                      style={{
-                        height: paddingBottom,
-                        padding: 0,
-                        border: "none",
-                      }}
+                      className="virt-spacer"
+                      style={{ height: paddingBottom }}
                     />
                   </tr>
                 )}

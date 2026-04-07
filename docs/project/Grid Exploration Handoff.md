@@ -237,3 +237,47 @@ Filter UX overhaul (2026-04-03):
 - **Flat `FilterBlock`** — Removed the bordered card treatment and the `description` prop. Each active filter is now a `.filter-row`: a compact header line (`FIELD-LABEL ×`) and the control directly below it, separated from adjacent filters by a single light divider. No cards, no descriptions, no extra chrome.
 - **Activation chips replace add-filter dropdown** — The `<select>` + "Add filter" button row replaced with a `.filter-chips` row: one small chip per remaining inactive filter type. Click a chip to add immediately. Chips disappear as filters are activated; the row disappears entirely when all filters are active.
 - **State cleanup** — Removed `genreQuery`, `labelQuery`, `formatQuery`, `styleQuery`, and `nextFilterToAdd` state vars from `App.tsx`. Removed the `useEffect` that kept `nextFilterToAdd` in sync with available options. `buildFilters()` and `deriveLoadedFilterState()` updated accordingly.
+
+---
+
+Architecture audit and App.tsx modularization (2026-04-07, branch `ui/accounts-topbar-dropdown`):
+
+**Design system compliance pass:**
+
+- `:root` was using hardcoded `color: #f0ead8; background: #0c0b09` — replaced with `var(--color-ink)` and `var(--color-bg)`.
+- Added 6 missing tokens to `:root`: `--text-credit`, `--text-credit-sm`, `--text-stat`, `--text-stat-sm`, `--text-chip`, `--radius-circle`. All font-size and border-radius values that were hardcoded in component rules now reference these tokens.
+- Virtualizer spacer rows in `SnapshotSection`, `SourceSelectionSection`, and `ReviewSection` switched from inline `style={{ padding: 0, border: "none" }}` overrides to a shared `.virt-spacer` CSS class.
+
+**Backend bug fixes:**
+
+- `selection.py` — `SelectionEngine._matches()` returned `any([])` = `False` when all filters were empty, silently selecting nothing. Fixed to `return True if not checks else any(checks)`.
+- `jobs.py` — `_run_copy` and `_run_delete` had no top-level try-except; any unexpected exception left a job stuck in `running_copy`/`running_delete` forever. Both methods now catch `Exception` and write a `failed` status + error event.
+- `keychain.py` — `get_secret()` used `check=True` on the subprocess call, letting `CalledProcessError` propagate as an unhandled 500. Now catches and re-raises as `ValueError` with a clear reconnect message.
+- `database.py` — `connect()` context manager now has an explicit `connection.rollback()` in the except branch before re-raising.
+
+**Frontend type fix:**
+
+- `ReviewTone` and `ReviewState` types were defined locally in `ReviewSection.tsx`. Moved to `lib/types.ts` (shared contract layer). Import updated in `ReviewSection.tsx`; `App.tsx` no longer needed to import them.
+
+**ReviewSection virtualization:**
+
+- The release review table was the one remaining unvirtualized table. Added `@tanstack/react-virtual` virtualizer with the same pattern as `SnapshotSection` and `SourceSelectionSection`.
+
+**App.tsx hook extraction — `frontend/src/hooks/`:**
+
+App.tsx reduced from ~1,430 lines to ~430. Four hooks extracted:
+
+| Hook                     | What moved there                                                                                                                                                                       |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useCollectionSnapshots` | Snapshot + item state for both accounts; derived `sourceAccount`/`destinationAccount`                                                                                                  |
+| `useSelectionFilters`    | All 11 filter state vars, `buildFilters` memo, option derivation memos, `addFilter`/`removeFilter`                                                                                     |
+| `useMigrationPlan`       | `planName`, `workflowMode`, selection IDs, override maps, `currentPlan`/`currentPlanSignature`, all selection callbacks, stale-ID pruning effect                                       |
+| `useWorkspaceState`      | All async handlers, all background effects (title, OAuth message, preset refresh, job detail load, active job polling), workspace state (`jobs`, `presets`, `preview`, `status`, etc.) |
+
+`CLAUDE.md` updated: App.tsx guidance changed from "do not split" to "hook extraction is encouraged; only extract render components when they have a clearly bounded prop interface."
+
+`FilterKeyBlock` component extracted from the `renderFilterBlock` switch in App.tsx → `components/FilterKeyBlock.tsx`. Typed props interface; renders the correct filter control for a given `FilterKey`.
+
+App.tsx now retains only: `accounts` useState, 4 hook calls, 3 DOM refs, keyboard/pointer/initial-load effects, inline derived render values (`previewIsStale`, `launchBlocked`, `reviewState`, etc.), and the JSX tree.
+
+**Verification:** 8/8 backend tests passed; `npm run build --prefix frontend` clean.

@@ -168,3 +168,11 @@ export interface SaveSelectionPresetRequest {
   account_id: string;
   filters: SelectionFilters;
 }
+
+export type ReviewTone = "default" | "warning" | "ready";
+
+export interface ReviewState {
+  tone: ReviewTone;
+  title: string;
+  message: string;
+}

@@ -3,8 +3,8 @@
   font-optical-sizing: auto;
   font-kerning: normal;
   font-synthesis: none;
-  color: #f0ead8;
-  background: #0c0b09;
+  color: var(--color-ink);
+  background: var(--color-bg);
 
   /* Color */
   --color-bg: #f5f0e8;
@@ -39,6 +39,11 @@
   --text-title-md: 1.7rem;
   --text-title-lg: 2.1rem;
   --text-display: clamp(3rem, 6vw, 5.8rem);
+  --text-credit: 1.65rem;
+  --text-credit-sm: 1.35rem;
+  --text-stat: 2.15rem;
+  --text-stat-sm: 1.55rem;
+  --text-chip: 0.68rem;
 
   --line-height-tight: 1.05;
   --line-height-body: 1.65;
@@ -81,6 +86,7 @@
   --radius-sm: 0px;
   --radius-md: 0px;
   --radius-pill: 0px;
+  --radius-circle: 50%;
 
   /* Motion */
   --duration-fast: 120ms;
@@ -229,7 +235,7 @@ p {
 .status-dot {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: var(--radius-circle);
   background: var(--color-success);
   box-shadow: 0 0 0 4px rgba(30, 122, 58, 0.15);
   animation: dot-pulse 2.4s ease-in-out infinite;
@@ -439,12 +445,12 @@ p {
 }
 
 .credit-name {
-  font-size: 1.65rem;
+  font-size: var(--text-credit);
   line-height: var(--line-height-tight);
 }
 
 .credit-name-empty {
-  font-size: 1.35rem;
+  font-size: var(--text-credit-sm);
 }
 
 .credit-meta,
@@ -745,7 +751,7 @@ p {
 .acct-dot {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: var(--radius-circle);
   background: var(--color-rule);
   flex-shrink: 0;
 }
@@ -1005,11 +1011,11 @@ select:focus {
 }
 
 .stat-block-small .stat-value {
-  font-size: 1.55rem;
+  font-size: var(--text-stat-sm);
 }
 
 .stat-value {
-  font-size: 2.15rem;
+  font-size: var(--text-stat);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
@@ -1272,7 +1278,7 @@ select:focus {
   gap: 0.35rem;
   border-radius: var(--radius-pill);
   padding: 0.3rem 0.6rem;
-  font-size: 0.68rem;
+  font-size: var(--text-chip);
   letter-spacing: 0.04em;
 }
 
@@ -1427,7 +1433,7 @@ select:focus {
 }
 
 .job-name {
-  font-size: 1.35rem;
+  font-size: var(--text-credit-sm);
   margin-bottom: 0.15rem;
 }
 
@@ -1766,6 +1772,12 @@ select:focus {
   display: flex;
   flex-direction: column;
   gap: var(--stack-sm);
+}
+
+/* Virtualized table spacer rows */
+.virt-spacer {
+  padding: 0;
+  border: none;
 }
 
 /* Reduced motion */

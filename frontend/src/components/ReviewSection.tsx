@@ -1,20 +1,14 @@
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { Play, ScanEye } from "lucide-react";
-import { useState, type KeyboardEvent } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { formatDate, renderCapabilityChips } from "../lib/format";
 import type {
   CollectionItemSnapshot,
   PreviewConflict,
   PreviewResponse,
+  ReviewState,
 } from "../lib/types";
 import { StatBlock } from "./ui";
-
-type ReviewTone = "default" | "warning" | "ready";
-
-export type ReviewState = {
-  tone: ReviewTone;
-  title: string;
-  message: string;
-};
 
 export function ReviewSection({
   isGeneratingPreview,
@@ -66,6 +60,22 @@ export function ReviewSection({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [tableCollapsed, setTableCollapsed] = useState(false);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+
+  const rowVirtualizer = useVirtualizer({
+    count: reviewItems.length,
+    getScrollElement: () => tableScrollRef.current,
+    estimateSize: () => 36,
+    overscan: 5,
+  });
+  const virtualItems = rowVirtualizer.getVirtualItems();
+  const paddingTop =
+    virtualItems.length > 0 ? (virtualItems[0]?.start ?? 0) : 0;
+  const paddingBottom =
+    virtualItems.length > 0
+      ? rowVirtualizer.getTotalSize() -
+        (virtualItems[virtualItems.length - 1]?.end ?? 0)
+      : 0;
 
   function handleToggle() {
     setCollapsed((c) => !c);
@@ -232,7 +242,10 @@ export function ReviewSection({
               </div>
 
               {!tableCollapsed && (
-                <div className="table-wrap table-wrap-tall">
+                <div
+                  ref={tableScrollRef}
+                  className="table-wrap table-wrap-tall"
+                >
                   <table className="data-table review-table">
                     <thead>
                       <tr>
@@ -252,7 +265,17 @@ export function ReviewSection({
                           </td>
                         </tr>
                       )}
-                      {reviewItems.map((item) => {
+                      {reviewItems.length > 0 && paddingTop > 0 && (
+                        <tr>
+                          <td
+                            colSpan={6}
+                            className="virt-spacer"
+                            style={{ height: paddingTop }}
+                          />
+                        </tr>
+                      )}
+                      {virtualItems.map((virtualRow) => {
+                        const item = reviewItems[virtualRow.index];
                         const isPreviewSelected = previewSelectedIds.has(
                           item.id,
                         );
@@ -297,6 +320,15 @@ export function ReviewSection({
                           </tr>
                         );
                       })}
+                      {reviewItems.length > 0 && paddingBottom > 0 && (
+                        <tr>
+                          <td
+                            colSpan={6}
+                            className="virt-spacer"
+                            style={{ height: paddingBottom }}
+                          />
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>

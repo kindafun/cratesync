@@ -11,63 +11,68 @@ This repo is **CrateSync** even though the working directory is named `Discogs M
 - Backend tests: `python3 -m pytest backend/app/tests`
 - Frontend build check: `npm run build --prefix frontend`
 
+For full setup and environment details, use `docs/dev-setup.md`.
+
 ## Code Quality
+
 - Prefer correct, complete implementations over minimal ones.
-- Use appropriate data structures and algorithms — don't brute-force what has a known better solution.
-- When fixing a bug, fix the root cause, not the symptom.
-- If something I asked for requires error handling or validation to work reliably, include it without asking.
+- Use appropriate data structures and algorithms instead of brute-force workarounds.
+- Fix root causes, not symptoms.
+- If a request needs validation or error handling to be reliable, include it.
 
 ## Environment
 
-- Backend serves on `127.0.0.1:8421`; Vite serves on `5173`.
-- This is a local-only macOS tool. SQLite lives under `app_data/`, Discogs OAuth tokens belong in macOS Keychain.
+- Backend serves on `127.0.0.1:8421`; Vite serves on `127.0.0.1:5173`.
+- This is a local-only macOS tool.
 - Do not swap to alternate app servers or ports unless the documented local endpoints are unavailable.
 
 ## Where To Look When Needed
 
-- `docs/architecture.md` — backend data flow, repository/service boundaries, local SQLite model.
-- `docs/migration-workflow.md` — copy/move job lifecycle, preview semantics, rollback/delete flow.
-- `docs/dev-setup.md` — local run commands and environment setup.
-- `docs/design-system.md` — frontend token/component patterns when making UI changes.
-- `docs/project/CrateSync Project Identity.md` — repo-specific architecture decisions and what is "real" vs design-lab code.
-- `docs/project/Grid Exploration Handoff.md` — active frontend branch direction; if you change frontend behavior/visuals, update this and `.impeccable.md` in the same pass.
-- `docs/project/Frontend Backlog.md` — known UI tradeoffs and branch-specific follow-ups.
+- `docs/README.md` — documentation index
+- `docs/dev-setup.md` — install, environment, run, test, and local-data behavior
+- `docs/architecture.md` — backend/frontend boundaries, storage model, and auth flow
+- `docs/migration-workflow.md` — copy/move lifecycle, preview semantics, rollback/delete flow
+- `docs/design-system.md` — frontend tokens and implementation-facing UI rules
+- `.impeccable.md` — durable design direction and UX constraints
 
 ## Project-Specific Coding Standards
 
-- `frontend/src/App.tsx` is the state/render hub. Hook extraction is encouraged — state, memos, and handlers should live in `frontend/src/hooks/` (e.g. `useSelectionFilters`, `useMigrationPlan`, `useCollectionSnapshots`, `useWorkspaceState`). Do not split the JSX render tree into sub-components opportunistically; only extract render components when they have a clearly bounded prop interface.
-- Do not delete `frontend/src/components/AccountConnections.tsx`, `JobConsole.tsx`, `PlannerPanel.tsx`, or `SnapshotExplorer.tsx` just because `App.tsx` does not import them; they are retained design-lab/reference components.
+- `frontend/src/App.tsx` is the state/render hub. Hook extraction is encouraged. Extract render components only when they have a clearly bounded prop interface.
+- Keep hook-owned state and async workflow logic under `frontend/src/hooks/`.
 - Keep shared frontend API/data contracts in `frontend/src/lib/types.ts` and request wrappers in `frontend/src/lib/api.ts`.
-- Add backend tests under `backend/app/tests/` for planner/selection/service changes, and run `python3 -m pytest backend/app/tests` when backend behavior changes.
+- Do not delete `frontend/src/components/AccountConnections.tsx`, `JobConsole.tsx`, `PlannerPanel.tsx`, or `SnapshotExplorer.tsx` just because `App.tsx` does not import them; they are retained design-lab/reference components.
+- Design-lab explorations under `frontend/src/__design_lab/` are reference code, not the active app surface.
+- Add backend tests under `backend/app/tests/` for planner, selection, service, or repository behavior changes.
 - Run `npm run build --prefix frontend` after frontend changes.
 
 ## Guardrails
 
 - Do not overwrite user edits, revert unrelated changes, or restore deleted code without checking why it was removed.
-- Verify file/symbol existence with `rg` before asserting architecture details; this repo has branch-specific docs and retained legacy files.
-- Do not mock database behavior in backend tests; use real test database flows because mocked persistence has caused migration bugs.
+- Verify file and symbol existence with `rg` before asserting repo structure.
+- Do not mock database behavior in backend tests; use real test database flows.
 - Preserve async sync semantics: `POST /collections/{id}/sync` starts work, and the frontend polls `GET /collections/{id}/sync-progress`.
 - Do not store Discogs OAuth access tokens in SQLite; they belong in macOS Keychain only.
-- For destructive local actions like clearing app data or deleting source-side releases, require deliberate confirmation and preserve a serious danger-state UI treatment.
-- In this branch's frontend exploration, preserve the exposed grid, square geometry, collapsible sections, and stronger Review-step threshold unless intentionally changing the design direction.
+- For destructive local actions like clearing app data or deleting source-side releases, require deliberate confirmation and preserve serious danger-state treatment.
+- Preserve the current exposed-grid, square-geometry, light control-surface direction unless intentionally changing design direction.
 
 ## Git / GitHub
 
 - "Commit to branch" means commit locally and push the current branch to `origin`.
-- Keep commit subjects short and imperative, e.g. `Refine grid exploration UI`. For non-trivial changes, add a commit body that explains what changed, why, and how it was verified.
+- Keep commit subjects short and imperative, e.g. `Refine review status flow`.
+- For non-trivial changes, add a commit body explaining what changed, why, and how it was verified.
 - Prefer non-interactive git commands; do not use `git reset --hard` or `git checkout --` unless explicitly requested.
-- Stage and commit only the files relevant to the task. Leave unrelated dirty files untouched.
-- For PRs, keep scope narrow, summarize user-facing impact, and list validation commands/results.
+- Stage and commit only files relevant to the task. Leave unrelated dirty files untouched.
+- For PRs, keep scope narrow, summarize user-facing impact, and list validation commands and results.
 
 ## Verification
 
 - Frontend-only change: run `npm run build --prefix frontend`.
 - Backend behavior change: run `python3 -m pytest backend/app/tests`.
-- Docs-only change: no build/test command is required unless docs describe generated behavior that changed.
+- Docs-only change: no build/test command is required unless the docs describe behavior that changed and you need to confirm it.
 - If a verification command cannot be run, state that explicitly and say what remains unverified.
 
 ## Doc Sync
 
-- If frontend implementation or visual direction changes, update `docs/project/Grid Exploration Handoff.md` and `.impeccable.md` in the same pass.
-- If architecture or workflow behavior changes, update the matching file under `docs/` and cross-check `docs/project/CrateSync Project Identity.md`.
-- Keep `AGENTS.md` as a shim only; update durable rules here in `CLAUDE.md`.
+- If frontend implementation or visual direction changes, update `docs/design-system.md` and `.impeccable.md` in the same pass when the change affects shared guidance.
+- If architecture, setup, or workflow behavior changes, update the matching file under `docs/`.
+- Keep `AGENTS.md` as a shim only; update durable coding-agent rules here in `CLAUDE.md`.

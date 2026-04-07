@@ -6,66 +6,70 @@ permalink: discogs-migration/design-system
 
 # CrateSync Design System
 
-## Direction
-- Editorial control surface, not generic SaaS dashboard.
-- High-contrast serif display typography over dense operational data.
-- Warm amber is the primary accent; green is reserved for success/safe states; red is reserved for destructive/error states.
+This file owns implementation-facing UI rules. For product tone and durable design intent, see [.impeccable.md](../.impeccable.md).
+
+## Current Direction
+
+- Exposed grid structure, not soft card stacks
+- Light, warm control surface with visible rules and square geometry
+- IBM Plex Sans for dense UI copy and IBM Plex Serif for emphasis
+- Orange for primary emphasis, green for success/source states, red for destructive states
 
 ## Core Tokens
 
 ### Color
-- `--color-bg`: app background
-- `--color-surface`, `--color-surface-raised`, `--color-surface-soft`: layered dark surfaces
-- `--color-rule`, `--color-rule-strong`: dividers and borders
-- `--color-ink`, `--color-muted`, `--color-faint`: text hierarchy
-- `--color-accent`: primary action and highlight color
-- `--color-success`, `--color-danger`: semantic state colors
+
+- `--color-bg`, `--color-surface`, `--color-surface-raised`, `--color-surface-soft`
+- `--color-rule`, `--color-rule-strong`
+- `--color-ink`, `--color-muted`, `--color-faint`
+- `--color-accent`, `--color-accent-strong`, `--color-accent-soft`
+- `--color-success`, `--color-success-soft`
+- `--color-danger`, `--color-danger-soft`, `--color-danger-ink`
+- `--color-th-bg`, `--color-overlay`
 
 ### Typography
-- `--font-ui`: all interface text
+
+- `--font-ui`: interface copy
 - `--font-display`: headings, account names, stat numerals
-- `--text-label`: metadata, labels, table headers
-- `--text-meta`: secondary operational copy
-- `--text-body`: standard body copy
-- `--text-title-sm`, `--text-title-md`, `--text-display`: section and hero scales
+- `--text-label`, `--text-meta`, `--text-body`, `--text-body-dense`, `--text-table`
+- `--text-title-sm`, `--text-title-md`, `--text-title-lg`, `--text-display`
+- `--text-credit`, `--text-credit-sm`, `--text-stat`, `--text-stat-sm`, `--text-chip`
 
-### Spacing
-- Base spacing scale:
-  - `--space-2xs`: 4px
-  - `--space-xs`: 8px
-  - `--space-sm`: 12px
-  - `--space-md`: 16px
-  - `--space-lg`: 24px
-  - `--space-xl`: 32px
-  - `--space-2xl`: 40px
-  - `--space-3xl`: 48px
-- Semantic spacing:
-  - `--shell-padding`: page gutters
-  - `--section-gap`: distance between major sections
-  - `--section-divider-space`: top padding after a divider
-  - `--stack-tight`, `--stack-sm`, `--stack-md`, `--stack-lg`, `--stack-xl`: vertical rhythm inside components
-  - `--inline-gap-sm`, `--inline-gap-md`, `--inline-gap-lg`: horizontal rhythm for actions/chips/toolbars
+### Spacing and control sizing
 
-### Radius
-- `--radius-sm`: form controls
-- `--radius-md`: cards, panels, tables, alerts
-- `--radius-pill`: chips, buttons, badges
+- Base spacing tokens: `--space-2xs` through `--space-3xl`
+- Semantic layout tokens: `--shell-padding`, `--section-gap`, `--section-divider-space`
+- Stack tokens: `--stack-tight`, `--stack-sm`, `--stack-md`, `--stack-lg`, `--stack-xl`
+- Inline-gap tokens: `--inline-gap-sm`, `--inline-gap-md`, `--inline-gap-lg`
+- Control tokens: `--control-height`, `--control-padding-x`, `--control-padding-y`
+- Table padding tokens: `--table-cell-padding-x`, `--table-cell-padding-y`
 
-## Spacing Rules
-- Use semantic spacing tokens first. Reach for raw spacing tokens only when introducing a new pattern.
-- Major layout transitions should use `--section-gap` and `--section-divider-space`, not ad hoc `margin-top` values.
-- Form stacks should use `--stack-lg`; tighter metadata groups can use `--stack-sm` or `--stack-md`.
-- Tables, cards, alerts, and events should share the same medium radius and similar internal padding to feel like one system.
-- Buttons and inputs should share `--control-height` and control padding.
+### Borders and radius
+
+- `--radius-sm`, `--radius-md`, `--radius-pill` are intentionally `0px`
+- `--radius-circle` is reserved for circular indicators only
+- `--border-grid`, `--border-grid-strong`, `--border-section-divider` define structural rhythm
+
+## Layout Rules
+
+- Let rules and spacing define regions before introducing extra fills.
+- Major transitions should use `--border-section-divider` and `--section-divider-space`.
+- The topbar and shell columns should derive padding from shell tokens, not local ad hoc values.
+- Collapsible sections are allowed when they reduce scanning cost without hiding capability.
+- Virtualized table spacer rows should use shared styling, not inline border/padding overrides.
 
 ## Component Rules
-- Top bar, left rail, and right canvas should inherit shell padding tokens instead of local custom padding.
-- Display serif is for emphasis only: hero heading, section titles where needed, account names, stat numerals, and conflict card titles.
-- Metadata labels should always use `--text-label` with uppercase tracking.
-- Use amber for primary actions and emphasis. Do not use green for primary CTAs.
-- Success, warning, and danger colors should appear only in status-bearing elements.
+
+- Accounts live in the topbar as infrequent configuration, not as a permanent left-rail panel.
+- Step 1 in the left rail owns plan configuration only; source filters live above the source table they affect.
+- Bounded filter dimensions should use `PillSelect` with type-to-filter behavior instead of free-text inputs.
+- Review state should read as a concise inline status line, not a padded feature banner.
+- The job console should focus on toolbar, summary, and results; server-noise event feeds are not part of the main UI.
+- Destructive actions must use danger styling and explicit confirmation.
 
 ## When Extending
+
 - Add new tokens in `frontend/src/styles.css` only when they are reusable across at least two components.
-- Prefer semantic names like `--section-gap` or `--control-height` over one-off intentless values.
-- If a new component needs spacing that the existing semantic scale cannot express cleanly, add a new semantic token and document it here.
+- Prefer semantic token names over one-off numeric aliases.
+- Keep display typography limited to emphasis moments; dense operational content should stay in the UI face.
+- If a new reusable pattern needs documentation, update this file and the matching durable design intent in `.impeccable.md` when applicable.

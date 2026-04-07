@@ -11,6 +11,7 @@ import {
   Bookmark,
   Copy,
   Link,
+  Plug,
   RefreshCw,
   Trash2,
   Unlink,
@@ -91,7 +92,6 @@ export function App() {
     "selected",
   );
   const [retryFn, setRetryFn] = useState<(() => void) | null>(null);
-  const [accountsCollapsed, setAccountsCollapsed] = useState(false);
   const [plannerCollapsed, setPlannerCollapsed] = useState(false);
 
   const [planName, setPlanName] = useState("Digital archive split");
@@ -376,6 +376,7 @@ export function App() {
   }
 
   const savedViewsRef = useRef<HTMLDetailsElement>(null);
+  const acctMenuRef = useRef<HTMLDetailsElement>(null);
   const handlePreviewRef = useRef(handlePreview);
   handlePreviewRef.current = handlePreview;
 
@@ -385,9 +386,15 @@ export function App() {
 
   useEffect(() => {
     function onKeyDown(event: globalThis.KeyboardEvent) {
-      if (event.key === "Escape" && savedViewsRef.current?.open) {
-        savedViewsRef.current.open = false;
-        return;
+      if (event.key === "Escape") {
+        if (savedViewsRef.current?.open) {
+          savedViewsRef.current.open = false;
+          return;
+        }
+        if (acctMenuRef.current?.open) {
+          acctMenuRef.current.open = false;
+          return;
+        }
       }
       if ((event.metaKey || event.ctrlKey) && event.key === "g") {
         if (
@@ -401,6 +408,23 @@ export function App() {
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  useEffect(() => {
+    function onPointerDown(e: PointerEvent) {
+      if (
+        acctMenuRef.current?.open &&
+        !acctMenuRef.current.contains(e.target as Node)
+      )
+        acctMenuRef.current.open = false;
+      if (
+        savedViewsRef.current?.open &&
+        !savedViewsRef.current.contains(e.target as Node)
+      )
+        savedViewsRef.current.open = false;
+    }
+    window.addEventListener("pointerdown", onPointerDown);
+    return () => window.removeEventListener("pointerdown", onPointerDown);
   }, []);
 
   useEffect(() => {
@@ -969,6 +993,17 @@ export function App() {
     }
   }
 
+  const acctTriggerLabel = isSyncing
+    ? "Syncing…"
+    : !sourceAccount || !destinationAccount
+      ? !sourceAccount && !destinationAccount
+        ? "Not connected"
+        : "Action needed"
+      : "2 connected";
+
+  const acctTriggerNeedsAction =
+    !isSyncing && (!sourceAccount || !destinationAccount);
+
   return (
     <main className="app-shell">
       <header className="topbar">
@@ -982,6 +1017,64 @@ export function App() {
               ? "Refreshing workspace"
               : `Backend online${accounts.length > 0 ? ` · ${accounts.length} account${accounts.length !== 1 ? "s" : ""}` : ""}`}
           </span>
+          <details className="acct-menu" ref={acctMenuRef}>
+            <summary
+              aria-label="Account connections"
+              className={
+                acctTriggerNeedsAction ? "acct-summary--action" : undefined
+              }
+            >
+              <Plug size={13} />
+              <span className="acct-trigger-label">
+                {isSyncing ? (
+                  <>
+                    <span
+                      className="status-dot status-dot-busy"
+                      aria-hidden="true"
+                    />
+                    Syncing…
+                  </>
+                ) : (
+                  acctTriggerLabel
+                )}
+              </span>
+            </summary>
+            <div className="acct-panel">
+              {retryFn && (
+                <div className="error-banner">
+                  <span>{status}</span>
+                  <button className="btn btn-ghost btn-sm" onClick={retryFn}>
+                    Try again
+                  </button>
+                </div>
+              )}
+              <AccountCard
+                role="source"
+                account={sourceAccount}
+                itemCount={sourceSnapshot?.total_items ?? 0}
+                syncing={isSyncing === sourceAccount?.id}
+                syncProgress={
+                  isSyncing === sourceAccount?.id ? syncProgress : null
+                }
+                onConnect={handleConnect}
+                onSync={handleSync}
+                onDisconnect={handleDisconnect}
+              />
+              <hr className="acct-row-divider" />
+              <AccountCard
+                role="destination"
+                account={destinationAccount}
+                itemCount={destinationSnapshot?.total_items ?? 0}
+                syncing={isSyncing === destinationAccount?.id}
+                syncProgress={
+                  isSyncing === destinationAccount?.id ? syncProgress : null
+                }
+                onConnect={handleConnect}
+                onSync={handleSync}
+                onDisconnect={handleDisconnect}
+              />
+            </div>
+          </details>
           <button
             className="text-btn text-btn-danger"
             onClick={() => void handleClearLocalData()}
@@ -994,64 +1087,6 @@ export function App() {
 
       <section className="shell-grid">
         <aside className="shell-left">
-          <section className="rail-section">
-            <div
-              className="rail-section-header"
-              role="button"
-              tabIndex={0}
-              aria-expanded={!accountsCollapsed}
-              onClick={() => setAccountsCollapsed((c) => !c)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setAccountsCollapsed((c) => !c);
-                }
-              }}
-            >
-              <h2 className="section-label">Accounts</h2>
-              <span
-                className={`section-collapse-icon${accountsCollapsed ? " collapsed" : ""}`}
-                aria-hidden="true"
-              />
-            </div>
-            {!accountsCollapsed && (
-              <>
-                {retryFn && (
-                  <div className="error-banner">
-                    <span>{status}</span>
-                    <button className="btn btn-ghost btn-sm" onClick={retryFn}>
-                      Try again
-                    </button>
-                  </div>
-                )}
-                <AccountCard
-                  role="source"
-                  account={sourceAccount}
-                  itemCount={sourceSnapshot?.total_items ?? 0}
-                  syncing={isSyncing === sourceAccount?.id}
-                  syncProgress={
-                    isSyncing === sourceAccount?.id ? syncProgress : null
-                  }
-                  onConnect={handleConnect}
-                  onSync={handleSync}
-                  onDisconnect={handleDisconnect}
-                />
-                <AccountCard
-                  role="destination"
-                  account={destinationAccount}
-                  itemCount={destinationSnapshot?.total_items ?? 0}
-                  syncing={isSyncing === destinationAccount?.id}
-                  syncProgress={
-                    isSyncing === destinationAccount?.id ? syncProgress : null
-                  }
-                  onConnect={handleConnect}
-                  onSync={handleSync}
-                  onDisconnect={handleDisconnect}
-                />
-              </>
-            )}
-          </section>
-
           <section className="rail-section">
             <div
               className="rail-section-header"
@@ -1277,65 +1312,57 @@ function AccountCard({
 }) {
   if (!account) {
     return (
-      <article className="credit-card credit-card-empty">
+      <div className="acct-row">
         <span className={`role-chip role-${role}`}>{role}</span>
-        <div className="credit-name credit-name-empty">
-          Authorize {role} account
+        <div className="acct-row-content">
+          <span className="acct-row-name acct-row-name--empty">
+            Not connected
+          </span>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => onConnect(role)}
+          >
+            <Link size={13} />
+            Connect account
+          </button>
         </div>
-        <p className="credit-meta">
-          Connect the {role} Discogs account to populate local snapshots.
-        </p>
-        <button className="btn btn-primary" onClick={() => onConnect(role)}>
-          <Link size={14} />
-          Connect account
-        </button>
-      </article>
+      </div>
     );
   }
 
   return (
-    <article className="credit-card">
+    <div className="acct-row">
       <span className={`role-chip role-${role}`}>{role}</span>
-      <div className="credit-name">{account.username}</div>
-      <div className="account-status">
-        {syncing ? (
-          <span className="credit-meta">
-            {syncProgress
+      <div className="acct-row-content">
+        <span className="acct-row-name">{account.username}</span>
+        <span className="acct-row-meta">
+          {syncing
+            ? syncProgress
               ? `Fetching ${syncProgress.fetched.toLocaleString()} / ${syncProgress.total != null ? syncProgress.total.toLocaleString() : "…"} releases…`
-              : "Syncing…"}
-          </span>
-        ) : account.last_synced_at ? (
-          <>
-            <span className="credit-meta">
-              Synced {formatSyncDateTime(account.last_synced_at)}
-            </span>
-            <span className="credit-count">
-              {itemCount.toLocaleString()} items
-            </span>
-          </>
-        ) : (
-          <span className="credit-meta">Connected, not yet synced</span>
-        )}
+              : "Syncing…"
+            : account.last_synced_at
+              ? `Synced ${formatSyncDateTime(account.last_synced_at)} · ${itemCount.toLocaleString()} items`
+              : "Connected, not yet synced"}
+        </span>
+        <div className="acct-row-actions">
+          <button
+            className="btn btn-primary btn-sm"
+            disabled={syncing}
+            onClick={() => onSync(account.id)}
+          >
+            <RefreshCw size={13} />
+            {syncing ? "Syncing…" : "Sync"}
+          </button>
+          <button
+            className="text-btn"
+            disabled={syncing}
+            onClick={() => onDisconnect(account.id)}
+          >
+            disconnect
+          </button>
+        </div>
       </div>
-      <div className="inline-button-row">
-        <button
-          className="btn btn-primary"
-          disabled={syncing}
-          onClick={() => onSync(account.id)}
-        >
-          <RefreshCw size={14} />
-          {syncing ? "Syncing…" : "Sync collection"}
-        </button>
-        <button
-          className="btn btn-ghost"
-          disabled={syncing}
-          onClick={() => onDisconnect(account.id)}
-        >
-          <Unlink size={14} />
-          Disconnect
-        </button>
-      </div>
-    </article>
+    </div>
   );
 }
 

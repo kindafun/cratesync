@@ -138,4 +138,4 @@ class SelectionEngine:
             query = filters.text_query.lower()
             haystack = f"{item.artist} {item.title} {' '.join(item.labels)} {' '.join(item.genres)}".lower()
             checks.append(query in haystack)
-        return any(checks)
+        return True if not checks else any(checks)

@@ -57,6 +57,16 @@ def test_style_filter_matches_styles():
     assert [item.id for item in selected] == ["item_1"]
 
 
+def test_empty_filters_selects_all_items():
+    items = [
+        make_item("item_1", 1, 1999, ["Electronic"], ["Warp"], "Alpha"),
+        make_item("item_2", 2, 2001, ["Rock"], ["Matador"], "Beta"),
+        make_item("item_3", 3, 2010, ["Jazz"], ["ECM"], "Gamma"),
+    ]
+    selected = SelectionEngine.select_items(items, SelectionFilters())
+    assert [item.id for item in selected] == ["item_1", "item_2", "item_3"]
+
+
 def test_artist_query_only_matches_artist_field():
     items = [
         make_item("item_1", 1, 1999, ["Electronic"], ["Warp"], "Alpha", ["Deep House"]),

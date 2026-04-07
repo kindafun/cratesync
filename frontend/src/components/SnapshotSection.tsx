@@ -192,7 +192,8 @@ export const SnapshotSection = memo(function SnapshotSection({
                   <tr>
                     <td
                       colSpan={6}
-                      style={{ height: paddingTop, padding: 0, border: "none" }}
+                      className="virt-spacer"
+                      style={{ height: paddingTop }}
                     />
                   </tr>
                 )}
@@ -213,11 +214,8 @@ export const SnapshotSection = memo(function SnapshotSection({
                   <tr>
                     <td
                       colSpan={6}
-                      style={{
-                        height: paddingBottom,
-                        padding: 0,
-                        border: "none",
-                      }}
+                      className="virt-spacer"
+                      style={{ height: paddingBottom }}
                     />
                   </tr>
                 )}

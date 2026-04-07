@@ -25,20 +25,25 @@ class KeychainStore:
         )
 
     def get_secret(self, account_name: str) -> str:
-        result = subprocess.run(
-            [
-                "security",
-                "find-generic-password",
-                "-a",
-                account_name,
-                "-s",
-                settings.keychain_service,
-                "-w",
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
+        try:
+            result = subprocess.run(
+                [
+                    "security",
+                    "find-generic-password",
+                    "-a",
+                    account_name,
+                    "-s",
+                    settings.keychain_service,
+                    "-w",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        except subprocess.CalledProcessError:
+            raise ValueError(
+                f"Token '{account_name}' not found in Keychain. Re-connect the account."
+            )
         return result.stdout.strip()
 
     def delete_secret(self, account_name: str) -> None:

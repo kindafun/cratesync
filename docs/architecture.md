@@ -8,11 +8,11 @@ permalink: discogs-migration/architecture
 
 ## Overview
 
-CrateSync is a localhost macOS app. There is no cloud component — all data stays on the user's machine.
+CrateSync is a local-only macOS app. There is no hosted backend or cloud persistence.
 
-```
+```text
 Browser (React/Vite)          Backend (FastAPI)           External
-  127.0.0.1:5173       ←→     127.0.0.1:8421      ←→    Discogs API
+  127.0.0.1:5173       <->     127.0.0.1:8421      <->    Discogs API
                                      |
                               SQLite (app_data/)
                               macOS Keychain
@@ -20,88 +20,100 @@ Browser (React/Vite)          Backend (FastAPI)           External
 
 ## Backend
 
-**FastAPI** (`backend/app/`) served by `uvicorn` on port 8421.
+FastAPI lives under `backend/app/`.
 
-| Module                  | Responsibility                                                                           |
-| ----------------------- | ---------------------------------------------------------------------------------------- |
-| `api/routes.py`         | All HTTP endpoints                                                                       |
-| `services/discogs.py`   | `DiscogsClient` — all Discogs API calls (OAuth1 via `requests_oauthlib`)                 |
-| `services/jobs.py`      | `JobRunner` — copy and delete phases run in background threads                           |
-| `services/planner.py`   | `MigrationPlanner` — preview logic, conflict detection                                   |
-| `services/selection.py` | `SelectionEngine` + `CollectionNormalizer` — filter/select items, normalize API payloads |
-| `services/exports.py`   | `ExportService` — write CSV and JSON exports to `app_data/exports/`                      |
-| `services/keychain.py`  | `KeychainStore` — read/write OAuth tokens from macOS Keychain                            |
-| `repository.py`         | All SQLite reads and writes, single `Repository` class                                   |
-| `database.py`           | Database init, schema migrations                                                         |
-| `domain/models.py`      | All Pydantic models and type aliases                                                     |
-| `config.py`             | `Settings` dataclass, reads from `.env`                                                  |
+| Module | Responsibility |
+| --- | --- |
+| `api/routes.py` | HTTP endpoints, background task triggers, sync progress surface |
+| `services/discogs.py` | Discogs OAuth and collection API client |
+| `services/jobs.py` | Copy, delete, rollback, and job execution state |
+| `services/planner.py` | Preview logic, duplicate detection, blocking conflicts |
+| `services/selection.py` | Selection and filter matching against synced snapshots |
+| `services/exports.py` | CSV and JSON job reports written under `app_data/exports/` |
+| `services/keychain.py` | macOS Keychain token storage |
+| `repository.py` | SQLite reads and writes |
+| `database.py` | Database initialization and migrations |
+| `domain/models.py` | Pydantic models and shared backend types |
+| `config.py` | Settings loaded from `.env` |
+
+### Runtime model
+
+- `POST /collections/{id}/sync` starts a background sync job and returns immediately.
+- The frontend polls `GET /collections/{id}/sync-progress` until the sync reports `done` or `error`.
+- Only one active migration job is allowed at a time.
+- OAuth access tokens are never stored in SQLite; only Keychain references are persisted.
 
 ## Frontend
 
-**React 19 + Vite + TypeScript** (`frontend/src/`) on port 5173.
+The frontend lives under `frontend/src/` and uses React 19, TypeScript 5.8, and Vite 7.
 
-**Hooks** (`frontend/src/hooks/`) — state extracted from App.tsx:
+### App structure
 
-| Hook                     | Responsibility                                                                              |
-| ------------------------ | ------------------------------------------------------------------------------------------- |
-| `useCollectionSnapshots` | Source/destination snapshot + item state; derives `sourceAccount`/`destinationAccount`      |
-| `useSelectionFilters`    | All 11 filter state vars, derived options, `addFilter`/`removeFilter`                       |
-| `useMigrationPlan`       | Plan config, selection state, `currentPlan`/`currentPlanSignature`, selection handlers      |
-| `useWorkspaceState`      | Async handlers (connect, sync, preview, job lifecycle), background effects, workspace state |
+- `App.tsx` is the state/render hub. It owns top-level refs, keyboard/pointer effects, inline render-only derivations, and the main JSX tree.
+- State and async behavior are extracted into hooks under `frontend/src/hooks/`.
+- Shared API contracts and request wrappers live under `frontend/src/lib/`.
 
-**Active components** (`frontend/src/components/`):
+### Hooks
 
-| File                         | Responsibility                                                                                                  |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `App.tsx`                    | Root component — calls 4 hooks, computes render-only derived values, owns DOM refs and keyboard/pointer effects |
-| `SourceSelectionSection.tsx` | Virtualized source table with bulk-select and filter slot                                                       |
-| `SnapshotSection.tsx`        | Destination reference table                                                                                     |
-| `ReviewSection.tsx`          | Preview, conflict resolution, virtualized review table, launch                                                  |
-| `JobConsoleSection.tsx`      | Job history strip and job detail                                                                                |
-| `FilterKeyBlock.tsx`         | Renders the correct filter control for a given `FilterKey`                                                      |
-| `ui.tsx`                     | Shared primitives: `FilterBlock`, `PillSelect`, `Field`, `StatBlock`                                            |
+| Hook | Responsibility |
+| --- | --- |
+| `useCollectionSnapshots` | Source/destination snapshot and item state; derives connected accounts |
+| `useSelectionFilters` | Filter state, derived options, and add/remove filter behavior |
+| `useMigrationPlan` | Plan config, selection state, overrides, and plan signatures |
+| `useWorkspaceState` | Async handlers, polling, presets, preview state, jobs, and workspace status |
 
-**Retained design-lab components** (not imported by App.tsx but preserved for reference):
-`AccountConnections.tsx`, `SnapshotExplorer.tsx`, `PlannerPanel.tsx`, `JobConsole.tsx`
+### Active components
 
-**Libraries** (`frontend/src/lib/`):
+| File | Responsibility |
+| --- | --- |
+| `App.tsx` | Root composition and workflow shell |
+| `SourceSelectionSection.tsx` | Source table, filtering slot, and selection controls |
+| `SnapshotSection.tsx` | Destination reference table |
+| `ReviewSection.tsx` | Preview, blocking-conflict resolution, and launch controls |
+| `JobConsoleSection.tsx` | Job history, summary, actions, and item results |
+| `FilterKeyBlock.tsx` | Renders the correct control for a given filter key |
+| `ui.tsx` | Shared primitives such as `Field`, `StatBlock`, `FilterBlock`, and `PillSelect` |
 
-| File         | Responsibility                                     |
-| ------------ | -------------------------------------------------- |
-| `api.ts`     | All fetch calls to the backend                     |
-| `oauth.ts`   | OAuth popup flow via `window.postMessage`          |
-| `types.ts`   | TypeScript types mirroring backend Pydantic models |
-| `filters.ts` | Filter building, option derivation, preset loading |
-| `format.ts`  | Date, status, and capability formatting helpers    |
+### Reference-only UI code
+
+These files are retained as design-lab/reference components and are not part of the active app surface:
+
+- `frontend/src/components/AccountConnections.tsx`
+- `frontend/src/components/JobConsole.tsx`
+- `frontend/src/components/PlannerPanel.tsx`
+- `frontend/src/components/SnapshotExplorer.tsx`
+- `frontend/src/__design_lab/`
 
 ## Data Storage
 
-- **SQLite** at `app_data/discogs_migration.sqlite3` — accounts, snapshots, jobs, events
-- **macOS Keychain** — OAuth access tokens (service: `local.discogs-migration.tokens`)
-- **Exports** at `app_data/exports/` — CSV and JSON job reports
+- SQLite: `app_data/discogs_migration.sqlite3`
+- Exports: `app_data/exports/`
+- OAuth tokens: macOS Keychain under `local.discogs-migration.tokens` by default
 
 ## Authentication
 
-Discogs uses OAuth 1.0a. The flow:
+Discogs uses OAuth 1.0a.
 
-1. Frontend calls `GET /auth/discogs/start?role=source` → gets an authorization URL
-2. Backend stores the request token in SQLite
-3. Frontend opens the URL in a popup window
-4. User approves on Discogs; Discogs redirects to `GET /auth/discogs/callback`
-5. Backend exchanges the verifier for access tokens, stores them in Keychain
-6. Callback page posts a message to the opener window; popup closes
-
-Access tokens are referenced by Keychain key names stored in the `connected_accounts` table — never stored in the database directly.
+1. Frontend requests `GET /auth/discogs/start?role=source|destination`.
+2. Backend stores the temporary request token in SQLite.
+3. Frontend opens the Discogs authorization URL in a popup.
+4. Discogs redirects to `GET /auth/discogs/callback`.
+5. Backend exchanges the verifier for access tokens and stores them in the macOS Keychain.
+6. The callback window posts a message back to the opener and closes.
 
 ## Configuration
 
-All config in `.env` at the project root. Key variables:
+Configuration is loaded from the project-root `.env`.
 
-| Variable                        | Default                 | Purpose                                                   |
-| ------------------------------- | ----------------------- | --------------------------------------------------------- |
-| `DISCOGS_CONSUMER_KEY`          | —                       | Required. Discogs app key                                 |
-| `DISCOGS_CONSUMER_SECRET`       | —                       | Required. Discogs app secret                              |
-| `DISCOGS_REQUEST_DELAY_SECONDS` | `1.1`                   | Rate limit buffer between API calls                       |
-| `SNAPSHOT_STALE_HOURS`          | `4`                     | How long before a collection snapshot is considered stale |
-| `FRONTEND_ORIGIN`               | `http://127.0.0.1:5173` | CORS allowed origin                                       |
-| `BACKEND_ORIGIN`                | `http://127.0.0.1:8421` | Used in OAuth callback                                    |
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `DISCOGS_CONSUMER_KEY` | none | Discogs application key |
+| `DISCOGS_CONSUMER_SECRET` | none | Discogs application secret |
+| `BACKEND_ORIGIN` | `http://127.0.0.1:8421` | OAuth callback origin |
+| `FRONTEND_ORIGIN` | `http://127.0.0.1:5173` | Allowed frontend origin |
+| `DISCOGS_REQUEST_DELAY_SECONDS` | `1.1` | Rate-limit buffer between Discogs calls |
+| `SNAPSHOT_STALE_HOURS` | `4` | Snapshot freshness threshold |
+| `DISCOGS_MIGRATION_APP_DIR` | `app_data/` | Local app-data root |
+| `DISCOGS_MIGRATION_DB_PATH` | `app_data/discogs_migration.sqlite3` | SQLite path |
+| `DISCOGS_MIGRATION_EXPORT_DIR` | `app_data/exports/` | Report export directory |
+| `DISCOGS_KEYCHAIN_SERVICE` | `local.discogs-migration.tokens` | Keychain service name |

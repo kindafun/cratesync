@@ -178,6 +178,18 @@ Cognitive load reduction — icons and account card differentiation (2026-04-03)
 
 ---
 
+Accounts topbar migration (2026-04-07, branch `ui/accounts-topbar-dropdown`):
+
+- **Accounts moved from sidebar to topbar dropdown** — The left rail no longer has an Accounts section. Account management now lives in a `<details>/<summary>` dropdown anchored to `.topbar-actions`, following the same native pattern as the `saved-views-menu`. The `accountsCollapsed` state var and the sidebar rail section are gone.
+- **Trigger: icon + dynamic status text** — The `<Plug>` icon (lucide-react) is accompanied by a short computed label: `"Not connected"`, `"Action needed"` (accent-tinted, shown when one account is missing), `"2 connected"`, or `"Syncing…"` (with pulsing status dot). Replaces the two-dot-only indicator.
+- **AccountCard redesigned — flat row layout** — `article.credit-card` replaced with `div.acct-row`: a 2-column CSS grid (`5.5rem` role chip column + `1fr` content). Username (primary), status meta (muted), and action row stack vertically in the right column. No card chrome, no borders. The old `.credit-card` CSS is preserved for the retained `AccountConnections.tsx` reference component.
+- **Disconnect de-risked** — Rendered as `.text-btn` (plain text link) instead of `.btn.btn-ghost`. Visually subordinate to the primary Sync action.
+- **Empty state simplified** — "Not connected" label + "Connect account" CTA only; no descriptive copy.
+- **New CSS classes** — `.acct-menu`, `.acct-panel`, `.acct-trigger-label`, `.acct-summary--action`, `.acct-row`, `.acct-row-content`, `.acct-row-name`, `.acct-row-meta`, `.acct-row-actions`, `.acct-row-divider`. `.acct-row-name` added to the shared `font-family: var(--font-display)` rule.
+- **Design system compliance** — All spacing uses existing semantic tokens (`--stack-tight`, `--space-2xs`, `--inline-gap-md`). No new tokens introduced.
+
+---
+
 ## How to Run
 
 ```bash

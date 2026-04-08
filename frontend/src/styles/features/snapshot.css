@@ -1,0 +1,118 @@
+.snapshot-toolbar,
+.snapshot-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--inline-gap-md);
+  flex-wrap: wrap;
+}
+
+.snapshot-toolbar {
+  justify-content: space-between;
+  margin-bottom: var(--stack-sm);
+}
+
+.snapshot-frame-wrap {
+  max-height: min(53rem, 80vh);
+}
+
+.snapshot-table {
+  width: max-content;
+  min-width: 100%;
+  table-layout: auto;
+}
+
+.snapshot-table .snapshot-col-artist {
+  min-width: 12rem;
+}
+
+.snapshot-table .snapshot-col-title {
+  min-width: 16rem;
+}
+
+.snapshot-table .snapshot-col-year {
+  min-width: 5.5rem;
+}
+
+.snapshot-table .snapshot-col-genre {
+  min-width: 9rem;
+}
+
+.snapshot-table .snapshot-col-style {
+  min-width: 9rem;
+}
+
+.snapshot-table .snapshot-col-label {
+  min-width: 10rem;
+}
+
+.snapshot-table .snapshot-col-format {
+  min-width: 10rem;
+}
+
+.snapshot-table .snapshot-col-added {
+  min-width: 8.5rem;
+}
+
+.snapshot-sort-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.snapshot-sort-button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.snapshot-table td,
+.snapshot-table th {
+  overflow-wrap: normal;
+  word-break: normal;
+  white-space: nowrap;
+}
+
+.snapshot-sort-chevron {
+  width: 0.46rem;
+  height: 0.46rem;
+  flex-shrink: 0;
+  border-right: 1.5px solid var(--color-muted);
+  border-bottom: 1.5px solid var(--color-muted);
+  transform: rotate(45deg);
+  transition:
+    transform var(--duration-fast) ease,
+    border-color var(--duration-fast) ease,
+    opacity var(--duration-fast) ease;
+  opacity: 0.55;
+}
+
+.snapshot-sort-button.active .snapshot-sort-chevron,
+.snapshot-sort-button:hover .snapshot-sort-chevron {
+  border-color: var(--color-accent);
+  opacity: 1;
+}
+
+.snapshot-sort-chevron.asc {
+  transform: rotate(225deg);
+}
+
+.snapshot-sort-chevron.desc {
+  transform: rotate(45deg);
+}
+
+@media (max-width: 760px) {
+  .snapshot-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

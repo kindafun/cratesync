@@ -1,0 +1,15 @@
+.job-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--inline-gap-lg);
+  margin-bottom: var(--space-md);
+}
+
+.job-name {
+  margin-bottom: 0.15rem;
+  font-family: var(--font-display);
+  font-size: var(--text-credit-sm);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}

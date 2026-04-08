@@ -12,9 +12,13 @@ import type {
 
 const ENV_API_BASE =
   typeof import.meta !== "undefined" ? import.meta.env.VITE_API_BASE?.trim() || "" : "";
+const BROWSER_ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
+const FRONTEND_DEV_ORIGINS = new Set(["http://localhost:5173", "http://127.0.0.1:5173"]);
+const SAME_ORIGIN_API_BASE =
+  BROWSER_ORIGIN && !FRONTEND_DEV_ORIGINS.has(BROWSER_ORIGIN) ? BROWSER_ORIGIN : "";
 const API_CANDIDATES = Array.from(
   new Set(
-    [ENV_API_BASE, "http://127.0.0.1:8421", "http://127.0.0.1:8000"].filter(
+    [ENV_API_BASE, SAME_ORIGIN_API_BASE, "http://127.0.0.1:8421", "http://127.0.0.1:8000"].filter(
       (value): value is string => Boolean(value),
     ),
   ),
@@ -22,7 +26,12 @@ const API_CANDIDATES = Array.from(
 
 let activeApiBase = API_CANDIDATES[0];
 
-export const API_ORIGINS = API_CANDIDATES.map((value) => new URL(value).origin);
+export const API_ORIGINS = Array.from(
+  new Set([
+    ...API_CANDIDATES.map((value) => new URL(value).origin),
+    ...(BROWSER_ORIGIN ? [BROWSER_ORIGIN] : []),
+  ]),
+);
 
 async function fetchFromBase(path: string, init: RequestInit | undefined, base: string) {
   return fetch(`${base}${path}`, {

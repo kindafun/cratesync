@@ -40,6 +40,22 @@ npm run dev --prefix frontend
 
 The backend runs on `http://127.0.0.1:8421` and the frontend runs on `http://127.0.0.1:5173`.
 
+To run the built frontend directly from FastAPI instead of Vite:
+
+```bash
+npm run build --prefix frontend
+DISCOGS_MIGRATION_SERVE_FRONTEND=1 uvicorn app.main:app --app-dir backend
+```
+
+In built-frontend mode, open `http://127.0.0.1:8421`.
+
+For the current macOS beta packaging flow:
+
+```bash
+pip install -e "backend[package]"
+./scripts/package_macos.sh
+```
+
 ## Documentation Map
 
 - [docs/README.md](docs/README.md) for the documentation index
@@ -61,5 +77,5 @@ The backend runs on `http://127.0.0.1:8421` and the frontend runs on `http://127
 ## Notes
 
 - This is a local, single-user tool intended for one source and one destination account at a time.
-- OAuth tokens are stored in the macOS Keychain. App state, snapshots, exports, and the SQLite database live under `app_data/` by default.
+- OAuth tokens are stored in the macOS Keychain. App state, snapshots, exports, and the SQLite database live under `app_data/` by default in source checkouts and under `~/Library/Application Support/CrateSync/` in frozen bundles.
 - The legacy Python scripts remain in the repo as references; the FastAPI + React app is the active product surface.

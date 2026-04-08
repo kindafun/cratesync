@@ -271,13 +271,19 @@ def resume_job(job_id: str):
 
 @router.post("/jobs/{job_id}/confirm-delete")
 def confirm_delete(job_id: str):
-    job_runner.confirm_delete(job_id)
+    try:
+        job_runner.confirm_delete(job_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     return repository.get_job_detail(job_id)
 
 
 @router.post("/jobs/{job_id}/rollback")
 def rollback_job(job_id: str):
-    job_runner.rollback(job_id)
+    try:
+        job_runner.rollback(job_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     return repository.get_job_detail(job_id)
 
 

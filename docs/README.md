@@ -7,7 +7,7 @@ Use these files as the current sources of truth:
 - [docs/architecture.md](architecture.md): backend/frontend structure, storage, auth, and runtime boundaries
 - [docs/migration-workflow.md](migration-workflow.md): copy/move lifecycle and job semantics
 - [docs/design-system.md](design-system.md): UI tokens, layout rules, and component conventions
-- [docs/package-macos.md](package-macos.md): packaging notes for a future signed macOS build
+- [docs/package-macos.md](package-macos.md): current beta packaging flow and remaining installer gaps
 - [CLAUDE.md](../CLAUDE.md): coding-agent instructions
 - [.impeccable.md](../.impeccable.md): persistent design intent
 

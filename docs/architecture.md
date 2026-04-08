@@ -11,10 +11,19 @@ permalink: discogs-migration/architecture
 CrateSync is a local-only macOS app. There is no hosted backend or cloud persistence.
 
 ```text
+Dev:
 Browser (React/Vite)          Backend (FastAPI)           External
   127.0.0.1:5173       <->     127.0.0.1:8421      <->    Discogs API
                                      |
                               SQLite (app_data/)
+                              macOS Keychain
+
+Packaged / built-frontend mode:
+Browser (served by FastAPI)   Backend (FastAPI)           External
+  127.0.0.1:8421       <->     127.0.0.1:8421      <->    Discogs API
+                                     |
+                              SQLite (app_data or
+                              ~/Library/Application Support/CrateSync/)
                               macOS Keychain
 ```
 
@@ -42,6 +51,7 @@ FastAPI lives under `backend/app/`.
 - The frontend polls `GET /collections/{id}/sync-progress` until the sync reports `done` or `error`.
 - Only one active migration job is allowed at a time.
 - OAuth access tokens are never stored in SQLite; only Keychain references are persisted.
+- When `DISCOGS_MIGRATION_SERVE_FRONTEND=1`, FastAPI serves the built frontend bundle from `frontend/dist` (or `DISCOGS_MIGRATION_FRONTEND_DIST_DIR`) and the frontend origin collapses to `BACKEND_ORIGIN`.
 
 ## Frontend
 
@@ -89,6 +99,7 @@ These files are retained as design-lab/reference components and are not part of 
 - SQLite: `app_data/discogs_migration.sqlite3`
 - Exports: `app_data/exports/`
 - OAuth tokens: macOS Keychain under `local.discogs-migration.tokens` by default
+- Frozen macOS bundles default writable app data to `~/Library/Application Support/CrateSync/`.
 
 ## Authentication
 
@@ -110,10 +121,12 @@ Configuration is loaded from the project-root `.env`.
 | `DISCOGS_CONSUMER_KEY` | none | Discogs application key |
 | `DISCOGS_CONSUMER_SECRET` | none | Discogs application secret |
 | `BACKEND_ORIGIN` | `http://127.0.0.1:8421` | OAuth callback origin |
-| `FRONTEND_ORIGIN` | `http://127.0.0.1:5173` | Allowed frontend origin |
+| `FRONTEND_ORIGIN` | `http://127.0.0.1:5173` in dev, `BACKEND_ORIGIN` in built-frontend mode | Allowed frontend origin |
 | `DISCOGS_REQUEST_DELAY_SECONDS` | `1.1` | Rate-limit buffer between Discogs calls |
 | `SNAPSHOT_STALE_HOURS` | `4` | Snapshot freshness threshold |
-| `DISCOGS_MIGRATION_APP_DIR` | `app_data/` | Local app-data root |
-| `DISCOGS_MIGRATION_DB_PATH` | `app_data/discogs_migration.sqlite3` | SQLite path |
-| `DISCOGS_MIGRATION_EXPORT_DIR` | `app_data/exports/` | Report export directory |
+| `DISCOGS_MIGRATION_APP_DIR` | `app_data/` in source checkouts, `~/Library/Application Support/CrateSync/` in frozen bundles | Local app-data root |
+| `DISCOGS_MIGRATION_DB_PATH` | `app_data/discogs_migration.sqlite3` in source checkouts | SQLite path |
+| `DISCOGS_MIGRATION_EXPORT_DIR` | `app_data/exports/` in source checkouts | Report export directory |
+| `DISCOGS_MIGRATION_SERVE_FRONTEND` | `0` in source checkouts, `1` in frozen bundles | Serve the built frontend bundle directly from FastAPI |
+| `DISCOGS_MIGRATION_FRONTEND_DIST_DIR` | `frontend/dist` | Directory containing the built frontend bundle |
 | `DISCOGS_KEYCHAIN_SERVICE` | `local.discogs-migration.tokens` | Keychain service name |

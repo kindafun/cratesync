@@ -1,0 +1,100 @@
+.canvas-section-review {
+  border-top: 3px solid var(--color-accent);
+  margin-top: calc(var(--section-gap) + 0.65rem);
+  padding-top: 1.6rem;
+}
+
+.review-status {
+  margin-bottom: var(--space-md);
+  padding: 0.35rem 0 0.35rem var(--space-sm);
+  border-left: 2px solid var(--color-rule-strong);
+  font-size: var(--text-body-dense);
+  color: var(--color-muted);
+  line-height: var(--line-height-body);
+}
+
+.review-status strong {
+  color: var(--color-ink);
+  font-weight: 500;
+}
+
+.review-status-warning {
+  border-color: var(--color-accent);
+}
+
+.review-status-ready {
+  border-color: var(--color-success);
+}
+
+.conflict-grid {
+  display: grid;
+  gap: var(--stack-sm);
+  margin-bottom: var(--space-md);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.conflict-card {
+  border: var(--border-grid);
+  border-radius: var(--radius-md);
+  padding: 0.9rem var(--space-md);
+  background: transparent;
+}
+
+.conflict-card h3 {
+  margin: 0.35rem 0 0.45rem;
+  font-family: var(--font-display);
+  font-size: var(--text-title-sm);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+.conflict-card p {
+  margin-bottom: var(--space-sm);
+  color: var(--color-muted);
+  font-size: var(--text-body-dense);
+  line-height: var(--line-height-body);
+}
+
+.capability-row,
+.preview-state {
+  display: flex;
+  gap: var(--inline-gap-sm);
+  flex-wrap: wrap;
+}
+
+.capability-row {
+  margin-bottom: 0.9rem;
+}
+
+.capability-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: var(--border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 0.3rem 0.6rem;
+  color: var(--color-muted);
+  font-size: var(--text-chip);
+  letter-spacing: 0.04em;
+  background: var(--color-overlay);
+}
+
+.table-wrap-tall {
+  max-height: min(38rem, 70vh);
+}
+
+.preview-loading {
+  display: grid;
+  gap: var(--stack-md);
+}
+
+.preview-loading-label {
+  color: var(--color-muted);
+  font-size: var(--text-meta);
+}
+
+.preview-loading-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-sm);
+}

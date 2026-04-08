@@ -1,0 +1,105 @@
+:root {
+  font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  font-optical-sizing: auto;
+  font-kerning: normal;
+  font-synthesis: none;
+  color: var(--color-ink);
+  background: var(--color-bg);
+
+  /* Color */
+  --color-bg: #f5f0e8;
+  --color-surface: #ede8df;
+  --color-surface-raised: #e6e0d6;
+  --color-surface-soft: #ddd7cc;
+  --color-rule: #c8c0b4;
+  --color-rule-strong: #b0a898;
+  --color-ink: #1a1612;
+  --color-muted: #6b6358;
+  --color-faint: #9b9389;
+  --color-accent: #f0522a;
+  --color-accent-strong: #e84020;
+  --color-accent-soft: rgba(240, 82, 42, 0.12);
+  --color-success: #1e7a3a;
+  --color-success-soft: rgba(30, 122, 58, 0.12);
+  --color-danger: #c42a1a;
+  --color-danger-soft: rgba(196, 42, 26, 0.12);
+  --color-danger-ink: #8a1a10;
+  --color-overlay: rgba(0, 0, 0, 0.035);
+
+  /* Typography */
+  --font-ui: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "IBM Plex Serif", Georgia, serif;
+
+  --text-label: 0.625rem;
+  --text-meta: 0.75rem;
+  --text-body: 0.875rem;
+  --text-body-dense: 0.8rem;
+  --text-table: 0.77rem;
+  --text-title-sm: 1.25rem;
+  --text-title-md: 1.7rem;
+  --text-title-lg: 2.1rem;
+  --text-display: clamp(3rem, 6vw, 5.8rem);
+  --text-credit: 1.65rem;
+  --text-credit-sm: 1.35rem;
+  --text-stat: 2.15rem;
+  --text-stat-sm: 1.55rem;
+  --text-chip: 0.68rem;
+
+  --line-height-tight: 1.05;
+  --line-height-body: 1.65;
+  --line-height-relaxed: 1.7;
+  --tracking-label: 0.2em;
+  --tracking-table: 0.14em;
+
+  /* Spacing */
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 2.5rem;
+  --space-3xl: 3rem;
+
+  /* Semantic spacing */
+  --shell-padding: var(--space-xl);
+  --shell-padding-right: var(--space-2xl);
+  --section-gap: var(--space-lg);
+  --section-divider-space: 1.35rem;
+  --stack-tight: var(--space-xs);
+  --stack-sm: 0.65rem;
+  --stack-md: 0.85rem;
+  --stack-lg: var(--space-md);
+  --stack-xl: 1.2rem;
+  --inline-gap-sm: 0.45rem;
+  --inline-gap-md: 0.65rem;
+  --inline-gap-lg: var(--space-md);
+
+  /* Controls */
+  --control-height: 2.5rem;
+  --control-padding-x: 0.75rem;
+  --control-padding-y: 0.625rem;
+  --table-cell-padding-y: 0.55rem;
+  --table-cell-padding-x: 0.7rem;
+
+  /* Radius */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-pill: 0px;
+  --radius-circle: 50%;
+
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-base: 140ms;
+  --duration-snap: 60ms;
+
+  /* Borders and surfaces */
+  --border-subtle: 1px solid var(--color-rule);
+  --border-strong: 1px solid var(--color-rule-strong);
+  --border-grid: 1px solid var(--color-rule);
+  --border-grid-strong: 1px solid var(--color-rule-strong);
+  --border-section-divider: 2px solid var(--color-rule-strong);
+  --color-th-bg: #ddd7cc;
+  --surface-card: rgba(237, 232, 223, 0.85);
+  --surface-table: rgba(237, 232, 223, 0.75);
+}

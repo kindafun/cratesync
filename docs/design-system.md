@@ -58,6 +58,16 @@ This file owns implementation-facing UI rules. For product tone and durable desi
 - Collapsible sections are allowed when they reduce scanning cost without hiding capability.
 - Virtualized table spacer rows should use shared styling, not inline border/padding overrides.
 
+## Stylesheet Architecture
+
+- `frontend/src/styles.css` is the stylesheet entrypoint only. Do not author selectors directly in that file.
+- Put reusable CSS variables in `frontend/src/styles/tokens.css`.
+- Put global reset and document-level behavior in `frontend/src/styles/base.css`.
+- Put shell and section structure in `frontend/src/styles/layout.css`.
+- Put shared UI primitives in `frontend/src/styles/primitives.css`.
+- Put active feature-owned selectors under `frontend/src/styles/features/`.
+- Leave reference-only selectors out of the active import graph unless that reference surface is intentionally being revived.
+
 ## Component Rules
 
 - Accounts live in the topbar as infrequent configuration, not as a permanent left-rail panel.
@@ -69,7 +79,9 @@ This file owns implementation-facing UI rules. For product tone and durable desi
 
 ## When Extending
 
-- Add new tokens in `frontend/src/styles.css` only when they are reusable across at least two components.
+- Add new tokens in `frontend/src/styles/tokens.css` only when they are reusable across at least two components.
 - Prefer semantic token names over one-off numeric aliases.
 - Keep display typography limited to emphasis moments; dense operational content should stay in the UI face.
+- Add selectors to `primitives.css` only when at least two active features intentionally share the pattern.
+- Add selectors to a feature stylesheet when the class is owned by one active surface, even if that surface spans more than one component.
 - If a new reusable pattern needs documentation, update this file and the matching durable design intent in `.impeccable.md` when applicable.

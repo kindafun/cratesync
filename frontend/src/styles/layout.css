@@ -19,17 +19,10 @@
 }
 
 .shell-grid {
-  display: grid;
-  grid-template-columns: minmax(340px, 1fr) minmax(0, 2.15fr);
   min-height: calc(100vh - 4.75rem);
 }
 
-.shell-left {
-  border-right: var(--border-grid-strong);
-  padding: var(--shell-padding);
-}
-
-.shell-right {
+.shell-content {
   padding: var(--shell-padding) var(--shell-padding) var(--space-3xl)
     var(--shell-padding-right);
 }
@@ -142,17 +135,6 @@
   }
 }
 
-@media (max-width: 960px) {
-  .shell-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .shell-left {
-    border-right: none;
-    border-bottom: var(--border-subtle);
-  }
-}
-
 @media (max-width: 760px) {
   :root {
     --shell-padding: var(--space-md);
@@ -163,8 +145,7 @@
   }
 
   .topbar,
-  .shell-left,
-  .shell-right {
+  .shell-content {
     padding-left: var(--shell-padding);
     padding-right: var(--shell-padding-right);
   }

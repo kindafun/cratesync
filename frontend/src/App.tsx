@@ -279,6 +279,22 @@ export function App() {
               ? "Refreshing workspace"
               : `Backend online${accounts.length > 0 ? ` · ${accounts.length} account${accounts.length !== 1 ? "s" : ""}` : ""}`}
           </span>
+          <div className="toggle-group">
+            <button
+              className={`toggle-option${workflowMode === "copy" ? " active" : ""}`}
+              onClick={() => setWorkflowMode("copy")}
+            >
+              <Copy size={13} />
+              Copy
+            </button>
+            <button
+              className={`toggle-option${workflowMode === "move" ? " active" : ""}`}
+              onClick={() => setWorkflowMode("move")}
+            >
+              <ArrowRightLeft size={13} />
+              Move
+            </button>
+          </div>
           <details className="acct-menu" ref={acctMenuRef}>
             <summary
               aria-label="Account connections"

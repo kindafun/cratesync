@@ -159,7 +159,6 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
         onKeyDown={handleHeaderKeyDown}
       >
         <div>
-          <div className="section-label">Step 2</div>
           <h2>{title}</h2>
         </div>
         <div className="canvas-header-right">

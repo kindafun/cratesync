@@ -70,7 +70,7 @@ This file owns implementation-facing UI rules. For product tone and durable desi
 
 ## Component Rules
 
-- Accounts live in the topbar as infrequent configuration, not as a permanent left-rail panel.
+- Account controls live with the Source and Destination sections they affect, not in a shared topbar dropdown or permanent left-rail panel.
 - Step 1 in the left rail owns plan configuration only; source filters live above the source table they affect.
 - Bounded filter dimensions should use `PillSelect` with type-to-filter behavior instead of free-text inputs.
 - Review state should read as a concise inline status line, not a padded feature banner.

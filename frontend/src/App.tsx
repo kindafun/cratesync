@@ -3,15 +3,13 @@ import {
   ArrowRightLeft,
   Bookmark,
   Copy,
-  Link,
-  Plug,
-  RefreshCw,
   Trash2,
 } from "lucide-react";
 
 import { FilterKeyBlock } from "./components/FilterKeyBlock";
 import { JobConsoleSection } from "./components/JobConsoleSection";
 import { ReviewSection } from "./components/ReviewSection";
+import { SectionAccountControls } from "./components/SectionAccountControls";
 import { SnapshotSection } from "./components/SnapshotSection";
 import { SourceSelectionSection } from "./components/SourceSelectionSection";
 import { Field } from "./components/ui";
@@ -19,7 +17,6 @@ import { useCollectionSnapshots } from "./hooks/useCollectionSnapshots";
 import { useMigrationPlan } from "./hooks/useMigrationPlan";
 import { useSelectionFilters } from "./hooks/useSelectionFilters";
 import { useWorkspaceState } from "./hooks/useWorkspaceState";
-import { formatSyncDateTime } from "./lib/format";
 import type {
   CollectionSnapshot,
   ConnectedAccount,
@@ -118,6 +115,7 @@ export function App() {
     isCreatingJob,
     lastPreviewSignature,
     retryFn,
+    retryAccountId,
     presetName,
     setPresetName,
     selectedPresetId,
@@ -164,7 +162,6 @@ export function App() {
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
   const savedViewsRef = useRef<HTMLDetailsElement>(null);
-  const acctMenuRef = useRef<HTMLDetailsElement>(null);
   const handlePreviewRef = useRef(handlePreview);
   handlePreviewRef.current = handlePreview;
 
@@ -180,10 +177,6 @@ export function App() {
       if (event.key === "Escape") {
         if (savedViewsRef.current?.open) {
           savedViewsRef.current.open = false;
-          return;
-        }
-        if (acctMenuRef.current?.open) {
-          acctMenuRef.current.open = false;
           return;
         }
       }
@@ -204,11 +197,6 @@ export function App() {
   // ── Click-outside to close dropdowns ─────────────────────────────────────
   useEffect(() => {
     function onPointerDown(e: PointerEvent) {
-      if (
-        acctMenuRef.current?.open &&
-        !acctMenuRef.current.contains(e.target as Node)
-      )
-        acctMenuRef.current.open = false;
       if (
         savedViewsRef.current?.open &&
         !savedViewsRef.current.contains(e.target as Node)
@@ -256,15 +244,9 @@ export function App() {
     destinationAccount,
     sourceSnapshot,
   });
-  const acctTriggerLabel = isSyncing
-    ? "Syncing…"
-    : !sourceAccount || !destinationAccount
-      ? !sourceAccount && !destinationAccount
-        ? "Not connected"
-        : "Action needed"
-      : "2 connected";
-  const acctTriggerNeedsAction =
-    !isSyncing && (!sourceAccount || !destinationAccount);
+  const heroStatusLabel = loading ? "Refreshing workspace" : status;
+  const workspaceRetry =
+    retryFn && retryAccountId === null ? retryFn : null;
 
   return (
     <main className="app-shell">
@@ -275,9 +257,7 @@ export function App() {
             <span
               className={`status-dot${loading ? " status-dot-busy" : ""}`}
             />
-            {loading
-              ? "Refreshing workspace"
-              : `Backend online${accounts.length > 0 ? ` · ${accounts.length} account${accounts.length !== 1 ? "s" : ""}` : ""}`}
+            {heroStatusLabel}
           </span>
           <div className="toggle-group">
             <button
@@ -295,64 +275,11 @@ export function App() {
               Move
             </button>
           </div>
-          <details className="acct-menu" ref={acctMenuRef}>
-            <summary
-              aria-label="Account connections"
-              className={
-                acctTriggerNeedsAction ? "acct-summary--action" : undefined
-              }
-            >
-              <Plug size={13} />
-              <span className="acct-trigger-label">
-                {isSyncing ? (
-                  <>
-                    <span
-                      className="status-dot status-dot-busy"
-                      aria-hidden="true"
-                    />
-                    Syncing…
-                  </>
-                ) : (
-                  acctTriggerLabel
-                )}
-              </span>
-            </summary>
-            <div className="acct-panel">
-              {retryFn && (
-                <div className="error-banner">
-                  <span>{status}</span>
-                  <button className="btn btn-ghost btn-sm" onClick={retryFn}>
-                    Try again
-                  </button>
-                </div>
-              )}
-              <AccountCard
-                role="source"
-                account={sourceAccount}
-                itemCount={sourceSnapshot?.total_items ?? 0}
-                syncing={isSyncing === sourceAccount?.id}
-                syncProgress={
-                  isSyncing === sourceAccount?.id ? syncProgress : null
-                }
-                onConnect={handleConnect}
-                onSync={handleSync}
-                onDisconnect={handleDisconnect}
-              />
-              <hr className="acct-row-divider" />
-              <AccountCard
-                role="destination"
-                account={destinationAccount}
-                itemCount={destinationSnapshot?.total_items ?? 0}
-                syncing={isSyncing === destinationAccount?.id}
-                syncProgress={
-                  isSyncing === destinationAccount?.id ? syncProgress : null
-                }
-                onConnect={handleConnect}
-                onSync={handleSync}
-                onDisconnect={handleDisconnect}
-              />
-            </div>
-          </details>
+          {workspaceRetry && (
+            <button className="text-btn" onClick={workspaceRetry}>
+              Try again
+            </button>
+          )}
           <button
             className="text-btn text-btn-danger"
             onClick={() => void handleClearLocalData()}
@@ -366,7 +293,7 @@ export function App() {
       <section className="shell-grid">
         <section className="shell-content">
           <SourceSelectionSection
-            title={`Source selection — ${sourceAccount?.username ?? "Not connected"}`}
+            title="Source selection"
             snapshot={sourceSnapshot}
             items={filteredSourceItems}
             totalSourceItems={sourceItems.length}
@@ -378,6 +305,24 @@ export function App() {
             onSelectAllVisible={selectFilteredItems}
             onDeselectVisible={deselectFilteredItems}
             onClearSelection={clearSelectedItems}
+            accountControls={
+              <SectionAccountControls
+                role="source"
+                account={sourceAccount}
+                itemCount={sourceSnapshot?.total_items ?? 0}
+                syncing={isSyncing === sourceAccount?.id}
+                syncProgress={
+                  isSyncing === sourceAccount?.id ? syncProgress : null
+                }
+                errorMessage={
+                  retryAccountId === sourceAccount?.id ? status : null
+                }
+                onRetry={retryAccountId === sourceAccount?.id ? retryFn : null}
+                onConnect={handleConnect}
+                onSync={handleSync}
+                onDisconnect={handleDisconnect}
+              />
+            }
             filterControls={
               <>
                 {presets.length > 0 && (
@@ -479,10 +424,30 @@ export function App() {
           />
 
           <SnapshotSection
-            title={`Destination reference — ${destinationAccount?.username ?? "Not connected"}`}
+            title="Destination reference"
             snapshot={destinationSnapshot}
             items={destinationItems}
             loading={loading || isSyncing !== null}
+            accountControls={
+              <SectionAccountControls
+                role="destination"
+                account={destinationAccount}
+                itemCount={destinationSnapshot?.total_items ?? 0}
+                syncing={isSyncing === destinationAccount?.id}
+                syncProgress={
+                  isSyncing === destinationAccount?.id ? syncProgress : null
+                }
+                errorMessage={
+                  retryAccountId === destinationAccount?.id ? status : null
+                }
+                onRetry={
+                  retryAccountId === destinationAccount?.id ? retryFn : null
+                }
+                onConnect={handleConnect}
+                onSync={handleSync}
+                onDisconnect={handleDisconnect}
+              />
+            }
           />
 
           <ReviewSection
@@ -521,81 +486,6 @@ export function App() {
         </section>
       </section>
     </main>
-  );
-}
-
-function AccountCard({
-  role,
-  account,
-  itemCount,
-  syncing = false,
-  syncProgress = null,
-  onConnect,
-  onSync,
-  onDisconnect,
-}: {
-  role: "source" | "destination";
-  account?: ConnectedAccount;
-  itemCount: number;
-  syncing?: boolean;
-  syncProgress?: { fetched: number; total: number | null } | null;
-  onConnect(role: "source" | "destination"): void;
-  onSync(accountId: string): void;
-  onDisconnect(accountId: string): void;
-}) {
-  if (!account) {
-    return (
-      <div className="acct-row">
-        <span className={`role-chip role-${role}`}>{role}</span>
-        <div className="acct-row-content">
-          <span className="acct-row-name acct-row-name--empty">
-            Not connected
-          </span>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => onConnect(role)}
-          >
-            <Link size={13} />
-            Connect account
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="acct-row">
-      <span className={`role-chip role-${role}`}>{role}</span>
-      <div className="acct-row-content">
-        <span className="acct-row-name">{account.username}</span>
-        <span className="acct-row-meta">
-          {syncing
-            ? syncProgress
-              ? `Fetching ${syncProgress.fetched.toLocaleString()} / ${syncProgress.total != null ? syncProgress.total.toLocaleString() : "…"} releases…`
-              : "Syncing…"
-            : account.last_synced_at
-              ? `Synced ${formatSyncDateTime(account.last_synced_at)} · ${itemCount.toLocaleString()} items`
-              : "Connected, not yet synced"}
-        </span>
-        <div className="acct-row-actions">
-          <button
-            className="btn btn-primary btn-sm"
-            disabled={syncing}
-            onClick={() => onSync(account.id)}
-          >
-            <RefreshCw size={13} />
-            {syncing ? "Syncing…" : "Sync"}
-          </button>
-          <button
-            className="text-btn"
-            disabled={syncing}
-            onClick={() => onDisconnect(account.id)}
-          >
-            Disconnect
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 

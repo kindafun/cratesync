@@ -1,4 +1,11 @@
-import { memo, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import {
+  memo,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
 import { formatDate, formatDateTime } from "../lib/format";
@@ -23,11 +30,13 @@ export const SnapshotSection = memo(function SnapshotSection({
   snapshot,
   items,
   loading,
+  accountControls,
 }: {
   title: string;
   snapshot: CollectionSnapshot | null;
   items: CollectionItemSnapshot[];
   loading: boolean;
+  accountControls?: ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(true);
   const [sortColumn, setSortColumn] = useState<SnapshotSortColumn | null>(null);
@@ -80,29 +89,33 @@ export const SnapshotSection = memo(function SnapshotSection({
 
   return (
     <section className={`canvas-section${collapsed ? " is-collapsed" : ""}`}>
-      <div
-        className="canvas-header is-toggle"
-        role="button"
-        tabIndex={0}
-        aria-expanded={!collapsed}
-        onClick={handleToggle}
-        onKeyDown={handleKeyDown}
-      >
-        <div>
-          <div className="section-label">Destination</div>
-          <h2>{title}</h2>
-        </div>
-        <div className="canvas-header-right">
-          <div className="header-note">
-            {snapshot
-              ? `${snapshot.total_items} items · synced ${formatDateTime(snapshot.created_at)}`
-              : "No local snapshot"}
+      <div className="canvas-header canvas-header-shell">
+        <button
+          type="button"
+          className="canvas-header-toggle"
+          aria-expanded={!collapsed}
+          onClick={handleToggle}
+          onKeyDown={handleKeyDown}
+        >
+          <div>
+            <div className="section-label">Destination</div>
+            <h2>{title}</h2>
           </div>
-          <span
-            className={`section-collapse-icon${collapsed ? " collapsed" : ""}`}
-            aria-hidden="true"
-          />
-        </div>
+          <div className="canvas-header-right">
+            <div className="header-note">
+              {snapshot
+                ? `${snapshot.total_items} items · synced ${formatDateTime(snapshot.created_at)}`
+                : "No local snapshot"}
+            </div>
+            <span
+              className={`section-collapse-icon${collapsed ? " collapsed" : ""}`}
+              aria-hidden="true"
+            />
+          </div>
+        </button>
+        {accountControls && (
+          <div className="canvas-header-controls">{accountControls}</div>
+        )}
       </div>
       {!collapsed && (
         <>

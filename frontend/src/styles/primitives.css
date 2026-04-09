@@ -30,11 +30,43 @@
 .planner-actions,
 .inline-action,
 .toolbar-actions,
-.filter-add-row {
+.filter-add-row,
+.section-account-actions {
   display: flex;
   align-items: center;
   gap: var(--inline-gap-md);
   flex-wrap: wrap;
+}
+
+.section-account-toolbar {
+  display: grid;
+  gap: var(--stack-sm);
+  min-width: min(22rem, 100%);
+}
+
+.section-account-head,
+.section-account-meta {
+  display: grid;
+  gap: var(--space-2xs);
+}
+
+.section-account-name {
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  color: var(--color-ink);
+  line-height: var(--line-height-tight);
+}
+
+.section-account-name.is-empty,
+.section-account-status {
+  color: var(--color-muted);
+}
+
+.section-account-status {
+  font-size: var(--text-meta);
+  line-height: var(--line-height-body);
 }
 
 .field-grid {
@@ -521,6 +553,23 @@ select:focus {
   );
   background-size: 300% 100%;
   animation: sk-shimmer 1.8s linear infinite;
+}
+
+@media (max-width: 760px) {
+  .section-account-toolbar {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .section-account-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    width: 100%;
+  }
+
+  .section-account-actions > * {
+    width: 100%;
+  }
 }
 
 .skeleton-cell-short {

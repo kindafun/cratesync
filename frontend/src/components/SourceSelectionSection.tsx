@@ -40,6 +40,7 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
   onSelectAllVisible,
   onDeselectVisible,
   onClearSelection,
+  accountControls,
   filterControls,
 }: {
   title: string;
@@ -54,6 +55,7 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
   onSelectAllVisible(): void;
   onDeselectVisible(): void;
   onClearSelection(): void;
+  accountControls?: ReactNode;
   filterControls?: ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -141,7 +143,7 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
     setCollapsed((c) => !c);
   }
 
-  function handleHeaderKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+  function handleHeaderKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       handleToggle();
@@ -150,28 +152,32 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
 
   return (
     <section className={`canvas-section${collapsed ? " is-collapsed" : ""}`}>
-      <div
-        className="canvas-header is-toggle"
-        role="button"
-        tabIndex={0}
-        aria-expanded={!collapsed}
-        onClick={handleToggle}
-        onKeyDown={handleHeaderKeyDown}
-      >
-        <div>
-          <h2>{title}</h2>
-        </div>
-        <div className="canvas-header-right">
-          <div className="header-note">
-            {snapshot
-              ? `${selectedCount} selected · ${totalItems} visible of ${totalSourceItems}`
-              : "No local snapshot"}
+      <div className="canvas-header canvas-header-shell">
+        <button
+          type="button"
+          className="canvas-header-toggle"
+          aria-expanded={!collapsed}
+          onClick={handleToggle}
+          onKeyDown={handleHeaderKeyDown}
+        >
+          <div>
+            <h2>{title}</h2>
           </div>
-          <span
-            className={`section-collapse-icon${collapsed ? " collapsed" : ""}`}
-            aria-hidden="true"
-          />
-        </div>
+          <div className="canvas-header-right">
+            <div className="header-note">
+              {snapshot
+                ? `${selectedCount} selected · ${totalItems} visible of ${totalSourceItems}`
+                : "No local snapshot"}
+            </div>
+            <span
+              className={`section-collapse-icon${collapsed ? " collapsed" : ""}`}
+              aria-hidden="true"
+            />
+          </div>
+        </button>
+        {accountControls && (
+          <div className="canvas-header-controls">{accountControls}</div>
+        )}
       </div>
 
       {!collapsed && (

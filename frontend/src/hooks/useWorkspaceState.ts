@@ -94,6 +94,7 @@ export function useWorkspaceState({
     string | null
   >(null);
   const [retryFn, setRetryFn] = useState<(() => void) | null>(null);
+  const [retryAccountId, setRetryAccountId] = useState<string | null>(null);
   const [presetName, setPresetName] = useState("");
   const [selectedPresetId, setSelectedPresetId] = useState("");
   const [reviewTableMode, setReviewTableMode] = useState<"selected" | "all">(
@@ -180,6 +181,7 @@ export function useWorkspaceState({
   async function refreshWorkspace() {
     setLoading(true);
     setRetryFn(null);
+    setRetryAccountId(null);
     try {
       const [health, accountList, jobList] = await Promise.all([
         api.health(),
@@ -227,6 +229,7 @@ export function useWorkspaceState({
       setStatus(
         error instanceof Error ? error.message : "Failed to load state.",
       );
+      setRetryAccountId(null);
       setRetryFn(() => () => void refreshWorkspace());
     } finally {
       setLoading(false);
@@ -297,6 +300,7 @@ export function useWorkspaceState({
 
   async function handleSync(accountId: string) {
     setRetryFn(null);
+    setRetryAccountId(null);
     setIsSyncing(accountId);
     setSyncProgress(null);
     try {
@@ -318,6 +322,7 @@ export function useWorkspaceState({
       await refreshWorkspace();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "Sync failed.");
+      setRetryAccountId(accountId);
       setRetryFn(() => () => void handleSync(accountId));
     } finally {
       setIsSyncing(null);
@@ -518,6 +523,7 @@ export function useWorkspaceState({
     isCreatingJob,
     lastPreviewSignature,
     retryFn,
+    retryAccountId,
     presetName,
     setPresetName,
     selectedPresetId,

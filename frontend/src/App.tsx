@@ -309,7 +309,6 @@ export function App() {
               <SectionAccountControls
                 role="source"
                 account={sourceAccount}
-                itemCount={sourceSnapshot?.total_items ?? 0}
                 syncing={isSyncing === sourceAccount?.id}
                 syncProgress={
                   isSyncing === sourceAccount?.id ? syncProgress : null
@@ -432,7 +431,6 @@ export function App() {
               <SectionAccountControls
                 role="destination"
                 account={destinationAccount}
-                itemCount={destinationSnapshot?.total_items ?? 0}
                 syncing={isSyncing === destinationAccount?.id}
                 syncProgress={
                   isSyncing === destinationAccount?.id ? syncProgress : null

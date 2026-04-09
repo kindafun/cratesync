@@ -26,7 +26,6 @@ export function useMigrationPlan({
   sourceItems: CollectionItemSnapshot[];
   filters: SelectionFilters;
 }) {
-  const [planName, setPlanName] = useState("Digital archive split");
   const [workflowMode, setWorkflowMode] = useState<WorkflowMode>("copy");
   const [selectedSourceItemIds, setSelectedSourceItemIds] = useState<string[]>(
     [],
@@ -52,7 +51,7 @@ export function useMigrationPlan({
       snapshot_id: sourceSnapshot?.id ?? "",
       selected_snapshot_item_ids: selectedSourceItemIds,
       workflow_mode: workflowMode,
-      name: planName.trim() || "Untitled plan",
+      name: "Untitled plan",
       filters,
       folder_mapping_overrides: folderMappingOverrides,
       custom_field_mapping_overrides: sanitizeStringMap(
@@ -66,7 +65,6 @@ export function useMigrationPlan({
       sourceSnapshot?.id,
       selectedSourceItemIds,
       workflowMode,
-      planName,
       filters,
       folderMappingOverrides,
       customFieldMappingOverrides,
@@ -144,8 +142,6 @@ export function useMigrationPlan({
   }
 
   return {
-    planName,
-    setPlanName,
     workflowMode,
     setWorkflowMode,
     selectedSourceItemIds,

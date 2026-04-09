@@ -14,7 +14,7 @@ import { JobConsoleSection } from "./components/JobConsoleSection";
 import { ReviewSection } from "./components/ReviewSection";
 import { SnapshotSection } from "./components/SnapshotSection";
 import { SourceSelectionSection } from "./components/SourceSelectionSection";
-import { Field, StatBlock } from "./components/ui";
+import { Field } from "./components/ui";
 import { useCollectionSnapshots } from "./hooks/useCollectionSnapshots";
 import { useMigrationPlan } from "./hooks/useMigrationPlan";
 import { useSelectionFilters } from "./hooks/useSelectionFilters";
@@ -78,8 +78,6 @@ export function App() {
   } = useSelectionFilters(sourceItems, destinationItems);
 
   const {
-    planName,
-    setPlanName,
     workflowMode,
     setWorkflowMode,
     setSelectedSourceItemIds,
@@ -125,8 +123,6 @@ export function App() {
     selectedPresetId,
     reviewTableMode,
     setReviewTableMode,
-    plannerCollapsed,
-    setPlannerCollapsed,
     refreshWorkspace,
     handleConnect,
     handleSync,
@@ -164,7 +160,6 @@ export function App() {
     setSelectedFormats,
     setSelectedStyles,
     filters,
-    planName,
   });
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
@@ -353,83 +348,7 @@ export function App() {
       </header>
 
       <section className="shell-grid">
-        <aside className="shell-left">
-          <section className="rail-section">
-            <div
-              className="rail-section-header"
-              role="button"
-              tabIndex={0}
-              aria-expanded={!plannerCollapsed}
-              onClick={() => setPlannerCollapsed((c) => !c)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  setPlannerCollapsed((c) => !c);
-                }
-              }}
-            >
-              <div>
-                <div className="section-label">Step 1</div>
-                <h2 className="editorial-title">Build the source view</h2>
-              </div>
-              <span
-                className={`section-collapse-icon${plannerCollapsed ? " collapsed" : ""}`}
-                aria-hidden="true"
-              />
-            </div>
-
-            {!plannerCollapsed && (
-              <>
-                <div className="field-stack">
-                  <Field label="Workflow mode">
-                    <div className="toggle-group">
-                      <button
-                        className={`toggle-option${workflowMode === "copy" ? " active" : ""}`}
-                        onClick={() => setWorkflowMode("copy")}
-                      >
-                        <Copy size={13} />
-                        Copy only
-                      </button>
-                      <button
-                        className={`toggle-option${workflowMode === "move" ? " active" : ""}`}
-                        onClick={() => setWorkflowMode("move")}
-                      >
-                        <ArrowRightLeft size={13} />
-                        Two-phase move
-                      </button>
-                    </div>
-                  </Field>
-
-                  <Field label="Plan name">
-                    <input
-                      type="text"
-                      value={planName}
-                      onChange={(event) => setPlanName(event.target.value)}
-                    />
-                  </Field>
-                </div>
-
-                <div className="planner-footer">
-                  <div className="stats-line">
-                    <StatBlock
-                      label="Selected releases"
-                      value={selectedSourceCount}
-                      small
-                    />
-                    <StatBlock
-                      label="Source total"
-                      value={sourceItems.length}
-                      muted
-                      small
-                    />
-                  </div>
-                </div>
-              </>
-            )}
-          </section>
-        </aside>
-
-        <section className="shell-right">
+        <section className="shell-content">
           <SourceSelectionSection
             title={`Source selection — ${sourceAccount?.username ?? "Not connected"}`}
             snapshot={sourceSnapshot}

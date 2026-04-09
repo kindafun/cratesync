@@ -110,7 +110,7 @@
 
 .canvas-header-controls {
   flex-shrink: 0;
-  max-width: min(28rem, 100%);
+  max-width: min(20rem, 100%);
 }
 
 .section-collapse-icon {
@@ -204,5 +204,9 @@
 
   .canvas-header h2 {
     font-size: 1.4rem;
+  }
+
+  .canvas-header-controls {
+    max-width: 100%;
   }
 }

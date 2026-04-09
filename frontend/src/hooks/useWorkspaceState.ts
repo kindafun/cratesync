@@ -48,7 +48,6 @@ export interface WorkspaceStateInput {
   setSelectedFormats: (v: string[]) => void;
   setSelectedStyles: (v: string[]) => void;
   filters: SelectionFilters;
-  planName: string;
 }
 
 export function useWorkspaceState({
@@ -76,7 +75,6 @@ export function useWorkspaceState({
   setSelectedFormats,
   setSelectedStyles,
   filters,
-  planName,
 }: WorkspaceStateInput) {
   const [jobs, setJobs] = useState<MigrationJob[]>([]);
   const [presets, setPresets] = useState<SelectionPreset[]>([]);
@@ -101,7 +99,6 @@ export function useWorkspaceState({
   const [reviewTableMode, setReviewTableMode] = useState<"selected" | "all">(
     "selected",
   );
-  const [plannerCollapsed, setPlannerCollapsed] = useState(false);
 
   // ── Document title ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -460,7 +457,7 @@ export function useWorkspaceState({
       setStatus("Connect a source account before saving presets.");
       return;
     }
-    const trimmedName = presetName.trim() || planName.trim();
+    const trimmedName = presetName.trim();
     if (!trimmedName) {
       setStatus("Give the saved view a name before saving.");
       return;
@@ -526,8 +523,6 @@ export function useWorkspaceState({
     selectedPresetId,
     reviewTableMode,
     setReviewTableMode,
-    plannerCollapsed,
-    setPlannerCollapsed,
     refreshWorkspace,
     refreshPresets,
     handleConnect,

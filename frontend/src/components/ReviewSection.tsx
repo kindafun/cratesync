@@ -112,7 +112,6 @@ export function ReviewSection({
         onKeyDown={handleHeaderKeyDown}
       >
         <div>
-          <div className="section-label">Step 3</div>
           <h2>Review and launch</h2>
         </div>
         <div className="canvas-header-right">

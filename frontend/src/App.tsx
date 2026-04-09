@@ -591,7 +591,7 @@ function AccountCard({
             disabled={syncing}
             onClick={() => onDisconnect(account.id)}
           >
-            disconnect
+            Disconnect
           </button>
         </div>
       </div>

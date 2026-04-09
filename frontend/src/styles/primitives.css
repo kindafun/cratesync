@@ -213,12 +213,15 @@ select:focus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
+  gap: var(--inline-gap-sm);
+  min-height: var(--control-height);
   border: none;
   background: transparent;
   color: var(--color-muted);
-  padding: 0.72rem 0.65rem;
+  padding: var(--control-padding-y) var(--control-padding-x);
   cursor: pointer;
+  font-size: var(--text-meta);
+  line-height: 1;
   transition:
     background var(--duration-base) ease,
     color var(--duration-base) ease;

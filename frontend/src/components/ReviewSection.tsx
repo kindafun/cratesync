@@ -81,7 +81,7 @@ export function ReviewSection({
     setCollapsed((c) => !c);
   }
 
-  function handleHeaderKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+  function handleHeaderKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       handleToggle();
@@ -103,19 +103,24 @@ export function ReviewSection({
     <section
       className={`canvas-section canvas-section-review${collapsed ? " is-collapsed" : ""}`}
     >
-      <div
-        className="canvas-header is-toggle"
-        role="button"
-        tabIndex={0}
-        aria-expanded={!collapsed}
-        onClick={handleToggle}
-        onKeyDown={handleHeaderKeyDown}
-      >
-        <div>
-          <h2>Review and launch</h2>
-        </div>
-        <div className="canvas-header-right">
-          <div className="toolbar-actions" onClick={(e) => e.stopPropagation()}>
+      <div className="canvas-header canvas-header-shell">
+        <button
+          type="button"
+          className="canvas-header-toggle"
+          aria-expanded={!collapsed}
+          onClick={handleToggle}
+          onKeyDown={handleHeaderKeyDown}
+        >
+          <span
+            className={`section-collapse-icon${collapsed ? " collapsed" : ""}`}
+            aria-hidden="true"
+          />
+          <div className="canvas-header-title">
+            <h2>Review and launch</h2>
+          </div>
+        </button>
+        <div className="canvas-header-controls review-header-controls">
+          <div className="toolbar-actions">
             <button
               className="btn btn-ghost"
               disabled={isGeneratingPreview}
@@ -133,10 +138,6 @@ export function ReviewSection({
               {isCreatingJob ? "Launching…" : "Launch job"}
             </button>
           </div>
-          <span
-            className={`section-collapse-icon${collapsed ? " collapsed" : ""}`}
-            aria-hidden="true"
-          />
         </div>
       </div>
 

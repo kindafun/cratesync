@@ -77,21 +77,27 @@
 
 .canvas-header-shell {
   align-items: flex-start;
+  flex-wrap: wrap;
 }
 
 .canvas-header-toggle {
-  flex: 1;
+  flex: 0 0 auto;
   min-width: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--inline-gap-lg);
+  gap: var(--inline-gap-md);
   border: none;
   padding: 0;
   background: transparent;
   color: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+.canvas-header-title {
+  display: grid;
+  gap: var(--space-2xs);
+  min-width: 0;
 }
 
 .canvas-header h2 {
@@ -101,16 +107,9 @@
   letter-spacing: -0.04em;
 }
 
-.canvas-header-right {
-  display: flex;
-  align-items: center;
-  gap: var(--inline-gap-md);
-  flex-shrink: 0;
-}
-
 .canvas-header-controls {
-  flex-shrink: 0;
-  max-width: min(20rem, 100%);
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .section-collapse-icon {
@@ -195,11 +194,14 @@
   .field-grid-compact,
   .job-toolbar,
   .canvas-header,
-  .canvas-header-toggle,
   .planner-header,
   .review-table-header {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .canvas-header-toggle {
+    display: flex;
   }
 
   .canvas-header h2 {
@@ -207,6 +209,7 @@
   }
 
   .canvas-header-controls {
+    min-width: 0;
     max-width: 100%;
   }
 }

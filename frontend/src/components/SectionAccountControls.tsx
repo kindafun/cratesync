@@ -26,16 +26,15 @@ export function SectionAccountControls({
 }) {
   const primaryLabel = account ? "Sync" : "Connect";
 
-  let detail = "Not connected";
-  if (account) {
-    detail = syncing
+  const detail = account
+    ? syncing
       ? syncProgress
         ? `Syncing ${syncProgress.fetched.toLocaleString()}${syncProgress.total != null ? ` / ${syncProgress.total.toLocaleString()}` : ""} releases`
         : "Syncing local snapshot…"
       : account.last_synced_at
         ? `Synced ${formatSyncDateTime(account.last_synced_at)}`
-        : "Ready to sync";
-  }
+        : "Ready to sync"
+    : null;
 
   return (
     <div className="section-account-toolbar">
@@ -44,7 +43,7 @@ export function SectionAccountControls({
           <span className={`section-account-name${account ? "" : " is-empty"}`}>
             {account?.username ?? "Not connected"}
           </span>
-          <span className="section-account-status">{detail}</span>
+          {detail && <span className="section-account-status">{detail}</span>}
         </div>
         <div className="section-account-actions">
           {account ? (

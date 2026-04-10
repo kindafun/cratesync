@@ -160,19 +160,12 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
           onClick={handleToggle}
           onKeyDown={handleHeaderKeyDown}
         >
-          <div>
+          <span
+            className={`section-collapse-icon${collapsed ? " collapsed" : ""}`}
+            aria-hidden="true"
+          />
+          <div className="canvas-header-title">
             <h2>{title}</h2>
-          </div>
-          <div className="canvas-header-right">
-            <div className="header-note">
-              {snapshot
-                ? `${selectedCount} selected · ${totalItems} visible of ${totalSourceItems}`
-                : "No local snapshot"}
-            </div>
-            <span
-              className={`section-collapse-icon${collapsed ? " collapsed" : ""}`}
-              aria-hidden="true"
-            />
           </div>
         </button>
         {accountControls && (
@@ -188,9 +181,9 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
           <div className="selection-toolbar">
             <div className="snapshot-controls">
               <div className="header-note">
-                {totalItems === 0
-                  ? "0 visible rows"
-                  : `${totalItems} visible row${totalItems === 1 ? "" : "s"}`}
+                {snapshot
+                  ? `${selectedCount} selected · ${totalItems} visible · ${totalSourceItems} total`
+                  : "No local snapshot"}
               </div>
             </div>
             <div className="toolbar-actions">

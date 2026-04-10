@@ -41,7 +41,8 @@
 .section-account-toolbar {
   display: grid;
   gap: var(--space-2xs);
-  min-width: min(16rem, 100%);
+  width: 100%;
+  min-width: 0;
 }
 
 .section-account-meta {
@@ -51,7 +52,6 @@
 .section-account-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--inline-gap-md);
   min-width: 0;
 }
@@ -60,8 +60,9 @@
   display: flex;
   align-items: baseline;
   gap: var(--inline-gap-sm);
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
+  white-space: nowrap;
 }
 
 .section-account-name {
@@ -71,7 +72,6 @@
   letter-spacing: -0.04em;
   color: var(--color-ink);
   line-height: var(--line-height-tight);
-  white-space: nowrap;
 }
 
 .section-account-name.is-empty,
@@ -85,10 +85,10 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .section-account-actions {
+  margin-left: auto;
   flex-shrink: 0;
   flex-wrap: nowrap;
 }
@@ -641,6 +641,10 @@ select:focus {
   .section-account-toolbar {
     min-width: 0;
     width: 100%;
+  }
+
+  .section-account-head {
+    align-items: flex-start;
   }
 
   .section-account-menu-panel {

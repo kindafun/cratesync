@@ -31,7 +31,7 @@ export function JobConsoleSection({
     setCollapsed((c) => !c);
   }
 
-  function handleHeaderKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+  function handleHeaderKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       handleToggle();
@@ -40,28 +40,29 @@ export function JobConsoleSection({
 
   return (
     <section className={`canvas-section${collapsed ? " is-collapsed" : ""}`}>
-      <div
-        className="canvas-header is-toggle"
-        role="button"
-        tabIndex={0}
-        aria-expanded={!collapsed}
-        onClick={handleToggle}
-        onKeyDown={handleHeaderKeyDown}
-      >
-        <div>
-          <div className="section-label">Execution</div>
-          <h2>Job console</h2>
-        </div>
-        <div className="canvas-header-right">
+      <div className="canvas-header canvas-header-shell">
+        <button
+          type="button"
+          className="canvas-header-toggle"
+          aria-expanded={!collapsed}
+          onClick={handleToggle}
+          onKeyDown={handleHeaderKeyDown}
+        >
+          <span
+            className={`section-collapse-icon${collapsed ? " collapsed" : ""}`}
+            aria-hidden="true"
+          />
+          <div className="canvas-header-title">
+            <div className="section-label">Execution</div>
+            <h2>Job console</h2>
+          </div>
+        </button>
+        <div className="canvas-header-controls job-console-header-note">
           <div className="header-note">
             {jobDetail
               ? formatJobStatus(jobDetail.job.status)
               : "Choose a recent job to inspect."}
           </div>
-          <span
-            className={`section-collapse-icon${collapsed ? " collapsed" : ""}`}
-            aria-hidden="true"
-          />
         </div>
       </div>
 

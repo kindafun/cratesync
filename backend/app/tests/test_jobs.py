@@ -197,6 +197,9 @@ def test_run_copy_marks_successful_copy_jobs_completed(tmp_path):
     detail = repository.get_job_detail(detail.job.id)
     assert detail.job.status == "completed"
     assert detail.job.summary == {"copied": 1}
+    assert detail.items[0].artist == "Artist"
+    assert detail.items[0].title == "Release 101"
+    assert detail.items[0].source_folder_name == "Main"
     assert detail.items[0].status == "copied"
     assert detail.items[0].destination_instance_id == 9001
 
@@ -426,6 +429,29 @@ def test_create_job_route_returns_conflict_when_preview_has_blocking_conflicts(t
     detail = response.json()["detail"]
     assert any(conflict["type"] == "custom_field_mapping" for conflict in detail["blocking_conflicts"])
     assert job_runner.started_job_ids == []
+
+
+def test_get_job_route_returns_enriched_job_detail(tmp_path, monkeypatch):
+    repository = make_repository(tmp_path)
+    source, destination = seed_accounts(repository)
+    detail = create_job(
+        repository,
+        source=source,
+        destination=destination,
+        source_items=[make_item("item_1", account_id=source.id, release_id=101)],
+    )
+    install_route_dependencies(monkeypatch, repository, RecordingJobRunner(repository))
+
+    with TestClient(app) as client:
+        response = client.get(f"/jobs/{detail.job.id}")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["items"][0]["artist"] == "Artist"
+    assert payload["items"][0]["title"] == "Release 101"
+    assert payload["items"][0]["source_folder_name"] == "Main"
+    assert payload["items"][0]["release_id"] == 101
+    assert payload["items"][0]["status"] == "pending"
 
 
 def test_confirm_delete_route_starts_delete_for_waiting_jobs(tmp_path, monkeypatch):

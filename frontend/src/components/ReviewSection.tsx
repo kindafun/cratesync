@@ -77,6 +77,15 @@ export function ReviewSection({
         (virtualItems[virtualItems.length - 1]?.end ?? 0)
       : 0;
 
+  const capabilityChips = preview
+    ? renderCapabilityChips(preview.metadata_capabilities)
+    : [];
+  const blockerCards = folderConflicts.length + customFieldConflicts.length;
+  const evidenceDescription =
+    reviewTableMode === "selected"
+      ? "Inspect only the rows currently included in the preview."
+      : "Compare included rows against the broader filtered source snapshot.";
+
   function handleToggle() {
     setCollapsed((c) => !c);
   }
@@ -143,11 +152,43 @@ export function ReviewSection({
 
       {!collapsed && (
         <>
-          <div className={`review-status review-status-${reviewState.tone}`}>
-            <strong>{reviewState.title}</strong>
-            {" — "}
-            {reviewState.message}
-          </div>
+          <section className={`review-summary review-summary-${reviewState.tone}`}>
+            <div className="review-summary-head">
+              <div>
+                <div className="section-label">Launch readiness</div>
+                <div className="review-summary-title-row">
+                  <h3>{reviewState.title}</h3>
+                  <span
+                    className={`review-launch-state review-launch-state-${reviewState.tone}`}
+                  >
+                    {reviewState.launchLabel}
+                  </span>
+                </div>
+              </div>
+              <div className="review-summary-meta">
+                {reviewState.blockerCount > 0 ? (
+                  <span>
+                    {reviewState.blockerCount} blocker
+                    {reviewState.blockerCount === 1 ? " remains" : "s remain"}
+                  </span>
+                ) : (
+                  <span>No blockers remain</span>
+                )}
+              </div>
+            </div>
+            <p className="review-summary-message">{reviewState.message}</p>
+            <div className="review-checklist" aria-label="Launch readiness checklist">
+              {reviewState.checklist.map((item) => (
+                <span
+                  key={item.label}
+                  className={`review-checklist-item review-checklist-item-${item.status}`}
+                >
+                  <span className="review-checklist-dot" aria-hidden="true" />
+                  {item.label}
+                </span>
+              ))}
+            </div>
+          </section>
 
           <div className="summary-strip">
             <StatBlock label="Chosen releases" value={selectedSourceCount} />
@@ -165,49 +206,71 @@ export function ReviewSection({
           {preview && (
             <>
               {preview.blocking_conflicts.length > 0 && (
-                <div className="conflict-grid">
-                  {folderConflicts.map((conflict) => (
-                    <FolderConflictCard
-                      key={`folder-${String(conflict.payload.source_folder_id)}`}
-                      conflict={conflict}
-                      destinationFolderLookup={destinationFolderLookup}
-                      selectedValue={
-                        folderMappingOverrides[
-                          String(conflict.payload.source_folder_id)
-                        ] ?? null
-                      }
-                      onChange={onFolderOverride}
-                    />
-                  ))}
-                  {customFieldConflicts.map((conflict) => (
-                    <CustomFieldConflictCard
-                      key={`field-${String(conflict.payload.field_name)}`}
-                      conflict={conflict}
-                      value={
-                        customFieldMappingOverrides[
-                          String(conflict.payload.field_name)
-                        ] ?? ""
-                      }
-                      onChange={onCustomFieldOverride}
-                    />
-                  ))}
-                </div>
+                <section className="review-blockers">
+                  <div className="review-blockers-head">
+                    <div>
+                      <div className="section-label">Resolve before launch</div>
+                      <h3>
+                        {reviewState.blockerCount} required action
+                        {reviewState.blockerCount !== 1 ? "s" : ""}
+                      </h3>
+                    </div>
+                    <p>
+                      Clear each mapping issue below before the launch button can
+                      proceed.
+                    </p>
+                  </div>
+                  <div className="conflict-grid">
+                    {folderConflicts.map((conflict) => (
+                      <FolderConflictCard
+                        key={`folder-${String(conflict.payload.source_folder_id)}`}
+                        conflict={conflict}
+                        destinationFolderLookup={destinationFolderLookup}
+                        selectedValue={
+                          folderMappingOverrides[
+                            String(conflict.payload.source_folder_id)
+                          ] ?? null
+                        }
+                        onChange={onFolderOverride}
+                      />
+                    ))}
+                    {customFieldConflicts.map((conflict) => (
+                      <CustomFieldConflictCard
+                        key={`field-${String(conflict.payload.field_name)}`}
+                        conflict={conflict}
+                        value={
+                          customFieldMappingOverrides[
+                            String(conflict.payload.field_name)
+                          ] ?? ""
+                        }
+                        onChange={onCustomFieldOverride}
+                      />
+                    ))}
+                  </div>
+                  {blockerCards !== reviewState.blockerCount && (
+                    <div className="header-note review-blockers-note">
+                      Some blockers may share the same action card grouping.
+                    </div>
+                  )}
+                </section>
               )}
 
-              <div className="section-label">Job behavior</div>
-              <div className="capability-row">
-                {renderCapabilityChips(preview.metadata_capabilities).map(
-                  (chip) => (
-                    <span
-                      key={chip.label}
-                      className="capability-chip"
-                      title={chip.note}
-                    >
-                      {chip.label} · {chip.value}
-                    </span>
-                  ),
-                )}
-              </div>
+              {capabilityChips.length > 0 && (
+                <section className="review-capabilities">
+                  <div className="section-label">Transfer behavior</div>
+                  <div className="capability-row">
+                    {capabilityChips.map((chip) => (
+                      <span
+                        key={chip.label}
+                        className="capability-chip"
+                        title={chip.note}
+                      >
+                        {chip.label} · {chip.value}
+                      </span>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               <div
                 className="review-table-header is-toggle"
@@ -217,23 +280,28 @@ export function ReviewSection({
                 onClick={handleTableToggle}
                 onKeyDown={handleTableHeaderKeyDown}
               >
-                <h3 className="section-label">Included release review</h3>
-                <div
-                  className="history-strip"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    className={`history-pill${reviewTableMode === "selected" ? " active" : ""}`}
-                    onClick={() => onReviewTableModeChange("selected")}
+                <div className="review-evidence-head">
+                  <div>
+                    <div className="section-label">Preview evidence</div>
+                    <p className="review-evidence-copy">{evidenceDescription}</p>
+                  </div>
+                  <div
+                    className="history-strip"
+                    onClick={(event) => event.stopPropagation()}
                   >
-                    Selected only
-                  </button>
-                  <button
-                    className={`history-pill${reviewTableMode === "all" ? " active" : ""}`}
-                    onClick={() => onReviewTableModeChange("all")}
-                  >
-                    All source rows
-                  </button>
+                    <button
+                      className={`history-pill${reviewTableMode === "selected" ? " active" : ""}`}
+                      onClick={() => onReviewTableModeChange("selected")}
+                    >
+                      Selected only
+                    </button>
+                    <button
+                      className={`history-pill${reviewTableMode === "all" ? " active" : ""}`}
+                      onClick={() => onReviewTableModeChange("all")}
+                    >
+                      All source rows
+                    </button>
+                  </div>
                 </div>
                 <span
                   className={`section-collapse-icon${tableCollapsed ? " collapsed" : ""}`}
@@ -276,15 +344,14 @@ export function ReviewSection({
                       )}
                       {virtualItems.map((virtualRow) => {
                         const item = reviewItems[virtualRow.index];
-                        const isPreviewSelected = previewSelectedIds.has(
-                          item.id,
-                        );
-                        const isExplicitlySelected = selectedSourceIdSet.has(
-                          item.id,
-                        );
-                        const isDuplicate = duplicateReleaseIds.has(
-                          item.release_id,
-                        );
+                        const isPreviewSelected = previewSelectedIds.has(item.id);
+                        const isExplicitlySelected = selectedSourceIdSet.has(item.id);
+                        const isDuplicate = duplicateReleaseIds.has(item.release_id);
+                        const primaryState = isPreviewSelected
+                          ? "Included in preview"
+                          : isExplicitlySelected
+                            ? "Chosen, not included"
+                            : "Comparison only";
                         return (
                           <tr
                             key={item.id}
@@ -304,15 +371,11 @@ export function ReviewSection({
                                 <span
                                   className={`state-pill${isPreviewSelected ? " active" : ""}`}
                                 >
-                                  {isPreviewSelected
-                                    ? "Included"
-                                    : isExplicitlySelected
-                                      ? "Chosen"
-                                      : "Not chosen"}
+                                  {primaryState}
                                 </span>
                                 {isDuplicate && (
                                   <span className="state-pill warning">
-                                    Duplicate
+                                    Duplicate on destination
                                   </span>
                                 )}
                               </div>
@@ -352,7 +415,7 @@ export function ReviewSection({
                   </div>
                 </>
               ) : (
-                "Use the source table to choose releases, then generate a preview here. This step will summarize what gets copied or moved, highlight duplicates, and show any conflicts you need to clear before launch."
+                "Generate a preview here to confirm readiness, inspect duplicates, and reveal any required mapping fixes before launch."
               )}
             </div>
           )}

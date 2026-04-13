@@ -24,9 +24,13 @@ class ExportService:
                 handle,
                 fieldnames=[
                     "snapshot_item_id",
+                    "artist",
+                    "title",
+                    "year",
                     "release_id",
                     "instance_id",
                     "source_folder_id",
+                    "source_folder_name",
                     "destination_folder_id",
                     "status",
                     "attempt_count",

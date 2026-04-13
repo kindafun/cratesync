@@ -4,37 +4,148 @@
   padding-top: 1.6rem;
 }
 
-.review-status {
-  margin-bottom: var(--space-md);
-  padding: 0.35rem 0 0.35rem var(--space-sm);
-  border-left: 2px solid var(--color-rule-strong);
-  font-size: var(--text-body-dense);
-  color: var(--color-muted);
-  line-height: var(--line-height-body);
-}
-
-.review-status strong {
-  color: var(--color-ink);
-  font-weight: 500;
-}
-
-.review-status-warning {
-  border-color: var(--color-accent);
-}
-
-.review-status-ready {
-  border-color: var(--color-success);
-}
-
 .review-header-controls {
   display: flex;
   justify-content: flex-end;
 }
 
-.conflict-grid {
+.review-summary {
   display: grid;
   gap: var(--stack-sm);
   margin-bottom: var(--space-md);
+  padding: var(--space-sm) 0 var(--space-md);
+  border-bottom: var(--border-grid);
+}
+
+.review-summary-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--inline-gap-md);
+}
+
+.review-summary-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--inline-gap-sm);
+  flex-wrap: wrap;
+}
+
+.review-summary-title-row h3,
+.review-blockers-head h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-title-sm);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  color: var(--color-ink);
+}
+
+.review-summary-message,
+.review-blockers-head p,
+.review-evidence-copy {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-body-dense);
+  line-height: var(--line-height-body);
+}
+
+.review-summary-meta {
+  color: var(--color-muted);
+  font-size: var(--text-meta);
+  white-space: nowrap;
+}
+
+.review-launch-state {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.65rem;
+  padding: 0.12rem 0.55rem;
+  border: var(--border-subtle);
+  color: var(--color-muted);
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.review-launch-state-warning {
+  border-color: var(--color-accent);
+  color: var(--color-accent-strong);
+}
+
+.review-launch-state-ready {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.review-checklist {
+  display: flex;
+  gap: var(--inline-gap-sm);
+  flex-wrap: wrap;
+}
+
+.review-checklist-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.8rem;
+  padding: 0.15rem 0.55rem;
+  border: var(--border-subtle);
+  color: var(--color-muted);
+  font-size: var(--text-chip);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.review-checklist-dot {
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: var(--radius-circle);
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.review-checklist-item-done {
+  color: var(--color-success);
+}
+
+.review-checklist-item-attention {
+  color: var(--color-muted);
+}
+
+.review-checklist-item-blocked {
+  border-color: var(--color-accent);
+  color: var(--color-accent-strong);
+}
+
+.review-blockers,
+.review-capabilities {
+  display: grid;
+  gap: var(--stack-sm);
+  margin-bottom: var(--space-md);
+}
+
+.review-blockers-head,
+.review-evidence-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--inline-gap-md);
+}
+
+.review-blockers {
+  padding-bottom: var(--space-md);
+  border-bottom: var(--border-grid);
+}
+
+.review-blockers-note {
+  margin-top: calc(var(--space-xs) * -1);
+}
+
+.conflict-grid {
+  display: grid;
+  gap: var(--stack-sm);
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
@@ -67,10 +178,6 @@
   flex-wrap: wrap;
 }
 
-.capability-row {
-  margin-bottom: 0.9rem;
-}
-
 .capability-chip {
   display: inline-flex;
   align-items: center;
@@ -82,6 +189,19 @@
   font-size: var(--text-chip);
   letter-spacing: 0.04em;
   background: var(--color-overlay);
+}
+
+.review-table-header {
+  margin-top: var(--space-sm);
+}
+
+.review-evidence-head {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.review-evidence-copy {
+  margin-top: 0.2rem;
 }
 
 .table-wrap-tall {
@@ -107,5 +227,15 @@
 @media (max-width: 760px) {
   .review-header-controls {
     justify-content: stretch;
+  }
+
+  .review-summary-head,
+  .review-blockers-head,
+  .review-evidence-head {
+    display: grid;
+  }
+
+  .review-summary-meta {
+    white-space: normal;
   }
 }

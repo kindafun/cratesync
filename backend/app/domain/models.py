@@ -178,6 +178,26 @@ class MigrationJobItem(BaseModel):
     updated_at: datetime
 
 
+class JobDetailItem(BaseModel):
+    id: str
+    job_id: str
+    snapshot_item_id: str
+    release_id: int
+    instance_id: int
+    source_folder_id: int
+    source_folder_name: Optional[str] = None
+    destination_folder_id: Optional[int] = None
+    status: JobItemStatus
+    attempt_count: int = 0
+    destination_instance_id: Optional[int] = None
+    message: Optional[str] = None
+    updated_at: datetime
+    artist: str
+    title: str
+    year: Optional[int] = None
+    date_added: Optional[datetime] = None
+
+
 class MigrationJob(BaseModel):
     id: str
     name: str
@@ -206,7 +226,7 @@ class JobEvent(BaseModel):
 
 class JobDetailResponse(BaseModel):
     job: MigrationJob
-    items: list[MigrationJobItem]
+    items: list[JobDetailItem]
     events: list[JobEvent]
 
 

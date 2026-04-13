@@ -23,13 +23,62 @@ export function formatJobStatus(status: string): string {
   return status.replace(/_/g, " ");
 }
 
+export function formatJobPhase(status: string): string {
+  switch (status) {
+    case "running_copy":
+      return "Copy in progress";
+    case "awaiting_delete_confirmation":
+      return "Waiting for delete confirmation";
+    case "running_delete":
+      return "Delete phase in progress";
+    case "completed":
+      return "Completed";
+    case "completed_with_issues":
+      return "Completed with issues";
+    case "failed":
+      return "Failed";
+    case "cancelled":
+      return "Cancelled";
+    default:
+      return formatJobStatus(status);
+  }
+}
+
+export function formatJobNextAction(status: string): string {
+  switch (status) {
+    case "awaiting_delete_confirmation":
+      return "Confirm delete or roll back copied releases.";
+    case "running_copy":
+      return "No action yet — the copy phase is still running.";
+    case "running_delete":
+      return "No action yet — the delete phase is still running.";
+    case "completed_with_issues":
+      return "Review failed or skipped rows before relying on this migration.";
+    case "failed":
+      return "Inspect failed rows and messages before retrying outside the app.";
+    default:
+      return "No immediate action required.";
+  }
+}
+
+export function formatJobItemStatus(status: string): string {
+  return JOB_ITEM_STATUS_LABELS[status] ?? formatJobStatus(status);
+}
+
 export function statusTone(status: string): string {
   if (status.includes("fail")) return "error";
-  if (status.includes("skip") || status.includes("awaiting")) return "warning";
+  if (
+    status.includes("skip") ||
+    status.includes("awaiting") ||
+    status.includes("issue")
+  ) {
+    return "warning";
+  }
   if (
     status.includes("copied") ||
     status.includes("deleted") ||
-    status.includes("rolled")
+    status.includes("rolled") ||
+    status === "completed"
   ) {
     return "success";
   }

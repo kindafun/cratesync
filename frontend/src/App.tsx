@@ -502,20 +502,59 @@ function deriveReviewState({
   destinationAccount?: ConnectedAccount;
   sourceSnapshot: CollectionSnapshot | null;
 }) {
-  if (!sourceAccount || !destinationAccount || !sourceSnapshot) {
+  const accountsReady = Boolean(sourceAccount && destinationAccount && sourceSnapshot);
+  const selectionReady = selectedSourceCount > 0;
+  const previewReady = Boolean(preview) && !previewIsStale;
+  const blockerCount = preview?.blocking_conflicts.length ?? 0;
+  const blockersCleared = previewReady && blockerCount === 0;
+
+  const checklist = [
+    {
+      label: "Accounts connected",
+      status: accountsReady ? "done" : "blocked",
+    },
+    {
+      label: "Source selection made",
+      status: !accountsReady ? "attention" : selectionReady ? "done" : "blocked",
+    },
+    {
+      label: "Preview current",
+      status: !accountsReady || !selectionReady
+        ? "attention"
+        : previewReady
+          ? "done"
+          : "blocked",
+    },
+    {
+      label: "Blocking conflicts cleared",
+      status: !previewReady
+        ? "attention"
+        : blockersCleared
+          ? "done"
+          : "blocked",
+    },
+  ] as const;
+
+  if (!accountsReady) {
     return {
       tone: "default",
       title: "Connect and sync both accounts",
       message:
-        "The review step will unlock once both source and destination snapshots are available.",
+        "The review step unlocks once both source and destination snapshots are available.",
+      launchLabel: "Not ready",
+      blockerCount: 1,
+      checklist: [...checklist],
     } as const;
   }
-  if (selectedSourceCount === 0) {
+  if (!selectionReady) {
     return {
       tone: "warning",
       title: "Select at least one release",
       message:
-        "Use the source table checkboxes or bulk-select all filtered rows before generating a preview.",
+        "Use the source table checkboxes or bulk-select the filtered rows before generating a preview.",
+      launchLabel: "Selection required",
+      blockerCount: 1,
+      checklist: [...checklist],
     } as const;
   }
   if (!preview) {
@@ -523,7 +562,10 @@ function deriveReviewState({
       tone: "default",
       title: "Generate a preview",
       message:
-        "Validate duplicates, folder mappings, and destination capabilities before launching the job.",
+        "Check duplicates, folder mappings, and destination behavior before launching the migration.",
+      launchLabel: "Preview required",
+      blockerCount: 1,
+      checklist: [...checklist],
     } as const;
   }
   if (previewIsStale) {
@@ -531,20 +573,29 @@ function deriveReviewState({
       tone: "warning",
       title: "Preview is stale",
       message:
-        "Your search, filters, selections, or workflow changed. Generate a fresh preview before launch.",
+        "Your filters, selections, or workflow changed. Generate a fresh preview before launch.",
+      launchLabel: "Refresh preview",
+      blockerCount: 1,
+      checklist: [...checklist],
     } as const;
   }
-  if (preview.blocking_conflicts.length > 0) {
+  if (blockerCount > 0) {
     return {
       tone: "warning",
       title: "Resolve blocking issues",
-      message: `Clear ${preview.blocking_conflicts.length} conflict${preview.blocking_conflicts.length !== 1 ? "s" : ""} below, then launch the job.`,
+      message: `Clear ${blockerCount} conflict${blockerCount !== 1 ? "s" : ""} below, then launch the job.`,
+      launchLabel: "Resolve blockers",
+      blockerCount,
+      checklist: [...checklist],
     } as const;
   }
   return {
     tone: "ready",
     title: "Ready to launch",
     message:
-      "The selected releases have been reviewed. Launch the job when you are satisfied with this preview.",
+      "The current preview is up to date, conflicts are cleared, and the selected releases are ready for migration.",
+    launchLabel: "Ready",
+    blockerCount: 0,
+    checklist: [...checklist],
   } as const;
 }

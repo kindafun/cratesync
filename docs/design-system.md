@@ -76,8 +76,10 @@ This file owns implementation-facing UI rules. For product tone and durable desi
 - Non-account shell headers should stay structured, but not empty: keep collapse plus title anchored on the left, and allow high-value actions or status on the right when they help the section scan as a single unit.
 - Step 1 in the left rail owns plan configuration only; source filters live above the source table they affect.
 - Bounded filter dimensions should use `PillSelect` with type-to-filter behavior instead of free-text inputs.
-- Review state should read as a concise inline status line, not a padded feature banner.
+- Review state should read as a compact readiness summary, not a padded feature banner.
+- Within the review section, order content by decision utility: readiness first, blocking actions second, then transfer behavior and row-level evidence.
 - The job console should focus on toolbar, summary, and results; server-noise event feeds are not part of the main UI.
+- Treat the job console as an audit surface first: lead with job phase and next action, then show human-readable release results instead of raw identifiers as the primary labels.
 - Destructive actions must use danger styling and explicit confirmation.
 
 ## When Extending

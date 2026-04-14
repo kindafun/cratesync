@@ -211,6 +211,66 @@
   }
 }
 
+.mode-toggle-group {
+  overflow: visible;
+}
+
+.mode-toggle-option-shell {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+}
+
+.mode-toggle-option-shell + .mode-toggle-option-shell {
+  border-left: var(--border-grid);
+}
+
+.mode-toggle-group .toggle-option {
+  width: 100%;
+}
+
+.mode-toggle-tooltip {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + var(--space-xs));
+  transform: translateX(-50%) translateY(-0.2rem);
+  width: max-content;
+  max-width: min(18rem, calc(100vw - 2rem));
+  padding: 0.55rem 0.7rem;
+  border: var(--border-grid-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-ink);
+  font-size: var(--text-meta);
+  line-height: 1.45;
+  box-shadow: var(--shadow-soft);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--duration-base) ease,
+    transform var(--duration-base) ease;
+  z-index: 5;
+}
+
+.mode-toggle-tooltip::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  width: 0.6rem;
+  height: 0.6rem;
+  transform: translate(-50%, 55%) rotate(45deg);
+  border-top: var(--border-grid-strong);
+  border-left: var(--border-grid-strong);
+  background: var(--color-surface-raised);
+}
+
+.mode-toggle-option-shell:hover .mode-toggle-tooltip,
+.mode-toggle-option-shell > .toggle-option:focus-visible + .mode-toggle-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 @media (max-width: 760px) {
   .hero-status,
   .toggle-group,

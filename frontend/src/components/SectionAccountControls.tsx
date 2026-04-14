@@ -1,4 +1,4 @@
-import { Link, MoreHorizontal, RefreshCw } from "lucide-react";
+import { CircleUserRound, Link, MoreHorizontal, RefreshCw } from "lucide-react";
 
 import { formatSyncDateTime } from "../lib/format";
 import type { ConnectedAccount } from "../lib/types";
@@ -40,8 +40,11 @@ export function SectionAccountControls({
     <div className="section-account-toolbar">
       <div className="section-account-head">
         <div className="section-account-meta">
-          <span className={`section-account-name${account ? "" : " is-empty"}`}>
-            {account?.username ?? "Not connected"}
+          <span className="section-account-identity">
+            <CircleUserRound className="section-account-icon" size={14} aria-hidden="true" />
+            <span className={`section-account-name${account ? "" : " is-empty"}`}>
+              {account?.username ?? "Not connected"}
+            </span>
           </span>
           {detail && <span className="section-account-status">{detail}</span>}
         </div>

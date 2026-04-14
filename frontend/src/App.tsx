@@ -259,21 +259,41 @@ export function App() {
             />
             {heroStatusLabel}
           </span>
-          <div className="toggle-group">
-            <button
-              className={`toggle-option${workflowMode === "copy" ? " active" : ""}`}
-              onClick={() => setWorkflowMode("copy")}
-            >
-              <Copy size={13} />
-              Copy
-            </button>
-            <button
-              className={`toggle-option${workflowMode === "move" ? " active" : ""}`}
-              onClick={() => setWorkflowMode("move")}
-            >
-              <ArrowRightLeft size={13} />
-              Move
-            </button>
+          <div className="toggle-group mode-toggle-group">
+            <span className="mode-toggle-option-shell">
+              <button
+                className={`toggle-option${workflowMode === "copy" ? " active" : ""}`}
+                aria-describedby="workflow-mode-copy-tip"
+                onClick={() => setWorkflowMode("copy")}
+              >
+                <Copy size={13} />
+                Copy
+              </button>
+              <span
+                className="mode-toggle-tooltip"
+                id="workflow-mode-copy-tip"
+                role="tooltip"
+              >
+                Keeps releases in the source and adds them to the destination.
+              </span>
+            </span>
+            <span className="mode-toggle-option-shell">
+              <button
+                className={`toggle-option${workflowMode === "move" ? " active" : ""}`}
+                aria-describedby="workflow-mode-move-tip"
+                onClick={() => setWorkflowMode("move")}
+              >
+                <ArrowRightLeft size={13} />
+                Move
+              </button>
+              <span
+                className="mode-toggle-tooltip"
+                id="workflow-mode-move-tip"
+                role="tooltip"
+              >
+                Adds releases to the destination and removes them from the source.
+              </span>
+            </span>
           </div>
           {workspaceRetry && (
             <button className="text-btn" onClick={workspaceRetry}>
@@ -293,7 +313,7 @@ export function App() {
       <section className="shell-grid">
         <section className="shell-content">
           <SourceSelectionSection
-            title="Source selection"
+            title="Source"
             snapshot={sourceSnapshot}
             items={filteredSourceItems}
             totalSourceItems={sourceItems.length}
@@ -423,7 +443,7 @@ export function App() {
           />
 
           <SnapshotSection
-            title="Destination reference"
+            title="Destination"
             snapshot={destinationSnapshot}
             items={destinationItems}
             loading={loading || isSyncing !== null}

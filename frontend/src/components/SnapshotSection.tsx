@@ -102,7 +102,6 @@ export const SnapshotSection = memo(function SnapshotSection({
             aria-hidden="true"
           />
           <div className="canvas-header-title">
-            <div className="section-label">Destination</div>
             <h2>{title}</h2>
           </div>
         </button>

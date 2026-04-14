@@ -76,7 +76,7 @@
 }
 
 .canvas-header-shell {
-  align-items: flex-start;
+  align-items: baseline;
   flex-wrap: wrap;
 }
 
@@ -84,7 +84,7 @@
   flex: 0 0 auto;
   min-width: 0;
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--inline-gap-md);
   border: none;
   padding: 0;
@@ -110,9 +110,13 @@
 .canvas-header-controls {
   flex: 1 1 auto;
   min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
 }
 
 .section-collapse-icon {
+  align-self: center;
   width: 0.55rem;
   height: 0.55rem;
   flex-shrink: 0;

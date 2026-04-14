@@ -51,7 +51,7 @@
 
 .section-account-head {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--inline-gap-md);
   min-width: 0;
 }
@@ -63,6 +63,19 @@
   flex: 1 1 auto;
   min-width: 0;
   white-space: nowrap;
+}
+
+.section-account-identity {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.section-account-icon {
+  flex-shrink: 0;
+  align-self: center;
+  color: var(--color-muted);
 }
 
 .section-account-name {
@@ -225,15 +238,17 @@ select:focus {
 }
 
 .filter-row-header {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 0.35rem;
+  width: fit-content;
 }
 
 .filter-remove-btn {
   border: none;
   background: none;
-  padding: 0 0.2rem;
+  padding: 0;
   cursor: pointer;
   color: var(--color-muted);
   font-size: 1rem;
@@ -343,6 +358,10 @@ select:focus {
 
 .toggle-option + .toggle-option {
   border-left: var(--border-grid);
+}
+
+.mode-toggle-group .toggle-option + .toggle-option {
+  border-left: none;
 }
 
 .toggle-option.active {

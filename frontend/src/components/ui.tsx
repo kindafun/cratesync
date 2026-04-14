@@ -48,6 +48,7 @@ export function FilterBlock({
       <div className="filter-row-header">
         <span className="field-label">{label}</span>
         <button
+          type="button"
           className="filter-remove-btn"
           onClick={onRemove}
           aria-label={`Remove ${label} filter`}

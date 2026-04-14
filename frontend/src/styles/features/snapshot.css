@@ -11,6 +11,10 @@
   margin-bottom: var(--stack-sm);
 }
 
+.snapshot-controls .header-note {
+  white-space: nowrap;
+}
+
 .snapshot-frame-wrap {
   max-height: min(53rem, 80vh);
 }
@@ -114,5 +118,9 @@
   .snapshot-controls {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .snapshot-controls .header-note {
+    white-space: normal;
   }
 }

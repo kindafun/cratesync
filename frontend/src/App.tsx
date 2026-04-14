@@ -259,21 +259,41 @@ export function App() {
             />
             {heroStatusLabel}
           </span>
-          <div className="toggle-group">
-            <button
-              className={`toggle-option${workflowMode === "copy" ? " active" : ""}`}
-              onClick={() => setWorkflowMode("copy")}
-            >
-              <Copy size={13} />
-              Copy
-            </button>
-            <button
-              className={`toggle-option${workflowMode === "move" ? " active" : ""}`}
-              onClick={() => setWorkflowMode("move")}
-            >
-              <ArrowRightLeft size={13} />
-              Move
-            </button>
+          <div className="toggle-group mode-toggle-group">
+            <span className="mode-toggle-option-shell">
+              <button
+                className={`toggle-option${workflowMode === "copy" ? " active" : ""}`}
+                aria-describedby="workflow-mode-copy-tip"
+                onClick={() => setWorkflowMode("copy")}
+              >
+                <Copy size={13} />
+                Copy
+              </button>
+              <span
+                className="mode-toggle-tooltip"
+                id="workflow-mode-copy-tip"
+                role="tooltip"
+              >
+                Keeps releases in the source and adds them to the destination.
+              </span>
+            </span>
+            <span className="mode-toggle-option-shell">
+              <button
+                className={`toggle-option${workflowMode === "move" ? " active" : ""}`}
+                aria-describedby="workflow-mode-move-tip"
+                onClick={() => setWorkflowMode("move")}
+              >
+                <ArrowRightLeft size={13} />
+                Move
+              </button>
+              <span
+                className="mode-toggle-tooltip"
+                id="workflow-mode-move-tip"
+                role="tooltip"
+              >
+                Adds releases to the destination and removes them from the source.
+              </span>
+            </span>
           </div>
           {workspaceRetry && (
             <button className="text-btn" onClick={workspaceRetry}>
@@ -293,7 +313,7 @@ export function App() {
       <section className="shell-grid">
         <section className="shell-content">
           <SourceSelectionSection
-            title="Source selection"
+            title="Source"
             snapshot={sourceSnapshot}
             items={filteredSourceItems}
             totalSourceItems={sourceItems.length}
@@ -309,7 +329,6 @@ export function App() {
               <SectionAccountControls
                 role="source"
                 account={sourceAccount}
-                itemCount={sourceSnapshot?.total_items ?? 0}
                 syncing={isSyncing === sourceAccount?.id}
                 syncProgress={
                   isSyncing === sourceAccount?.id ? syncProgress : null
@@ -424,7 +443,7 @@ export function App() {
           />
 
           <SnapshotSection
-            title="Destination reference"
+            title="Destination"
             snapshot={destinationSnapshot}
             items={destinationItems}
             loading={loading || isSyncing !== null}
@@ -432,7 +451,6 @@ export function App() {
               <SectionAccountControls
                 role="destination"
                 account={destinationAccount}
-                itemCount={destinationSnapshot?.total_items ?? 0}
                 syncing={isSyncing === destinationAccount?.id}
                 syncProgress={
                   isSyncing === destinationAccount?.id ? syncProgress : null
@@ -504,49 +522,100 @@ function deriveReviewState({
   destinationAccount?: ConnectedAccount;
   sourceSnapshot: CollectionSnapshot | null;
 }) {
-  if (!sourceAccount || !destinationAccount || !sourceSnapshot) {
+  const accountsReady = Boolean(sourceAccount && destinationAccount && sourceSnapshot);
+  const selectionReady = selectedSourceCount > 0;
+  const previewReady = Boolean(preview) && !previewIsStale;
+  const blockerCount = preview?.blocking_conflicts.length ?? 0;
+  const blockersCleared = previewReady && blockerCount === 0;
+
+  const checklist = [
+    {
+      label: "Both accounts connected",
+      status: accountsReady ? "done" : "blocked",
+    },
+    {
+      label: "Items selected",
+      status: !accountsReady ? "attention" : selectionReady ? "done" : "blocked",
+    },
+    {
+      label: "Preview ready",
+      status: !accountsReady || !selectionReady
+        ? "attention"
+        : previewReady
+          ? "done"
+          : "blocked",
+    },
+    {
+      label: "All requirements met",
+      status: !previewReady
+        ? "attention"
+        : blockersCleared
+          ? "done"
+          : "blocked",
+    },
+  ] as const;
+
+  if (!accountsReady) {
     return {
       tone: "default",
-      title: "Connect and sync both accounts",
+      title: "Connect your destination and sync your source library",
       message:
-        "The review step will unlock once both source and destination snapshots are available.",
+        "Once your destination is connected and your source collection is up to date, you can review this migration and start it.",
+      launchLabel: "Not ready",
+      blockerCount: 1,
+      checklist: [...checklist],
     } as const;
   }
-  if (selectedSourceCount === 0) {
+  if (!selectionReady) {
     return {
       tone: "warning",
-      title: "Select at least one release",
+      title: "Choose the releases to include",
       message:
-        "Use the source table checkboxes or bulk-select all filtered rows before generating a preview.",
+        "Select at least one source row before you generate a preview for launch.",
+      launchLabel: "Selection required",
+      blockerCount: 1,
+      checklist: [...checklist],
     } as const;
   }
   if (!preview) {
     return {
       tone: "default",
-      title: "Generate a preview",
+      title: "Generate a preview before launch",
       message:
-        "Validate duplicates, folder mappings, and destination capabilities before launching the job.",
+        "Review duplicates, folder mappings, and destination behavior before you start the migration.",
+      launchLabel: "Preview required",
+      blockerCount: 1,
+      checklist: [...checklist],
     } as const;
   }
   if (previewIsStale) {
     return {
       tone: "warning",
-      title: "Preview is stale",
+      title: "Refresh the preview",
       message:
-        "Your search, filters, selections, or workflow changed. Generate a fresh preview before launch.",
+        "Your selections or workflow changed. Generate a fresh preview before launching.",
+      launchLabel: "Refresh preview",
+      blockerCount: 1,
+      checklist: [...checklist],
     } as const;
   }
-  if (preview.blocking_conflicts.length > 0) {
+  if (blockerCount > 0) {
     return {
       tone: "warning",
-      title: "Resolve blocking issues",
-      message: `Clear ${preview.blocking_conflicts.length} conflict${preview.blocking_conflicts.length !== 1 ? "s" : ""} below, then launch the job.`,
+      title: "Resolve blockers before launch",
+      message: `Clear ${blockerCount} conflict${blockerCount !== 1 ? "s" : ""} below, then you can launch the migration.`,
+      launchLabel: "Resolve blockers",
+      blockerCount,
+      checklist: [...checklist],
     } as const;
   }
   return {
     tone: "ready",
     title: "Ready to launch",
     message:
-      "The selected releases have been reviewed. Launch the job when you are satisfied with this preview.",
+      "Your preview is current, blockers are cleared, and the selected releases are ready to migrate.",
+    launchLabel: "Ready",
+    blockerCount: 0,
+    checklist: [...checklist],
   } as const;
 }

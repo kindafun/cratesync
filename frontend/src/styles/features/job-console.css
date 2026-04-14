@@ -1,9 +1,27 @@
-.job-toolbar {
+.job-console-header-note {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.job-phase-summary {
+  display: grid;
+  gap: var(--stack-sm);
+  margin-bottom: var(--space-md);
+}
+
+.job-phase-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--inline-gap-lg);
-  margin-bottom: var(--space-md);
+}
+
+.job-name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--inline-gap-sm);
+  flex-wrap: wrap;
 }
 
 .job-name {
@@ -12,4 +30,61 @@
   font-size: var(--text-credit-sm);
   font-weight: 500;
   letter-spacing: -0.04em;
+}
+
+.job-phase-pill {
+  display: inline-flex;
+  align-items: center;
+}
+
+.job-phase-next-action {
+  max-width: 26rem;
+}
+
+.job-phase-next-action h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-title-sm);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  color: var(--color-ink);
+}
+
+.job-phase-next-action p {
+  margin: 0.2rem 0 0;
+  color: var(--color-muted);
+  font-size: var(--text-body-dense);
+  line-height: var(--line-height-body);
+}
+
+.job-audit-table td {
+  vertical-align: top;
+}
+
+.job-release-cell,
+.job-outcome-cell {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.job-release-cell strong {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.job-row-meta,
+.job-note-cell {
+  color: var(--color-muted);
+  font-size: var(--text-meta);
+  line-height: var(--line-height-body);
+}
+
+@media (max-width: 760px) {
+  .job-phase-head {
+    display: grid;
+  }
+
+  .job-phase-next-action {
+    max-width: none;
+  }
 }

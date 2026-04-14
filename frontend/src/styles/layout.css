@@ -76,22 +76,28 @@
 }
 
 .canvas-header-shell {
-  align-items: flex-start;
+  align-items: baseline;
+  flex-wrap: wrap;
 }
 
 .canvas-header-toggle {
-  flex: 1;
+  flex: 0 0 auto;
   min-width: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--inline-gap-lg);
+  align-items: baseline;
+  gap: var(--inline-gap-md);
   border: none;
   padding: 0;
   background: transparent;
   color: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+.canvas-header-title {
+  display: grid;
+  gap: var(--space-2xs);
+  min-width: 0;
 }
 
 .canvas-header h2 {
@@ -101,19 +107,16 @@
   letter-spacing: -0.04em;
 }
 
-.canvas-header-right {
-  display: flex;
-  align-items: center;
-  gap: var(--inline-gap-md);
-  flex-shrink: 0;
-}
-
 .canvas-header-controls {
-  flex-shrink: 0;
-  max-width: min(28rem, 100%);
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
 }
 
 .section-collapse-icon {
+  align-self: center;
   width: 0.55rem;
   height: 0.55rem;
   flex-shrink: 0;
@@ -195,14 +198,22 @@
   .field-grid-compact,
   .job-toolbar,
   .canvas-header,
-  .canvas-header-toggle,
   .planner-header,
   .review-table-header {
     display: grid;
     grid-template-columns: 1fr;
   }
 
+  .canvas-header-toggle {
+    display: flex;
+  }
+
   .canvas-header h2 {
     font-size: 1.4rem;
+  }
+
+  .canvas-header-controls {
+    min-width: 0;
+    max-width: 100%;
   }
 }

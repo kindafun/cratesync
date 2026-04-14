@@ -8,7 +8,7 @@ import {
 } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 
-import { formatDate, formatDateTime } from "../lib/format";
+import { formatDate, formatSyncDateTime } from "../lib/format";
 import {
   sortSnapshotItems,
   type SnapshotSortColumn,
@@ -97,20 +97,12 @@ export const SnapshotSection = memo(function SnapshotSection({
           onClick={handleToggle}
           onKeyDown={handleKeyDown}
         >
-          <div>
-            <div className="section-label">Destination</div>
+          <span
+            className={`section-collapse-icon${collapsed ? " collapsed" : ""}`}
+            aria-hidden="true"
+          />
+          <div className="canvas-header-title">
             <h2>{title}</h2>
-          </div>
-          <div className="canvas-header-right">
-            <div className="header-note">
-              {snapshot
-                ? `${snapshot.total_items} items · synced ${formatDateTime(snapshot.created_at)}`
-                : "No local snapshot"}
-            </div>
-            <span
-              className={`section-collapse-icon${collapsed ? " collapsed" : ""}`}
-              aria-hidden="true"
-            />
           </div>
         </button>
         {accountControls && (
@@ -122,9 +114,9 @@ export const SnapshotSection = memo(function SnapshotSection({
           <div className="snapshot-toolbar">
             <div className="snapshot-controls">
               <div className="header-note">
-                {totalItems === 0
-                  ? "0 items"
-                  : `${totalItems} item${totalItems === 1 ? "" : "s"}`}
+                {snapshot
+                  ? `${snapshot.total_items} items · synced ${formatSyncDateTime(snapshot.created_at)}`
+                  : "No local snapshot"}
               </div>
             </div>
           </div>

@@ -265,6 +265,7 @@ export function useWorkspaceState({
   }
 
   async function handleConnect(role: "source" | "destination") {
+    const roleLabel = role === "source" ? "Source" : "Destination";
     const popup = window.open(
       "",
       `discogs-oauth-${role}`,
@@ -283,7 +284,7 @@ export function useWorkspaceState({
       const response = await api.startOAuth(role);
       popup.location.replace(response.authorization_url);
       setStatus(
-        `OAuth started for ${role}. Finish the callback flow in the opened window.`,
+        `${roleLabel} sign-in window opened. Finish connecting that account there.`,
       );
     } catch (error) {
       const message =

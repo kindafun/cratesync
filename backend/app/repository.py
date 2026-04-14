@@ -9,6 +9,7 @@ from .domain.models import (
     CollectionItemSnapshot,
     CollectionSnapshot,
     ConnectedAccount,
+    JobDetailItem,
     JobDetailResponse,
     JobEvent,
     MigrationJob,
@@ -381,10 +382,31 @@ class Repository:
             ).fetchall()
         return [self._row_to_event(row) for row in rows]
 
+    def list_job_detail_items(self, job_id: str) -> list[JobDetailItem]:
+        with self.database.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT
+                    mji.*,
+                    cis.folder_name AS source_folder_name,
+                    cis.artist AS artist,
+                    cis.title AS title,
+                    cis.year AS year,
+                    cis.date_added AS date_added
+                FROM migration_job_items AS mji
+                JOIN collection_item_snapshots AS cis
+                    ON cis.id = mji.snapshot_item_id
+                WHERE mji.job_id = ?
+                ORDER BY mji.updated_at ASC
+                """,
+                (job_id,),
+            ).fetchall()
+        return [self._row_to_job_detail_item(row) for row in rows]
+
     def get_job_detail(self, job_id: str) -> JobDetailResponse:
         return JobDetailResponse(
             job=self.get_job(job_id),
-            items=self.list_job_items(job_id),
+            items=self.list_job_detail_items(job_id),
             events=self.list_job_events(job_id),
         )
 
@@ -452,6 +474,9 @@ class Repository:
 
     def _row_to_job_item(self, row) -> MigrationJobItem:
         return MigrationJobItem.model_validate(dict(row))
+
+    def _row_to_job_detail_item(self, row) -> JobDetailItem:
+        return JobDetailItem.model_validate(dict(row))
 
     def _row_to_event(self, row) -> JobEvent:
         return JobEvent.model_validate(dict(row))

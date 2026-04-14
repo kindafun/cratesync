@@ -77,11 +77,24 @@ export function ReviewSection({
         (virtualItems[virtualItems.length - 1]?.end ?? 0)
       : 0;
 
+  const capabilityChips = preview
+    ? renderCapabilityChips(preview.metadata_capabilities)
+    : [];
+  const blockerCards = folderConflicts.length + customFieldConflicts.length;
+  const evidenceDescription =
+    reviewTableMode === "selected"
+      ? "Showing the rows currently included in this preview."
+      : "Showing the wider filtered source snapshot for comparison.";
+  const hasPreview = Boolean(preview);
+  const shouldShowMetrics = selectedSourceCount > 0 || hasPreview;
+  const pendingChecks = reviewState.checklist.filter((item) => item.status !== "done");
+  const checklistHeading = pendingChecks.length > 0 ? "Before launch" : "Checks complete";
+
   function handleToggle() {
     setCollapsed((c) => !c);
   }
 
-  function handleHeaderKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+  function handleHeaderKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
       handleToggle();
@@ -103,110 +116,154 @@ export function ReviewSection({
     <section
       className={`canvas-section canvas-section-review${collapsed ? " is-collapsed" : ""}`}
     >
-      <div
-        className="canvas-header is-toggle"
-        role="button"
-        tabIndex={0}
-        aria-expanded={!collapsed}
-        onClick={handleToggle}
-        onKeyDown={handleHeaderKeyDown}
-      >
-        <div>
-          <h2>Review and launch</h2>
-        </div>
-        <div className="canvas-header-right">
-          <div className="toolbar-actions" onClick={(e) => e.stopPropagation()}>
-            <button
-              className="btn btn-ghost"
-              disabled={isGeneratingPreview}
-              onClick={onGeneratePreview}
-            >
-              <ScanEye size={14} />
-              {isGeneratingPreview ? "Checking…" : "Generate preview"}
-            </button>
-            <button
-              className="btn btn-primary"
-              disabled={launchBlocked || isCreatingJob}
-              onClick={onLaunchJob}
-            >
-              <Play size={14} />
-              {isCreatingJob ? "Launching…" : "Launch job"}
-            </button>
-          </div>
+      <div className="canvas-header canvas-header-shell">
+        <button
+          type="button"
+          className="canvas-header-toggle"
+          aria-expanded={!collapsed}
+          onClick={handleToggle}
+          onKeyDown={handleHeaderKeyDown}
+        >
           <span
             className={`section-collapse-icon${collapsed ? " collapsed" : ""}`}
             aria-hidden="true"
           />
-        </div>
+          <div className="canvas-header-title">
+            <h2>Review and launch</h2>
+          </div>
+        </button>
       </div>
 
       {!collapsed && (
         <>
-          <div className={`review-status review-status-${reviewState.tone}`}>
-            <strong>{reviewState.title}</strong>
-            {" — "}
-            {reviewState.message}
-          </div>
+          <section className={`review-summary review-summary-${reviewState.tone}`}>
+            <div className="review-summary-head">
+              <div className="review-summary-copy-block">
+                <div className="review-summary-title-row">
+                  <h3>{reviewState.title}</h3>
+                </div>
+                <p className="review-summary-message">{reviewState.message}</p>
+              </div>
+              <div className="review-summary-actions">
+                <button
+                  className="btn btn-ghost"
+                  disabled={isGeneratingPreview}
+                  onClick={onGeneratePreview}
+                >
+                  <ScanEye size={14} />
+                  {isGeneratingPreview ? "Checking…" : hasPreview ? "Refresh preview" : "Generate preview"}
+                </button>
+                <button
+                  className="btn btn-primary"
+                  disabled={launchBlocked || isCreatingJob}
+                  onClick={onLaunchJob}
+                >
+                  <Play size={14} />
+                  {isCreatingJob ? "Launching…" : "Start migration"}
+                </button>
+              </div>
+            </div>
 
-          <div className="summary-strip">
-            <StatBlock label="Chosen releases" value={selectedSourceCount} />
-            <StatBlock
-              label="Preview included"
-              value={preview?.selected_count ?? 0}
-            />
-            <StatBlock
-              label="Duplicates"
-              value={preview?.duplicate_release_ids.length ?? 0}
-              muted
-            />
-          </div>
+            {shouldShowMetrics && (
+              <div className="summary-strip review-summary-strip">
+                <StatBlock label="Selected" value={selectedSourceCount} />
+                <StatBlock
+                  label="Included in preview"
+                  value={preview?.selected_count ?? 0}
+                />
+                <StatBlock
+                  label="Possible duplicates"
+                  value={preview?.duplicate_release_ids.length ?? 0}
+                  muted
+                />
+              </div>
+            )}
+
+            <div className="review-checklist-block">
+              <div className="review-checklist-heading">{checklistHeading}</div>
+              <div className="review-checklist" aria-label="Launch readiness checklist">
+                {reviewState.checklist.map((item) => (
+                  <span
+                    key={item.label}
+                    className={`review-checklist-item review-checklist-item-${item.status}`}
+                  >
+                    <span className="review-checklist-dot" aria-hidden="true" />
+                    {item.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </section>
 
           {preview && (
             <>
               {preview.blocking_conflicts.length > 0 && (
-                <div className="conflict-grid">
-                  {folderConflicts.map((conflict) => (
-                    <FolderConflictCard
-                      key={`folder-${String(conflict.payload.source_folder_id)}`}
-                      conflict={conflict}
-                      destinationFolderLookup={destinationFolderLookup}
-                      selectedValue={
-                        folderMappingOverrides[
-                          String(conflict.payload.source_folder_id)
-                        ] ?? null
-                      }
-                      onChange={onFolderOverride}
-                    />
-                  ))}
-                  {customFieldConflicts.map((conflict) => (
-                    <CustomFieldConflictCard
-                      key={`field-${String(conflict.payload.field_name)}`}
-                      conflict={conflict}
-                      value={
-                        customFieldMappingOverrides[
-                          String(conflict.payload.field_name)
-                        ] ?? ""
-                      }
-                      onChange={onCustomFieldOverride}
-                    />
-                  ))}
-                </div>
+                <section className="review-blockers">
+                  <div className="review-blockers-head">
+                    <div>
+                      <h3>
+                        Resolve {reviewState.blockerCount} blocker
+                        {reviewState.blockerCount !== 1 ? "s" : ""}
+                      </h3>
+                    </div>
+                    <p>Clear each mapping below to continue to launch.</p>
+                  </div>
+                  <div className="conflict-grid">
+                    {folderConflicts.map((conflict) => (
+                      <FolderConflictCard
+                        key={`folder-${String(conflict.payload.source_folder_id)}`}
+                        conflict={conflict}
+                        destinationFolderLookup={destinationFolderLookup}
+                        selectedValue={
+                          folderMappingOverrides[
+                            String(conflict.payload.source_folder_id)
+                          ] ?? null
+                        }
+                        onChange={onFolderOverride}
+                      />
+                    ))}
+                    {customFieldConflicts.map((conflict) => (
+                      <CustomFieldConflictCard
+                        key={`field-${String(conflict.payload.field_name)}`}
+                        conflict={conflict}
+                        value={
+                          customFieldMappingOverrides[
+                            String(conflict.payload.field_name)
+                          ] ?? ""
+                        }
+                        onChange={onCustomFieldOverride}
+                      />
+                    ))}
+                  </div>
+                  {blockerCards !== reviewState.blockerCount && (
+                    <div className="header-note review-blockers-note">
+                      Some conflicts are grouped into the same action card.
+                    </div>
+                  )}
+                </section>
               )}
 
-              <div className="section-label">Job behavior</div>
-              <div className="capability-row">
-                {renderCapabilityChips(preview.metadata_capabilities).map(
-                  (chip) => (
-                    <span
-                      key={chip.label}
-                      className="capability-chip"
-                      title={chip.note}
-                    >
-                      {chip.label} · {chip.value}
-                    </span>
-                  ),
-                )}
-              </div>
+              {capabilityChips.length > 0 && (
+                <section className="review-capabilities">
+                  <div className="review-capabilities-copy">
+                    <h3>What will happen</h3>
+                    <p className="review-evidence-copy">
+                      These preview checks summarize what the current migration can carry over.
+                    </p>
+                  </div>
+                  <div className="capability-row">
+                    {capabilityChips.map((chip) => (
+                      <span
+                        key={chip.label}
+                        className="capability-chip"
+                        title={chip.note}
+                      >
+                        {chip.label} · {chip.value}
+                      </span>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               <div
                 className="review-table-header is-toggle"
@@ -216,23 +273,28 @@ export function ReviewSection({
                 onClick={handleTableToggle}
                 onKeyDown={handleTableHeaderKeyDown}
               >
-                <h3 className="section-label">Included release review</h3>
-                <div
-                  className="history-strip"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    className={`history-pill${reviewTableMode === "selected" ? " active" : ""}`}
-                    onClick={() => onReviewTableModeChange("selected")}
+                <div className="review-evidence-head">
+                  <div>
+                    <h3>Preview items</h3>
+                    <p className="review-evidence-copy">{evidenceDescription}</p>
+                  </div>
+                  <div
+                    className="history-strip"
+                    onClick={(event) => event.stopPropagation()}
                   >
-                    Selected only
-                  </button>
-                  <button
-                    className={`history-pill${reviewTableMode === "all" ? " active" : ""}`}
-                    onClick={() => onReviewTableModeChange("all")}
-                  >
-                    All source rows
-                  </button>
+                    <button
+                      className={`history-pill${reviewTableMode === "selected" ? " active" : ""}`}
+                      onClick={() => onReviewTableModeChange("selected")}
+                    >
+                      Selected only
+                    </button>
+                    <button
+                      className={`history-pill${reviewTableMode === "all" ? " active" : ""}`}
+                      onClick={() => onReviewTableModeChange("all")}
+                    >
+                      All filtered rows
+                    </button>
+                  </div>
                 </div>
                 <span
                   className={`section-collapse-icon${tableCollapsed ? " collapsed" : ""}`}
@@ -275,15 +337,14 @@ export function ReviewSection({
                       )}
                       {virtualItems.map((virtualRow) => {
                         const item = reviewItems[virtualRow.index];
-                        const isPreviewSelected = previewSelectedIds.has(
-                          item.id,
-                        );
-                        const isExplicitlySelected = selectedSourceIdSet.has(
-                          item.id,
-                        );
-                        const isDuplicate = duplicateReleaseIds.has(
-                          item.release_id,
-                        );
+                        const isPreviewSelected = previewSelectedIds.has(item.id);
+                        const isExplicitlySelected = selectedSourceIdSet.has(item.id);
+                        const isDuplicate = duplicateReleaseIds.has(item.release_id);
+                        const primaryState = isPreviewSelected
+                          ? "Included in preview"
+                          : isExplicitlySelected
+                            ? "Chosen, not included"
+                            : "Comparison only";
                         return (
                           <tr
                             key={item.id}
@@ -303,15 +364,11 @@ export function ReviewSection({
                                 <span
                                   className={`state-pill${isPreviewSelected ? " active" : ""}`}
                                 >
-                                  {isPreviewSelected
-                                    ? "Included"
-                                    : isExplicitlySelected
-                                      ? "Chosen"
-                                      : "Not chosen"}
+                                  {primaryState}
                                 </span>
                                 {isDuplicate && (
                                   <span className="state-pill warning">
-                                    Duplicate
+                                    Duplicate on destination
                                   </span>
                                 )}
                               </div>
@@ -335,24 +392,16 @@ export function ReviewSection({
             </>
           )}
 
-          {!preview && (
-            <div
-              className={`empty-block${isGeneratingPreview ? " preview-loading" : ""}`}
-            >
-              {isGeneratingPreview ? (
-                <>
-                  <span className="preview-loading-label">
-                    Checking selections against destination…
-                  </span>
-                  <div className="preview-loading-bars">
-                    <span className="skeleton-cell skeleton-cell-long" />
-                    <span className="skeleton-cell skeleton-cell-mid" />
-                    <span className="skeleton-cell skeleton-cell-short" />
-                  </div>
-                </>
-              ) : (
-                "Use the source table to choose releases, then generate a preview here. This step will summarize what gets copied or moved, highlight duplicates, and show any conflicts you need to clear before launch."
-              )}
+          {!preview && isGeneratingPreview && (
+            <div className="empty-block preview-loading">
+              <span className="preview-loading-label">
+                Checking selections against destination…
+              </span>
+              <div className="preview-loading-bars">
+                <span className="skeleton-cell skeleton-cell-long" />
+                <span className="skeleton-cell skeleton-cell-mid" />
+                <span className="skeleton-cell skeleton-cell-short" />
+              </div>
             </div>
           )}
         </>
@@ -382,7 +431,6 @@ function FolderConflictCard({
 
   return (
     <article className="conflict-card">
-      <div className="section-label">Folder mapping</div>
       <h3>{folderName}</h3>
       <p>{conflict.message}</p>
       <select
@@ -419,7 +467,6 @@ function CustomFieldConflictCard({
 
   return (
     <article className="conflict-card">
-      <div className="section-label">Custom field</div>
       <h3>{fieldName}</h3>
       <p>
         This source field doesn't have a matching field in the destination.

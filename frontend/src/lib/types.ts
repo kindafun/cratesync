@@ -125,19 +125,24 @@ export interface MigrationJob {
   summary: JobSummary;
 }
 
-export interface MigrationJobItem {
+export interface JobDetailItem {
   id: string;
   job_id: string;
   snapshot_item_id: string;
   release_id: number;
   instance_id: number;
   source_folder_id: number;
+  source_folder_name?: string | null;
   destination_folder_id?: number | null;
   status: string;
   attempt_count: number;
   destination_instance_id?: number | null;
   message?: string | null;
   updated_at: string;
+  artist: string;
+  title: string;
+  year?: number | null;
+  date_added?: string | null;
 }
 
 export interface JobEvent {
@@ -150,7 +155,7 @@ export interface JobEvent {
 
 export interface JobDetailResponse {
   job: MigrationJob;
-  items: MigrationJobItem[];
+  items: JobDetailItem[];
   events: JobEvent[];
 }
 
@@ -170,9 +175,18 @@ export interface SaveSelectionPresetRequest {
 }
 
 export type ReviewTone = "default" | "warning" | "ready";
+export type ReviewChecklistStatus = "done" | "attention" | "blocked";
+
+export interface ReviewChecklistItem {
+  label: string;
+  status: ReviewChecklistStatus;
+}
 
 export interface ReviewState {
   tone: ReviewTone;
   title: string;
   message: string;
+  launchLabel: string;
+  blockerCount: number;
+  checklist: ReviewChecklistItem[];
 }

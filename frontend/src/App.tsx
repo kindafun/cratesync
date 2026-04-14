@@ -530,15 +530,15 @@ function deriveReviewState({
 
   const checklist = [
     {
-      label: "Accounts connected",
+      label: "Both accounts connected",
       status: accountsReady ? "done" : "blocked",
     },
     {
-      label: "Source selection made",
+      label: "Items selected",
       status: !accountsReady ? "attention" : selectionReady ? "done" : "blocked",
     },
     {
-      label: "Preview current",
+      label: "Preview ready",
       status: !accountsReady || !selectionReady
         ? "attention"
         : previewReady
@@ -546,7 +546,7 @@ function deriveReviewState({
           : "blocked",
     },
     {
-      label: "Blocking conflicts cleared",
+      label: "All requirements met",
       status: !previewReady
         ? "attention"
         : blockersCleared
@@ -558,9 +558,9 @@ function deriveReviewState({
   if (!accountsReady) {
     return {
       tone: "default",
-      title: "Connect and sync both accounts",
+      title: "Connect your destination and sync your source library",
       message:
-        "The review step unlocks once both source and destination snapshots are available.",
+        "Once your destination is connected and your source collection is up to date, you can review this migration and start it.",
       launchLabel: "Not ready",
       blockerCount: 1,
       checklist: [...checklist],
@@ -569,9 +569,9 @@ function deriveReviewState({
   if (!selectionReady) {
     return {
       tone: "warning",
-      title: "Select at least one release",
+      title: "Choose the releases to include",
       message:
-        "Use the source table checkboxes or bulk-select the filtered rows before generating a preview.",
+        "Select at least one source row before you generate a preview for launch.",
       launchLabel: "Selection required",
       blockerCount: 1,
       checklist: [...checklist],
@@ -580,9 +580,9 @@ function deriveReviewState({
   if (!preview) {
     return {
       tone: "default",
-      title: "Generate a preview",
+      title: "Generate a preview before launch",
       message:
-        "Check duplicates, folder mappings, and destination behavior before launching the migration.",
+        "Review duplicates, folder mappings, and destination behavior before you start the migration.",
       launchLabel: "Preview required",
       blockerCount: 1,
       checklist: [...checklist],
@@ -591,9 +591,9 @@ function deriveReviewState({
   if (previewIsStale) {
     return {
       tone: "warning",
-      title: "Preview is stale",
+      title: "Refresh the preview",
       message:
-        "Your filters, selections, or workflow changed. Generate a fresh preview before launch.",
+        "Your selections or workflow changed. Generate a fresh preview before launching.",
       launchLabel: "Refresh preview",
       blockerCount: 1,
       checklist: [...checklist],
@@ -602,8 +602,8 @@ function deriveReviewState({
   if (blockerCount > 0) {
     return {
       tone: "warning",
-      title: "Resolve blocking issues",
-      message: `Clear ${blockerCount} conflict${blockerCount !== 1 ? "s" : ""} below, then launch the job.`,
+      title: "Resolve blockers before launch",
+      message: `Clear ${blockerCount} conflict${blockerCount !== 1 ? "s" : ""} below, then you can launch the migration.`,
       launchLabel: "Resolve blockers",
       blockerCount,
       checklist: [...checklist],
@@ -613,7 +613,7 @@ function deriveReviewState({
     tone: "ready",
     title: "Ready to launch",
     message:
-      "The current preview is up to date, conflicts are cleared, and the selected releases are ready for migration.",
+      "Your preview is current, blockers are cleared, and the selected releases are ready to migrate.",
     launchLabel: "Ready",
     blockerCount: 0,
     checklist: [...checklist],

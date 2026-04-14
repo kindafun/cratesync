@@ -62,7 +62,6 @@ export function JobConsoleSection({
             aria-hidden="true"
           />
           <div className="canvas-header-title">
-            <div className="section-label">Execution</div>
             <h2>Job console</h2>
           </div>
         </button>
@@ -101,7 +100,6 @@ export function JobConsoleSection({
               <section className="job-phase-summary">
                 <div className="job-phase-head">
                   <div>
-                    <div className="section-label">Audit phase</div>
                     <div className="job-name-row">
                       <div className="job-name">{jobDetail.job.name}</div>
                       <span
@@ -120,7 +118,7 @@ export function JobConsoleSection({
                     </div>
                   </div>
                   <div className="job-phase-next-action">
-                    <div className="section-label">Next step</div>
+                    <h3>Next step</h3>
                     <p>{nextAction}</p>
                   </div>
                 </div>

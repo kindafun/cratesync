@@ -83,8 +83,12 @@ export function ReviewSection({
   const blockerCards = folderConflicts.length + customFieldConflicts.length;
   const evidenceDescription =
     reviewTableMode === "selected"
-      ? "Inspect only the rows currently included in the preview."
-      : "Compare included rows against the broader filtered source snapshot.";
+      ? "Showing the rows currently included in this preview."
+      : "Showing the wider filtered source snapshot for comparison.";
+  const hasPreview = Boolean(preview);
+  const shouldShowMetrics = selectedSourceCount > 0 || hasPreview;
+  const pendingChecks = reviewState.checklist.filter((item) => item.status !== "done");
+  const checklistHeading = pendingChecks.length > 0 ? "Before launch" : "Checks complete";
 
   function handleToggle() {
     setCollapsed((c) => !c);
@@ -128,80 +132,68 @@ export function ReviewSection({
             <h2>Review and launch</h2>
           </div>
         </button>
-        <div className="canvas-header-controls review-header-controls">
-          <div className="toolbar-actions">
-            <button
-              className="btn btn-ghost"
-              disabled={isGeneratingPreview}
-              onClick={onGeneratePreview}
-            >
-              <ScanEye size={14} />
-              {isGeneratingPreview ? "Checking…" : "Generate preview"}
-            </button>
-            <button
-              className="btn btn-primary"
-              disabled={launchBlocked || isCreatingJob}
-              onClick={onLaunchJob}
-            >
-              <Play size={14} />
-              {isCreatingJob ? "Launching…" : "Launch job"}
-            </button>
-          </div>
-        </div>
       </div>
 
       {!collapsed && (
         <>
           <section className={`review-summary review-summary-${reviewState.tone}`}>
             <div className="review-summary-head">
-              <div>
-                <div className="section-label">Launch readiness</div>
+              <div className="review-summary-copy-block">
                 <div className="review-summary-title-row">
                   <h3>{reviewState.title}</h3>
-                  <span
-                    className={`review-launch-state review-launch-state-${reviewState.tone}`}
-                  >
-                    {reviewState.launchLabel}
-                  </span>
                 </div>
+                <p className="review-summary-message">{reviewState.message}</p>
               </div>
-              <div className="review-summary-meta">
-                {reviewState.blockerCount > 0 ? (
-                  <span>
-                    {reviewState.blockerCount} blocker
-                    {reviewState.blockerCount === 1 ? " remains" : "s remain"}
-                  </span>
-                ) : (
-                  <span>No blockers remain</span>
-                )}
+              <div className="review-summary-actions">
+                <button
+                  className="btn btn-ghost"
+                  disabled={isGeneratingPreview}
+                  onClick={onGeneratePreview}
+                >
+                  <ScanEye size={14} />
+                  {isGeneratingPreview ? "Checking…" : hasPreview ? "Refresh preview" : "Generate preview"}
+                </button>
+                <button
+                  className="btn btn-primary"
+                  disabled={launchBlocked || isCreatingJob}
+                  onClick={onLaunchJob}
+                >
+                  <Play size={14} />
+                  {isCreatingJob ? "Launching…" : "Start migration"}
+                </button>
               </div>
             </div>
-            <p className="review-summary-message">{reviewState.message}</p>
-            <div className="review-checklist" aria-label="Launch readiness checklist">
-              {reviewState.checklist.map((item) => (
-                <span
-                  key={item.label}
-                  className={`review-checklist-item review-checklist-item-${item.status}`}
-                >
-                  <span className="review-checklist-dot" aria-hidden="true" />
-                  {item.label}
-                </span>
-              ))}
+
+            {shouldShowMetrics && (
+              <div className="summary-strip review-summary-strip">
+                <StatBlock label="Selected" value={selectedSourceCount} />
+                <StatBlock
+                  label="Included in preview"
+                  value={preview?.selected_count ?? 0}
+                />
+                <StatBlock
+                  label="Possible duplicates"
+                  value={preview?.duplicate_release_ids.length ?? 0}
+                  muted
+                />
+              </div>
+            )}
+
+            <div className="review-checklist-block">
+              <div className="review-checklist-heading">{checklistHeading}</div>
+              <div className="review-checklist" aria-label="Launch readiness checklist">
+                {reviewState.checklist.map((item) => (
+                  <span
+                    key={item.label}
+                    className={`review-checklist-item review-checklist-item-${item.status}`}
+                  >
+                    <span className="review-checklist-dot" aria-hidden="true" />
+                    {item.label}
+                  </span>
+                ))}
+              </div>
             </div>
           </section>
-
-          <div className="summary-strip">
-            <StatBlock label="Chosen releases" value={selectedSourceCount} />
-            <StatBlock
-              label="Preview included"
-              value={preview?.selected_count ?? 0}
-            />
-            <StatBlock
-              label="Duplicates"
-              value={preview?.duplicate_release_ids.length ?? 0}
-              muted
-            />
-          </div>
 
           {preview && (
             <>
@@ -209,16 +201,12 @@ export function ReviewSection({
                 <section className="review-blockers">
                   <div className="review-blockers-head">
                     <div>
-                      <div className="section-label">Resolve before launch</div>
                       <h3>
-                        {reviewState.blockerCount} required action
+                        Resolve {reviewState.blockerCount} blocker
                         {reviewState.blockerCount !== 1 ? "s" : ""}
                       </h3>
                     </div>
-                    <p>
-                      Clear each mapping issue below before the launch button can
-                      proceed.
-                    </p>
+                    <p>Clear each mapping below to continue to launch.</p>
                   </div>
                   <div className="conflict-grid">
                     {folderConflicts.map((conflict) => (
@@ -249,7 +237,7 @@ export function ReviewSection({
                   </div>
                   {blockerCards !== reviewState.blockerCount && (
                     <div className="header-note review-blockers-note">
-                      Some blockers may share the same action card grouping.
+                      Some conflicts are grouped into the same action card.
                     </div>
                   )}
                 </section>
@@ -257,7 +245,12 @@ export function ReviewSection({
 
               {capabilityChips.length > 0 && (
                 <section className="review-capabilities">
-                  <div className="section-label">Transfer behavior</div>
+                  <div className="review-capabilities-copy">
+                    <h3>What will happen</h3>
+                    <p className="review-evidence-copy">
+                      These preview checks summarize what the current migration can carry over.
+                    </p>
+                  </div>
                   <div className="capability-row">
                     {capabilityChips.map((chip) => (
                       <span
@@ -282,7 +275,7 @@ export function ReviewSection({
               >
                 <div className="review-evidence-head">
                   <div>
-                    <div className="section-label">Preview evidence</div>
+                    <h3>Preview items</h3>
                     <p className="review-evidence-copy">{evidenceDescription}</p>
                   </div>
                   <div
@@ -299,7 +292,7 @@ export function ReviewSection({
                       className={`history-pill${reviewTableMode === "all" ? " active" : ""}`}
                       onClick={() => onReviewTableModeChange("all")}
                     >
-                      All source rows
+                      All filtered rows
                     </button>
                   </div>
                 </div>
@@ -399,24 +392,16 @@ export function ReviewSection({
             </>
           )}
 
-          {!preview && (
-            <div
-              className={`empty-block${isGeneratingPreview ? " preview-loading" : ""}`}
-            >
-              {isGeneratingPreview ? (
-                <>
-                  <span className="preview-loading-label">
-                    Checking selections against destination…
-                  </span>
-                  <div className="preview-loading-bars">
-                    <span className="skeleton-cell skeleton-cell-long" />
-                    <span className="skeleton-cell skeleton-cell-mid" />
-                    <span className="skeleton-cell skeleton-cell-short" />
-                  </div>
-                </>
-              ) : (
-                "Generate a preview here to confirm readiness, inspect duplicates, and reveal any required mapping fixes before launch."
-              )}
+          {!preview && isGeneratingPreview && (
+            <div className="empty-block preview-loading">
+              <span className="preview-loading-label">
+                Checking selections against destination…
+              </span>
+              <div className="preview-loading-bars">
+                <span className="skeleton-cell skeleton-cell-long" />
+                <span className="skeleton-cell skeleton-cell-mid" />
+                <span className="skeleton-cell skeleton-cell-short" />
+              </div>
             </div>
           )}
         </>
@@ -446,7 +431,6 @@ function FolderConflictCard({
 
   return (
     <article className="conflict-card">
-      <div className="section-label">Folder mapping</div>
       <h3>{folderName}</h3>
       <p>{conflict.message}</p>
       <select
@@ -483,7 +467,6 @@ function CustomFieldConflictCard({
 
   return (
     <article className="conflict-card">
-      <div className="section-label">Custom field</div>
       <h3>{fieldName}</h3>
       <p>
         This source field doesn't have a matching field in the destination.

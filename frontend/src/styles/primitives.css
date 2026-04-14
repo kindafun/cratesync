@@ -58,8 +58,8 @@
 
 .section-account-meta {
   display: flex;
-  align-items: baseline;
-  gap: var(--inline-gap-sm);
+  align-items: center;
+  gap: var(--inline-gap-md);
   flex: 1 1 auto;
   min-width: 0;
   white-space: nowrap;
@@ -94,7 +94,7 @@
 
 .section-account-status {
   font-size: var(--text-meta);
-  line-height: var(--line-height-body);
+  line-height: 1.2;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -246,9 +246,14 @@ select:focus {
 }
 
 .filter-remove-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  min-height: 1rem;
   border: none;
   background: none;
-  padding: 0;
+  padding: 0.1rem;
   cursor: pointer;
   color: var(--color-muted);
   font-size: 1rem;

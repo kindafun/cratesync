@@ -13,6 +13,7 @@ import { SectionAccountControls } from "./components/SectionAccountControls";
 import { SnapshotSection } from "./components/SnapshotSection";
 import { SourceSelectionSection } from "./components/SourceSelectionSection";
 import { Field } from "./components/ui";
+import { deriveReviewState } from "./lib/reviewPresentation";
 import { useCollectionSnapshots } from "./hooks/useCollectionSnapshots";
 import { useMigrationPlan } from "./hooks/useMigrationPlan";
 import { useSelectionFilters } from "./hooks/useSelectionFilters";
@@ -505,117 +506,4 @@ export function App() {
       </section>
     </main>
   );
-}
-
-function deriveReviewState({
-  preview,
-  previewIsStale,
-  selectedSourceCount,
-  sourceAccount,
-  destinationAccount,
-  sourceSnapshot,
-}: {
-  preview: PreviewResponse | null;
-  previewIsStale: boolean;
-  selectedSourceCount: number;
-  sourceAccount?: ConnectedAccount;
-  destinationAccount?: ConnectedAccount;
-  sourceSnapshot: CollectionSnapshot | null;
-}) {
-  const accountsReady = Boolean(sourceAccount && destinationAccount && sourceSnapshot);
-  const selectionReady = selectedSourceCount > 0;
-  const previewReady = Boolean(preview) && !previewIsStale;
-  const blockerCount = preview?.blocking_conflicts.length ?? 0;
-  const blockersCleared = previewReady && blockerCount === 0;
-
-  const checklist = [
-    {
-      label: "Both accounts connected",
-      status: accountsReady ? "done" : "blocked",
-    },
-    {
-      label: "Items selected",
-      status: !accountsReady ? "attention" : selectionReady ? "done" : "blocked",
-    },
-    {
-      label: "Preview ready",
-      status: !accountsReady || !selectionReady
-        ? "attention"
-        : previewReady
-          ? "done"
-          : "blocked",
-    },
-    {
-      label: "All requirements met",
-      status: !previewReady
-        ? "attention"
-        : blockersCleared
-          ? "done"
-          : "blocked",
-    },
-  ] as const;
-
-  if (!accountsReady) {
-    return {
-      tone: "default",
-      title: "Connect your destination and sync your source library",
-      message:
-        "Once your destination is connected and your source collection is up to date, you can review this migration and start it.",
-      launchLabel: "Not ready",
-      blockerCount: 1,
-      checklist: [...checklist],
-    } as const;
-  }
-  if (!selectionReady) {
-    return {
-      tone: "warning",
-      title: "Choose the releases to include",
-      message:
-        "Select at least one source row before you generate a preview for launch.",
-      launchLabel: "Selection required",
-      blockerCount: 1,
-      checklist: [...checklist],
-    } as const;
-  }
-  if (!preview) {
-    return {
-      tone: "default",
-      title: "Generate a preview before launch",
-      message:
-        "Review duplicates, folder mappings, and destination behavior before you start the migration.",
-      launchLabel: "Preview required",
-      blockerCount: 1,
-      checklist: [...checklist],
-    } as const;
-  }
-  if (previewIsStale) {
-    return {
-      tone: "warning",
-      title: "Refresh the preview",
-      message:
-        "Your selections or workflow changed. Generate a fresh preview before launching.",
-      launchLabel: "Refresh preview",
-      blockerCount: 1,
-      checklist: [...checklist],
-    } as const;
-  }
-  if (blockerCount > 0) {
-    return {
-      tone: "warning",
-      title: "Resolve blockers before launch",
-      message: `Clear ${blockerCount} conflict${blockerCount !== 1 ? "s" : ""} below, then you can launch the migration.`,
-      launchLabel: "Resolve blockers",
-      blockerCount,
-      checklist: [...checklist],
-    } as const;
-  }
-  return {
-    tone: "ready",
-    title: "Ready to launch",
-    message:
-      "Your preview is current, blockers are cleared, and the selected releases are ready to migrate.",
-    launchLabel: "Ready",
-    blockerCount: 0,
-    checklist: [...checklist],
-  } as const;
 }

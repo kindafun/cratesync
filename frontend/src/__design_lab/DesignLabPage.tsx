@@ -5,6 +5,7 @@ import { VariantB } from "./variants/VariantB";
 import { VariantC } from "./variants/VariantC";
 import { VariantD } from "./variants/VariantD";
 import { VariantE } from "./variants/VariantE";
+import { VariantF } from "./variants/VariantF";
 
 const variants = [
   {
@@ -32,6 +33,11 @@ const variants = [
     name: "Signal Flow",
     rationale: "Horizontal pipeline: Source → Plan → Destination. Makes the migration workflow spatially explicit. Steel-blue palette, job console as a bottom monitoring band.",
   },
+  {
+    id: "F" as const,
+    name: "Review Rail",
+    rationale: "Review-focused exploration. Readiness stays primary while migration capabilities move into a narrower supporting rail beside it.",
+  },
 ];
 
 const components: Record<string, React.ReactNode> = {
@@ -40,6 +46,7 @@ const components: Record<string, React.ReactNode> = {
   C: <VariantC />,
   D: <VariantD />,
   E: <VariantE />,
+  F: <VariantF />,
 };
 
 export function DesignLabPage() {
@@ -52,7 +59,7 @@ export function DesignLabPage() {
           <div>
             <h1 className="lab-title">CrateSync — Full App Redesign</h1>
             <p className="lab-subtitle">
-              5 distinct explorations · Fresh direction · Discogs-inspired density
+              6 distinct explorations · Fresh direction · Discogs-inspired density
             </p>
           </div>
         </div>

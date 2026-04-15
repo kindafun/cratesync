@@ -2,6 +2,12 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { Play, ScanEye } from "lucide-react";
 import { useRef, useState, type KeyboardEvent } from "react";
 import { formatDate, renderCapabilityChips } from "../lib/format";
+import {
+  getReviewBlockersMessage,
+  getReviewBlockersTitle,
+  getReviewCapabilityIntro,
+  getReviewEvidenceDescription,
+} from "../lib/reviewPresentation";
 import type {
   CollectionItemSnapshot,
   PreviewConflict,
@@ -81,10 +87,8 @@ export function ReviewSection({
     ? renderCapabilityChips(preview.metadata_capabilities)
     : [];
   const blockerCards = folderConflicts.length + customFieldConflicts.length;
-  const evidenceDescription =
-    reviewTableMode === "selected"
-      ? "Showing the rows currently included in this preview."
-      : "Showing the wider filtered source snapshot for comparison.";
+  const capabilityIntro = getReviewCapabilityIntro();
+  const evidenceDescription = getReviewEvidenceDescription(reviewTableMode);
   const hasPreview = Boolean(preview);
   const shouldShowMetrics = selectedSourceCount > 0 || hasPreview;
   const pendingChecks = reviewState.checklist.filter((item) => item.status !== "done");
@@ -136,64 +140,97 @@ export function ReviewSection({
 
       {!collapsed && (
         <>
-          <section className={`review-summary review-summary-${reviewState.tone}`}>
-            <div className="review-summary-head">
-              <div className="review-summary-copy-block">
-                <div className="review-summary-title-row">
-                  <h3>{reviewState.title}</h3>
+          <div
+            className={`review-head-grid${capabilityChips.length === 0 ? " is-single" : ""}`}
+          >
+            <section className={`review-summary review-summary-${reviewState.tone}`}>
+              <div className="review-summary-head">
+                <div className="review-summary-copy-block">
+                  <div className="review-summary-label">Launch readiness</div>
+                  <div className="review-summary-title-row">
+                    <h3>{reviewState.title}</h3>
+                  </div>
+                  <p className="review-summary-message">{reviewState.message}</p>
                 </div>
-                <p className="review-summary-message">{reviewState.message}</p>
-              </div>
-              <div className="review-summary-actions">
-                <button
-                  className="btn btn-ghost"
-                  disabled={isGeneratingPreview}
-                  onClick={onGeneratePreview}
-                >
-                  <ScanEye size={14} />
-                  {isGeneratingPreview ? "Checking…" : hasPreview ? "Refresh preview" : "Generate preview"}
-                </button>
-                <button
-                  className="btn btn-primary"
-                  disabled={launchBlocked || isCreatingJob}
-                  onClick={onLaunchJob}
-                >
-                  <Play size={14} />
-                  {isCreatingJob ? "Launching…" : "Start migration"}
-                </button>
-              </div>
-            </div>
-
-            {shouldShowMetrics && (
-              <div className="summary-strip review-summary-strip">
-                <StatBlock label="Selected" value={selectedSourceCount} />
-                <StatBlock
-                  label="Included in preview"
-                  value={preview?.selected_count ?? 0}
-                />
-                <StatBlock
-                  label="Possible duplicates"
-                  value={preview?.duplicate_release_ids.length ?? 0}
-                  muted
-                />
-              </div>
-            )}
-
-            <div className="review-checklist-block">
-              <div className="review-checklist-heading">{checklistHeading}</div>
-              <div className="review-checklist" aria-label="Launch readiness checklist">
-                {reviewState.checklist.map((item) => (
-                  <span
-                    key={item.label}
-                    className={`review-checklist-item review-checklist-item-${item.status}`}
+                <div className="review-summary-actions">
+                  <button
+                    className="btn btn-ghost"
+                    disabled={isGeneratingPreview}
+                    onClick={onGeneratePreview}
                   >
-                    <span className="review-checklist-dot" aria-hidden="true" />
-                    {item.label}
-                  </span>
-                ))}
+                    <ScanEye size={14} />
+                    {isGeneratingPreview ? "Checking…" : hasPreview ? "Refresh preview" : "Generate preview"}
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    disabled={launchBlocked || isCreatingJob}
+                    onClick={onLaunchJob}
+                  >
+                    <Play size={14} />
+                    {isCreatingJob ? "Launching…" : "Start migration"}
+                  </button>
+                </div>
               </div>
-            </div>
-          </section>
+
+              {shouldShowMetrics && (
+                <div className="summary-strip review-summary-strip">
+                  <StatBlock label="Selected" value={selectedSourceCount} />
+                  <StatBlock
+                    label="Included in preview"
+                    value={preview?.selected_count ?? 0}
+                  />
+                  <StatBlock
+                    label="Possible duplicates"
+                    value={preview?.duplicate_release_ids.length ?? 0}
+                    muted
+                  />
+                </div>
+              )}
+
+              <div className="review-checklist-block">
+                <div className="review-checklist-heading">{checklistHeading}</div>
+                <div className="review-checklist" aria-label="Launch readiness checklist">
+                  {reviewState.checklist.map((item) => (
+                    <span
+                      key={item.label}
+                      className={`review-checklist-item review-checklist-item-${item.status}`}
+                    >
+                      <span className="review-checklist-dot" aria-hidden="true" />
+                      {item.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {preview && capabilityChips.length > 0 && (
+              <aside className="review-capabilities">
+                <div className="review-capabilities-copy">
+                  <h3>{capabilityIntro.title}</h3>
+                  <p className="review-evidence-copy">
+                    {capabilityIntro.message}
+                  </p>
+                </div>
+                <div className="review-capability-list">
+                  {capabilityChips.map((chip) => (
+                    <div
+                      key={chip.label}
+                      className={`review-capability-card review-capability-card-${toneForCapability(chip.value)}`}
+                      title={chip.note}
+                    >
+                      <div className="review-capability-meta">
+                        <span className="review-capability-label">{chip.label}</span>
+                        <span className="review-capability-value">{chip.value}</span>
+                      </div>
+                      {chip.note && (
+                        <p className="review-capability-note">{chip.note}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </aside>
+            )}
+          </div>
 
           {preview && (
             <>
@@ -201,12 +238,9 @@ export function ReviewSection({
                 <section className="review-blockers">
                   <div className="review-blockers-head">
                     <div>
-                      <h3>
-                        Resolve {reviewState.blockerCount} blocker
-                        {reviewState.blockerCount !== 1 ? "s" : ""}
-                      </h3>
+                      <h3>{getReviewBlockersTitle(reviewState.blockerCount)}</h3>
                     </div>
-                    <p>Clear each mapping below to continue to launch.</p>
+                    <p>{getReviewBlockersMessage()}</p>
                   </div>
                   <div className="conflict-grid">
                     {folderConflicts.map((conflict) => (
@@ -240,28 +274,6 @@ export function ReviewSection({
                       Some conflicts are grouped into the same action card.
                     </div>
                   )}
-                </section>
-              )}
-
-              {capabilityChips.length > 0 && (
-                <section className="review-capabilities">
-                  <div className="review-capabilities-copy">
-                    <h3>What will happen</h3>
-                    <p className="review-evidence-copy">
-                      These preview checks summarize what the current migration can carry over.
-                    </p>
-                  </div>
-                  <div className="capability-row">
-                    {capabilityChips.map((chip) => (
-                      <span
-                        key={chip.label}
-                        className="capability-chip"
-                        title={chip.note}
-                      >
-                        {chip.label} · {chip.value}
-                      </span>
-                    ))}
-                  </div>
                 </section>
               )}
 
@@ -408,6 +420,25 @@ export function ReviewSection({
       )}
     </section>
   );
+}
+
+function toneForCapability(value: string): "ready" | "attention" | "blocked" {
+  const normalized = value.toLowerCase();
+  if (
+    normalized.includes("not ") ||
+    normalized.includes("cannot") ||
+    normalized.includes("missing")
+  ) {
+    return "blocked";
+  }
+  if (
+    normalized.includes("best effort") ||
+    normalized.includes("partial") ||
+    normalized.includes("skip")
+  ) {
+    return "attention";
+  }
+  return "ready";
 }
 
 function FolderConflictCard({

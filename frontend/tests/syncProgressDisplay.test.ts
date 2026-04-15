@@ -26,3 +26,13 @@ test("snaps to the backend target when progress resets or total metadata changes
     { fetched: 0, total: null },
   );
 });
+
+test("accelerates the final catch-up once the backend sync is done", () => {
+  const next = advanceDisplayedSyncProgress(
+    { fetched: 900, total: 1200 },
+    { fetched: 1200, total: 1200 },
+    "finishing",
+  );
+
+  assert.deepEqual(next, { fetched: 915, total: 1200 });
+});

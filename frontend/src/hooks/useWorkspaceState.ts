@@ -5,6 +5,7 @@ import { formatJobStatus } from "../lib/format";
 import { renderOAuthPopup, type OAuthCompleteMessage } from "../lib/oauth";
 import {
   advanceDisplayedSyncProgress,
+  type SyncProgressPhase,
   type SyncProgressValue,
 } from "../lib/syncProgressDisplay";
 import type {
@@ -95,6 +96,8 @@ export function useWorkspaceState({
   );
   const [syncProgressTarget, setSyncProgressTarget] =
     useState<SyncProgressValue | null>(null);
+  const [syncProgressPhase, setSyncProgressPhase] =
+    useState<SyncProgressPhase>("running");
   const syncProgressRef = useRef<SyncProgressValue | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [isCreatingJob, setIsCreatingJob] = useState(false);
@@ -139,12 +142,16 @@ export function useWorkspaceState({
 
     const timer = window.setInterval(() => {
       setSyncProgress((current) =>
-        advanceDisplayedSyncProgress(current, syncProgressTarget),
+        advanceDisplayedSyncProgress(
+          current,
+          syncProgressTarget,
+          syncProgressPhase,
+        ),
       );
     }, SYNC_PROGRESS_TICK_MS);
 
     return () => window.clearInterval(timer);
-  }, [isSyncing, syncProgress, syncProgressTarget]);
+  }, [isSyncing, syncProgress, syncProgressTarget, syncProgressPhase]);
 
   useEffect(() => {
     syncProgressRef.current = syncProgress;
@@ -344,6 +351,7 @@ export function useWorkspaceState({
     const initialProgress = { fetched: 0, total: null };
     setSyncProgress(initialProgress);
     setSyncProgressTarget(initialProgress);
+    setSyncProgressPhase("running");
     try {
       await api.syncCollection(accountId);
       let latestProgress: SyncProgressValue = initialProgress;
@@ -367,6 +375,7 @@ export function useWorkspaceState({
             fetched: progress.fetched ?? latestProgress.fetched,
             total: progress.total ?? latestProgress.total,
           };
+          setSyncProgressPhase("finishing");
           setSyncProgressTarget(latestProgress);
           await waitForDisplayedSyncProgress(latestProgress);
           break;
@@ -381,6 +390,7 @@ export function useWorkspaceState({
       setIsSyncing(null);
       setSyncProgress(null);
       setSyncProgressTarget(null);
+      setSyncProgressPhase("running");
     }
   }
 

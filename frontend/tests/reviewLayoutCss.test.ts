@@ -18,3 +18,18 @@ test("review head grid explicitly stretches the summary and capabilities panels"
     /\.review-head-grid\s*>\s*\.review-summary,\s*[\r\n]+\s*\.review-head-grid\s*>\s*\.review-capabilities\s*\{[\s\S]*margin-bottom:\s*0;/,
   );
 });
+
+test("review summary strip and conflict cards add local hierarchy without generic cards", () => {
+  assert.match(
+    css,
+    /\.review-summary-strip\s*\{[\s\S]*display:\s*grid;[\s\S]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/,
+  );
+  assert.match(
+    css,
+    /\.review-summary-stale\s*\{[\s\S]*border-top:\s*var\(--border-grid\);/,
+  );
+  assert.match(
+    css,
+    /\.conflict-card-type\s*\{[\s\S]*text-transform:\s*uppercase;/,
+  );
+});

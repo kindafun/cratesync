@@ -478,6 +478,7 @@ export function App() {
             reviewState={reviewState}
             selectedSourceCount={selectedSourceCount}
             preview={preview}
+            previewIsStale={previewIsStale}
             previewSelectedIds={previewSelectedIds}
             duplicateReleaseIds={duplicateReleaseIds}
             folderConflicts={folderConflicts}

@@ -123,12 +123,46 @@ export function getReviewCapabilityIntro() {
   };
 }
 
-export function getReviewBlockersTitle(blockerCount: number): string {
-  return `Resolve ${blockerCount} blocker${blockerCount !== 1 ? "s" : ""} before launch`;
+export function getReviewBlockersTitle(): string {
+  return "Resolve before launch";
 }
 
 export function getReviewBlockersMessage(): string {
-  return "These need a decision before the migration can start.";
+  return "This preview found setup issues that need your input before migration can start.";
+}
+
+export function getReviewBlockersRefreshCue(): string {
+  return "After updating any blocker, refresh preview to confirm these issues are cleared.";
+}
+
+export function getReviewSummaryStaleMessage({
+  selectedSourceCount,
+  previewSelectedCount,
+}: {
+  selectedSourceCount: number;
+  previewSelectedCount: number;
+}): string {
+  if (selectedSourceCount !== previewSelectedCount) {
+    return `Preview is out of date. Last preview included ${previewSelectedCount} release${previewSelectedCount !== 1 ? "s" : ""}; ${selectedSourceCount} ${selectedSourceCount !== 1 ? "are" : "is"} now selected. Refresh preview.`;
+  }
+
+  return "Preview is out of date. Filters or mappings changed since the last preview. Refresh preview.";
+}
+
+export function getReviewCustomFieldConflictTitle(fieldName: string): string {
+  return `Map source field "${fieldName}"`;
+}
+
+export function getReviewCustomFieldConflictBody(fieldName: string): string {
+  return `This source field is not mapped in the destination yet. Enter the destination field name for "${fieldName}", or keep the same name on both sides.`;
+}
+
+export function getReviewFolderConflictTitle(folderName: string): string {
+  return `Choose destination folder for "${folderName}"`;
+}
+
+export function getReviewFolderConflictBody(folderName: string): string {
+  return `The destination account has more than one folder named "${folderName}". Choose the folder this source folder should map to.`;
 }
 
 export function getReviewEvidenceDescription(mode: "selected" | "all"): string {

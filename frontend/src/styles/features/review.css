@@ -94,6 +94,37 @@
 
 .review-summary-strip {
   margin-top: calc(var(--space-2xs) * -1);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.review-summary-stat {
+  min-width: 0;
+}
+
+.review-summary-stat:not(:last-child) {
+  padding-right: var(--space-sm);
+  border-right: var(--border-grid);
+}
+
+.review-summary-stat.is-quiet .stat-value,
+.review-summary-stat.is-quiet .stat-label {
+  color: var(--color-muted);
+}
+
+.review-summary-stat.is-attention .stat-value,
+.review-summary-stat.is-attention .stat-label {
+  color: var(--color-accent-strong);
+}
+
+.review-summary-stale {
+  margin: calc(var(--space-xs) * -1) 0 0;
+  padding-top: var(--space-xs);
+  border-top: var(--border-grid);
+  color: var(--color-muted);
+  font-size: var(--text-meta);
+  line-height: var(--line-height-body);
 }
 
 .review-checklist-block {
@@ -169,6 +200,12 @@
 
 .review-blockers-note {
   margin-top: calc(var(--space-xs) * -1);
+}
+
+.review-blockers-refresh-note {
+  margin-top: 0;
+  padding-top: var(--space-xs);
+  border-top: var(--border-grid);
 }
 
 .review-capabilities-copy {
@@ -262,14 +299,24 @@
 }
 
 .conflict-card {
+  display: grid;
+  gap: var(--space-xs);
   border: var(--border-grid);
   border-radius: var(--radius-md);
   padding: 0.9rem var(--space-md);
   background: transparent;
 }
 
+.conflict-card-type {
+  color: var(--color-muted);
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
 .conflict-card h3 {
-  margin: 0.35rem 0 0.45rem;
+  margin: 0;
   font-family: var(--font-display);
   font-size: var(--text-title-sm);
   font-weight: 500;
@@ -277,7 +324,7 @@
 }
 
 .conflict-card p {
-  margin-bottom: var(--space-sm);
+  margin: 0 0 var(--space-xs);
   color: var(--color-muted);
   font-size: var(--text-body-dense);
   line-height: var(--line-height-body);
@@ -335,5 +382,16 @@
 
   .review-summary-actions .btn {
     width: 100%;
+  }
+
+  .review-summary-strip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .review-summary-stat:not(:last-child) {
+    padding-right: 0;
+    padding-bottom: var(--space-xs);
+    border-right: none;
+    border-bottom: var(--border-grid);
   }
 }

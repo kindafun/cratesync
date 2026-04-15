@@ -4,9 +4,15 @@ import { useRef, useState, type KeyboardEvent } from "react";
 import { formatDate, renderCapabilityChips } from "../lib/format";
 import {
   getReviewBlockersMessage,
+  getReviewBlockersRefreshCue,
   getReviewBlockersTitle,
   getReviewCapabilityIntro,
+  getReviewCustomFieldConflictBody,
+  getReviewCustomFieldConflictTitle,
   getReviewEvidenceDescription,
+  getReviewFolderConflictBody,
+  getReviewFolderConflictTitle,
+  getReviewSummaryStaleMessage,
 } from "../lib/reviewPresentation";
 import type {
   CollectionItemSnapshot,
@@ -14,7 +20,6 @@ import type {
   PreviewResponse,
   ReviewState,
 } from "../lib/types";
-import { StatBlock } from "./ui";
 
 export function ReviewSection({
   isGeneratingPreview,
@@ -25,6 +30,7 @@ export function ReviewSection({
   reviewState,
   selectedSourceCount,
   preview,
+  previewIsStale,
   previewSelectedIds,
   duplicateReleaseIds,
   folderConflicts,
@@ -47,6 +53,7 @@ export function ReviewSection({
   reviewState: ReviewState;
   selectedSourceCount: number;
   preview: PreviewResponse | null;
+  previewIsStale: boolean;
   previewSelectedIds: Set<string>;
   duplicateReleaseIds: Set<number>;
   folderConflicts: PreviewConflict[];
@@ -91,6 +98,13 @@ export function ReviewSection({
   const evidenceDescription = getReviewEvidenceDescription(reviewTableMode);
   const hasPreview = Boolean(preview);
   const shouldShowMetrics = selectedSourceCount > 0 || hasPreview;
+  const duplicateCount = preview?.duplicate_release_ids.length ?? 0;
+  const reviewSummaryStaleMessage = previewIsStale && preview
+    ? getReviewSummaryStaleMessage({
+        selectedSourceCount,
+        previewSelectedCount: preview.selected_count,
+      })
+    : null;
   const pendingChecks = reviewState.checklist.filter((item) => item.status !== "done");
   const checklistHeading = pendingChecks.length > 0 ? "Before launch" : "Checks complete";
 
@@ -174,17 +188,25 @@ export function ReviewSection({
 
               {shouldShowMetrics && (
                 <div className="summary-strip review-summary-strip">
-                  <StatBlock label="Selected" value={selectedSourceCount} />
-                  <StatBlock
-                    label="Included in preview"
+                  <ReviewSummaryStat
+                    label="Current selection"
+                    value={selectedSourceCount}
+                  />
+                  <ReviewSummaryStat
+                    label="Last preview"
                     value={preview?.selected_count ?? 0}
                   />
-                  <StatBlock
-                    label="Possible duplicates"
-                    value={preview?.duplicate_release_ids.length ?? 0}
-                    muted
+                  <ReviewSummaryStat
+                    label="Duplicates on destination"
+                    value={duplicateCount}
+                    quiet={duplicateCount === 0}
+                    attention={duplicateCount > 0}
                   />
                 </div>
+              )}
+
+              {reviewSummaryStaleMessage && (
+                <p className="review-summary-stale">{reviewSummaryStaleMessage}</p>
               )}
 
               <div className="review-checklist-block">
@@ -238,7 +260,7 @@ export function ReviewSection({
                 <section className="review-blockers">
                   <div className="review-blockers-head">
                     <div>
-                      <h3>{getReviewBlockersTitle(reviewState.blockerCount)}</h3>
+                      <h3>{getReviewBlockersTitle()}</h3>
                     </div>
                     <p>{getReviewBlockersMessage()}</p>
                   </div>
@@ -268,6 +290,9 @@ export function ReviewSection({
                         onChange={onCustomFieldOverride}
                       />
                     ))}
+                  </div>
+                  <div className="header-note review-blockers-note review-blockers-refresh-note">
+                    {getReviewBlockersRefreshCue()}
                   </div>
                   {blockerCards !== reviewState.blockerCount && (
                     <div className="header-note review-blockers-note">
@@ -462,8 +487,9 @@ function FolderConflictCard({
 
   return (
     <article className="conflict-card">
-      <h3>{folderName}</h3>
-      <p>{conflict.message}</p>
+      <div className="conflict-card-type">Folder mapping</div>
+      <h3>{getReviewFolderConflictTitle(folderName)}</h3>
+      <p>{getReviewFolderConflictBody(folderName)}</p>
       <select
         aria-label={`Map ${folderName} to destination folder`}
         value={selectedValue ? String(selectedValue) : ""}
@@ -498,16 +524,14 @@ function CustomFieldConflictCard({
 
   return (
     <article className="conflict-card">
-      <h3>{fieldName}</h3>
-      <p>
-        This source field doesn't have a matching field in the destination.
-        Enter the destination field name to map it, or use the same name.
-      </p>
+      <div className="conflict-card-type">Custom field</div>
+      <h3>{getReviewCustomFieldConflictTitle(fieldName)}</h3>
+      <p>{getReviewCustomFieldConflictBody(fieldName)}</p>
       <div className="inline-action">
         <input
           type="text"
           aria-label={`Destination field name for ${fieldName}`}
-          placeholder={`e.g. ${fieldName}`}
+          placeholder="Destination field name"
           value={value}
           onChange={(event) => onChange(fieldName, event.target.value)}
         />
@@ -519,5 +543,26 @@ function CustomFieldConflictCard({
         </button>
       </div>
     </article>
+  );
+}
+
+function ReviewSummaryStat({
+  label,
+  value,
+  quiet = false,
+  attention = false,
+}: {
+  label: string;
+  value: number;
+  quiet?: boolean;
+  attention?: boolean;
+}) {
+  return (
+    <div
+      className={`stat-block review-summary-stat${quiet ? " is-quiet" : ""}${attention ? " is-attention" : ""}`}
+    >
+      <span className="stat-value">{value}</span>
+      <span className="stat-label">{label}</span>
+    </div>
   );
 }

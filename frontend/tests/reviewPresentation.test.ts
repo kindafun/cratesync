@@ -4,8 +4,14 @@ import test from "node:test";
 import {
   deriveReviewState,
   getReviewBlockersMessage,
+  getReviewBlockersRefreshCue,
   getReviewCapabilityIntro,
+  getReviewCustomFieldConflictBody,
+  getReviewCustomFieldConflictTitle,
   getReviewEvidenceDescription,
+  getReviewFolderConflictBody,
+  getReviewFolderConflictTitle,
+  getReviewSummaryStaleMessage,
 } from "../src/lib/reviewPresentation.ts";
 
 test("deriveReviewState keeps ready-state copy short and operational", () => {
@@ -60,7 +66,11 @@ test("review support copy is concise and user-oriented", () => {
   });
   assert.equal(
     getReviewBlockersMessage(),
-    "These need a decision before the migration can start.",
+    "This preview found setup issues that need your input before migration can start.",
+  );
+  assert.equal(
+    getReviewBlockersRefreshCue(),
+    "After updating any blocker, refresh preview to confirm these issues are cleared.",
   );
   assert.equal(
     getReviewEvidenceDescription("selected"),
@@ -69,5 +79,44 @@ test("review support copy is concise and user-oriented", () => {
   assert.equal(
     getReviewEvidenceDescription("all"),
     "Compare the preview against the wider filtered source rows.",
+  );
+});
+
+test("stale preview summary copy explains count mismatches directly", () => {
+  assert.equal(
+    getReviewSummaryStaleMessage({
+      selectedSourceCount: 872,
+      previewSelectedCount: 861,
+    }),
+    "Preview is out of date. Last preview included 861 releases; 872 are now selected. Refresh preview.",
+  );
+});
+
+test("stale preview summary copy stays accurate when counts match", () => {
+  assert.equal(
+    getReviewSummaryStaleMessage({
+      selectedSourceCount: 861,
+      previewSelectedCount: 861,
+    }),
+    "Preview is out of date. Filters or mappings changed since the last preview. Refresh preview.",
+  );
+});
+
+test("blocker card copy turns raw identifiers into explicit tasks", () => {
+  assert.equal(
+    getReviewCustomFieldConflictTitle("field_1"),
+    'Map source field "field_1"',
+  );
+  assert.equal(
+    getReviewCustomFieldConflictBody("field_1"),
+    'This source field is not mapped in the destination yet. Enter the destination field name for "field_1", or keep the same name on both sides.',
+  );
+  assert.equal(
+    getReviewFolderConflictTitle("Wishlist"),
+    'Choose destination folder for "Wishlist"',
+  );
+  assert.equal(
+    getReviewFolderConflictBody("Wishlist"),
+    'The destination account has more than one folder named "Wishlist". Choose the folder this source folder should map to.',
   );
 });

@@ -3,8 +3,8 @@ import test from "node:test";
 
 import {
   deriveReviewState,
-  getReviewBlockersMessage,
   getReviewBlockersRefreshCue,
+  getReviewBlockersTitle,
   getReviewCapabilityIntro,
   getReviewCustomFieldConflictBody,
   getReviewCustomFieldConflictTitle,
@@ -57,6 +57,14 @@ test("deriveReviewState keeps ready-state copy short and operational", () => {
     reviewState.message,
     "Your preview is current and blockers are cleared.",
   );
+  assert.deepEqual(
+    reviewState.checklist.map((item) => item.label),
+    [
+      "Both accounts connected",
+      "Items selected",
+      "Preview ready",
+    ],
+  );
 });
 
 test("review support copy is concise and user-oriented", () => {
@@ -64,10 +72,8 @@ test("review support copy is concise and user-oriented", () => {
     title: "What carries over",
     message: "Use this to confirm what will transfer before you start.",
   });
-  assert.equal(
-    getReviewBlockersMessage(),
-    "This preview found setup issues that need your input before migration can start.",
-  );
+  assert.equal(getReviewBlockersTitle(1), "Resolve before launch");
+  assert.equal(getReviewBlockersTitle(2), "Resolve before launch (2)");
   assert.equal(
     getReviewBlockersRefreshCue(),
     "After updating any blocker, refresh preview to confirm these issues are cleared.",

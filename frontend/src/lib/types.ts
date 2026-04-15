@@ -186,7 +186,6 @@ export interface ReviewState {
   tone: ReviewTone;
   title: string;
   message: string;
-  launchLabel: string;
   blockerCount: number;
   checklist: ReviewChecklistItem[];
 }

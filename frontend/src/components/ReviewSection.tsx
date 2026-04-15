@@ -3,7 +3,6 @@ import { Play, ScanEye } from "lucide-react";
 import { useRef, useState, type KeyboardEvent } from "react";
 import { formatDate, renderCapabilityChips } from "../lib/format";
 import {
-  getReviewBlockersMessage,
   getReviewBlockersRefreshCue,
   getReviewBlockersTitle,
   getReviewCapabilityIntro,
@@ -93,10 +92,13 @@ export function ReviewSection({
   const capabilityChips = preview
     ? renderCapabilityChips(preview.metadata_capabilities)
     : [];
-  const blockerCards = folderConflicts.length + customFieldConflicts.length;
   const capabilityIntro = getReviewCapabilityIntro();
   const evidenceDescription = getReviewEvidenceDescription(reviewTableMode);
   const hasPreview = Boolean(preview);
+  const shouldShowReadyCapabilities =
+    hasPreview && capabilityChips.length > 0 && reviewState.tone === "ready";
+  const shouldShowStandaloneCapabilities =
+    hasPreview && capabilityChips.length > 0 && reviewState.tone !== "ready";
   const shouldShowMetrics = selectedSourceCount > 0 || hasPreview;
   const duplicateCount = preview?.duplicate_release_ids.length ?? 0;
   const reviewSummaryStaleMessage = previewIsStale && preview
@@ -105,8 +107,6 @@ export function ReviewSection({
         previewSelectedCount: preview.selected_count,
       })
     : null;
-  const pendingChecks = reviewState.checklist.filter((item) => item.status !== "done");
-  const checklistHeading = pendingChecks.length > 0 ? "Before launch" : "Checks complete";
 
   function handleToggle() {
     setCollapsed((c) => !c);
@@ -154,13 +154,10 @@ export function ReviewSection({
 
       {!collapsed && (
         <>
-          <div
-            className={`review-head-grid${capabilityChips.length === 0 ? " is-single" : ""}`}
-          >
+          <div className={`review-head-grid${shouldShowReadyCapabilities ? "" : " is-single"}`}>
             <section className={`review-summary review-summary-${reviewState.tone}`}>
               <div className="review-summary-head">
                 <div className="review-summary-copy-block">
-                  <div className="review-summary-label">Launch readiness</div>
                   <div className="review-summary-title-row">
                     <h3>{reviewState.title}</h3>
                   </div>
@@ -210,7 +207,6 @@ export function ReviewSection({
               )}
 
               <div className="review-checklist-block">
-                <div className="review-checklist-heading">{checklistHeading}</div>
                 <div className="review-checklist" aria-label="Launch readiness checklist">
                   {reviewState.checklist.map((item) => (
                     <span
@@ -225,8 +221,8 @@ export function ReviewSection({
               </div>
             </section>
 
-            {preview && capabilityChips.length > 0 && (
-              <aside className="review-capabilities">
+            {shouldShowReadyCapabilities && (
+              <section className="review-capabilities">
                 <div className="review-capabilities-copy">
                   <h3>{capabilityIntro.title}</h3>
                   <p className="review-evidence-copy">
@@ -250,9 +246,37 @@ export function ReviewSection({
                     </div>
                   ))}
                 </div>
-              </aside>
+              </section>
             )}
           </div>
+
+          {shouldShowStandaloneCapabilities && (
+            <section className="review-capabilities">
+              <div className="review-capabilities-copy">
+                <h3>{capabilityIntro.title}</h3>
+                <p className="review-evidence-copy">
+                  {capabilityIntro.message}
+                </p>
+              </div>
+              <div className="review-capability-list">
+                {capabilityChips.map((chip) => (
+                  <div
+                    key={chip.label}
+                    className={`review-capability-card review-capability-card-${toneForCapability(chip.value)}`}
+                    title={chip.note}
+                  >
+                    <div className="review-capability-meta">
+                      <span className="review-capability-label">{chip.label}</span>
+                      <span className="review-capability-value">{chip.value}</span>
+                    </div>
+                    {chip.note && (
+                      <p className="review-capability-note">{chip.note}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {preview && (
             <>
@@ -260,9 +284,8 @@ export function ReviewSection({
                 <section className="review-blockers">
                   <div className="review-blockers-head">
                     <div>
-                      <h3>{getReviewBlockersTitle()}</h3>
+                      <h3>{getReviewBlockersTitle(reviewState.blockerCount)}</h3>
                     </div>
-                    <p>{getReviewBlockersMessage()}</p>
                   </div>
                   <div className="conflict-grid">
                     {folderConflicts.map((conflict) => (
@@ -294,11 +317,6 @@ export function ReviewSection({
                   <div className="header-note review-blockers-note review-blockers-refresh-note">
                     {getReviewBlockersRefreshCue()}
                   </div>
-                  {blockerCards !== reviewState.blockerCount && (
-                    <div className="header-note review-blockers-note">
-                      Some conflicts are grouped into the same action card.
-                    </div>
-                  )}
                 </section>
               )}
 

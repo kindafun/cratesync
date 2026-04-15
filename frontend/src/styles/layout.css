@@ -26,6 +26,8 @@
 }
 
 .shell-content {
+  max-width: 96rem;
+  margin: 0 auto;
   padding: var(--shell-padding) var(--shell-padding) var(--space-3xl)
     var(--shell-padding-right);
 }

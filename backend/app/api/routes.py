@@ -163,8 +163,13 @@ def _run_sync(account_id: str) -> None:
         account = repository.get_account(account_id)
         oauth_token = keychain_store.get_secret(account.token_key)
         oauth_secret = keychain_store.get_secret(account.token_secret_key)
+        latest_fetched = 0
+        latest_total: int | None = None
 
         def on_progress(fetched: int, total: int) -> None:
+            nonlocal latest_fetched, latest_total
+            latest_fetched = fetched
+            latest_total = total
             _sync_progress[account_id] = {"status": "running", "fetched": fetched, "total": total}
 
         raw_items = discogs_client.paged_collection_items(
@@ -176,7 +181,14 @@ def _run_sync(account_id: str) -> None:
             for item in raw_items
         ]
         snapshot = repository.replace_snapshot(account.id, account.username, items)
-        _sync_progress[account_id] = {"status": "done", "snapshot_id": snapshot.id}
+        final_fetched = len(raw_items) if raw_items else latest_fetched
+        final_total = latest_total if latest_total is not None else final_fetched
+        _sync_progress[account_id] = {
+            "status": "done",
+            "snapshot_id": snapshot.id,
+            "fetched": final_fetched,
+            "total": final_total,
+        }
     except Exception as exc:
         _sync_progress[account_id] = {"status": "error", "error": str(exc)}
 

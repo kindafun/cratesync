@@ -49,6 +49,16 @@ class FakeKeychainStore:
         return f"secret-for-{key}"
 
 
+class FakeSyncDiscogsClient:
+    def __init__(self, items: list[dict]) -> None:
+        self.items = items
+
+    def paged_collection_items(self, username, oauth_token, oauth_secret, on_progress=None):
+        if on_progress is not None:
+            on_progress(100, len(self.items))
+        return self.items
+
+
 class RecordingJobRunner:
     def __init__(self, repository: Repository) -> None:
         self.repository = repository
@@ -175,6 +185,68 @@ def create_job(
 def install_route_dependencies(monkeypatch, repository: Repository, job_runner) -> None:
     monkeypatch.setattr(routes, "repository", repository)
     monkeypatch.setattr(routes, "job_runner", job_runner)
+
+
+def test_run_sync_preserves_final_progress_counts_when_done(tmp_path, monkeypatch):
+    repository = make_repository(tmp_path)
+    source, _ = seed_accounts(repository)
+    monkeypatch.setattr(routes, "repository", repository)
+    monkeypatch.setattr(routes, "keychain_store", FakeKeychainStore())
+    monkeypatch.setattr(
+        routes,
+        "discogs_client",
+        FakeSyncDiscogsClient(
+            [
+                {
+                    "id": 101,
+                    "instance_id": 5001,
+                    "folder_id": 1,
+                    "basic_information": {
+                        "title": "Example 1",
+                        "artists": [{"name": "Artist"}],
+                        "labels": [],
+                        "formats": [],
+                        "genres": [],
+                        "styles": [],
+                    },
+                },
+                {
+                    "id": 102,
+                    "instance_id": 5002,
+                    "folder_id": 1,
+                    "basic_information": {
+                        "title": "Example 2",
+                        "artists": [{"name": "Artist"}],
+                        "labels": [],
+                        "formats": [],
+                        "genres": [],
+                        "styles": [],
+                    },
+                },
+                {
+                    "id": 103,
+                    "instance_id": 5003,
+                    "folder_id": 1,
+                    "basic_information": {
+                        "title": "Example 3",
+                        "artists": [{"name": "Artist"}],
+                        "labels": [],
+                        "formats": [],
+                        "genres": [],
+                        "styles": [],
+                    },
+                },
+            ],
+        ),
+    )
+
+    routes._sync_progress.clear()
+
+    routes._run_sync(source.id)
+
+    assert routes._sync_progress[source.id]["status"] == "done"
+    assert routes._sync_progress[source.id]["fetched"] == 3
+    assert routes._sync_progress[source.id]["total"] == 3
 
 
 def test_run_copy_marks_successful_copy_jobs_completed(tmp_path):

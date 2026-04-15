@@ -1,8 +1,12 @@
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import { API_ORIGINS, api } from "../lib/api";
 import { deriveLoadedFilterState, type FilterKey } from "../lib/filters";
 import { formatJobStatus } from "../lib/format";
 import { renderOAuthPopup, type OAuthCompleteMessage } from "../lib/oauth";
+import {
+  advanceDisplayedSyncProgress,
+  type SyncProgressValue,
+} from "../lib/syncProgressDisplay";
 import type {
   CollectionItemSnapshot,
   CollectionSnapshot,
@@ -22,6 +26,8 @@ const ACTIVE_JOB_STATUSES: JobStatus[] = [
   "awaiting_delete_confirmation",
   "running_delete",
 ];
+const SYNC_PROGRESS_POLL_MS = 800;
+const SYNC_PROGRESS_TICK_MS = 20;
 
 export interface WorkspaceStateInput {
   setAccounts: (accounts: ConnectedAccount[]) => void;
@@ -84,10 +90,12 @@ export function useWorkspaceState({
   const [status, setStatus] = useState("Connecting to local backend…");
   const [loading, setLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState<string | null>(null);
-  const [syncProgress, setSyncProgress] = useState<{
-    fetched: number;
-    total: number | null;
-  } | null>(null);
+  const [syncProgress, setSyncProgress] = useState<SyncProgressValue | null>(
+    null,
+  );
+  const [syncProgressTarget, setSyncProgressTarget] =
+    useState<SyncProgressValue | null>(null);
+  const syncProgressRef = useRef<SyncProgressValue | null>(null);
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [isCreatingJob, setIsCreatingJob] = useState(false);
   const [lastPreviewSignature, setLastPreviewSignature] = useState<
@@ -111,6 +119,36 @@ export function useWorkspaceState({
       document.title = "CrateSync";
     }
   }, [jobDetail, isSyncing]);
+
+  // ── Animate sync progress display toward backend checkpoints ─────────────
+  useEffect(() => {
+    if (
+      isSyncing === null ||
+      syncProgress === null ||
+      syncProgressTarget === null
+    ) {
+      return;
+    }
+
+    if (
+      syncProgress.fetched === syncProgressTarget.fetched &&
+      syncProgress.total === syncProgressTarget.total
+    ) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setSyncProgress((current) =>
+        advanceDisplayedSyncProgress(current, syncProgressTarget),
+      );
+    }, SYNC_PROGRESS_TICK_MS);
+
+    return () => window.clearInterval(timer);
+  }, [isSyncing, syncProgress, syncProgressTarget]);
+
+  useEffect(() => {
+    syncProgressRef.current = syncProgress;
+  }, [syncProgress]);
 
   // ── OAuth callback message ────────────────────────────────────────────────
   useEffect(() => {
@@ -303,22 +341,36 @@ export function useWorkspaceState({
     setRetryFn(null);
     setRetryAccountId(null);
     setIsSyncing(accountId);
-    setSyncProgress(null);
+    const initialProgress = { fetched: 0, total: null };
+    setSyncProgress(initialProgress);
+    setSyncProgressTarget(initialProgress);
     try {
       await api.syncCollection(accountId);
+      let latestProgress: SyncProgressValue = initialProgress;
       while (true) {
-        await new Promise<void>((resolve) => setTimeout(resolve, 800));
+        await new Promise<void>((resolve) =>
+          setTimeout(resolve, SYNC_PROGRESS_POLL_MS),
+        );
         const progress = await api.getSyncProgress(accountId);
         if (progress.status === "error") {
           throw new Error(progress.error ?? "Sync failed.");
         }
         if (progress.status === "running") {
-          setSyncProgress({
+          latestProgress = {
             fetched: progress.fetched ?? 0,
             total: progress.total ?? null,
-          });
+          };
+          setSyncProgressTarget(latestProgress);
         }
-        if (progress.status === "done") break;
+        if (progress.status === "done") {
+          latestProgress = {
+            fetched: progress.fetched ?? latestProgress.fetched,
+            total: progress.total ?? latestProgress.total,
+          };
+          setSyncProgressTarget(latestProgress);
+          await waitForDisplayedSyncProgress(latestProgress);
+          break;
+        }
       }
       await refreshWorkspace();
     } catch (error) {
@@ -328,6 +380,23 @@ export function useWorkspaceState({
     } finally {
       setIsSyncing(null);
       setSyncProgress(null);
+      setSyncProgressTarget(null);
+    }
+  }
+
+  async function waitForDisplayedSyncProgress(target: SyncProgressValue) {
+    while (true) {
+      const current = syncProgressRef.current;
+      if (
+        current !== null &&
+        current.fetched >= target.fetched &&
+        current.total === target.total
+      ) {
+        return;
+      }
+      await new Promise<void>((resolve) =>
+        window.setTimeout(resolve, SYNC_PROGRESS_TICK_MS),
+      );
     }
   }
 

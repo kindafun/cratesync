@@ -1,9 +1,16 @@
-import type { ConnectedAccount } from "./types";
+import type { ConnectedAccount, PendingAuthConnection } from "./types";
 
 export type OAuthCompleteMessage = {
   type: "discogs-oauth-complete";
   account?: ConnectedAccount;
 };
+
+export type OAuthVerificationReadyMessage = {
+  type: "discogs-auth-verification-ready";
+  verification?: PendingAuthConnection;
+};
+
+export type OAuthMessage = OAuthCompleteMessage | OAuthVerificationReadyMessage;
 
 export function renderOAuthPopup(
   popup: Window,

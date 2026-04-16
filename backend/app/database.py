@@ -70,9 +70,10 @@ class Database:
                     id TEXT PRIMARY KEY,
                     username TEXT NOT NULL UNIQUE,
                     role TEXT NOT NULL,
+                    auth_type TEXT NOT NULL DEFAULT 'oauth',
                     discogs_user_id INTEGER,
                     token_key TEXT NOT NULL,
-                    token_secret_key TEXT NOT NULL,
+                    token_secret_key TEXT NOT NULL DEFAULT '',
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
                     last_synced_at TEXT
@@ -160,6 +161,16 @@ class Database:
                     created_at TEXT NOT NULL
                 );
                 """
+            )
+            self._ensure_connected_account_columns(conn)
+
+    def _ensure_connected_account_columns(self, conn: sqlite3.Connection) -> None:
+        columns = {
+            row["name"] for row in conn.execute("PRAGMA table_info(connected_accounts)").fetchall()
+        }
+        if "auth_type" not in columns:
+            conn.execute(
+                "ALTER TABLE connected_accounts ADD COLUMN auth_type TEXT NOT NULL DEFAULT 'oauth'"
             )
             self._ensure_column(
                 conn,

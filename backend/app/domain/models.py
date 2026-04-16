@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 
 WorkflowMode = Literal["copy", "move"]
+AuthType = Literal["oauth", "token"]
 JobStatus = Literal[
     "draft",
     "running_copy",
@@ -34,9 +35,10 @@ class ConnectedAccount(BaseModel):
     id: str
     username: str
     role: Literal["source", "destination"]
+    auth_type: AuthType = "oauth"
     discogs_user_id: Optional[int] = None
     token_key: str
-    token_secret_key: str
+    token_secret_key: str = ""
     created_at: datetime
     updated_at: datetime
     last_synced_at: Optional[datetime] = None
@@ -86,6 +88,26 @@ class AccountLinkRequest(BaseModel):
     role: Literal["source", "destination"]
     oauth_token: str
     oauth_verifier: str
+
+
+class DiscogsTokenVerifyRequest(BaseModel):
+    role: Literal["source", "destination"]
+    user_token: str
+
+
+class PendingAuthConnectionRequest(BaseModel):
+    verification_id: str
+    confirm_replace: bool = False
+
+
+class PendingAuthConnectionResponse(BaseModel):
+    verification_id: str
+    role: Literal["source", "destination"]
+    auth_type: AuthType
+    username: str
+    discogs_user_id: Optional[int] = None
+    requires_replacement_confirmation: bool = False
+    existing_account: Optional[ConnectedAccount] = None
 
 
 class SelectionFilters(BaseModel):

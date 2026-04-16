@@ -15,7 +15,11 @@ permalink: discogs-migration/migration-workflow
 
 ### 1. Connect accounts
 
-Connect one `source` account and one `destination` account through Discogs OAuth.
+Connect one `source` account and one `destination` account.
+
+- Default path: paste a Discogs user token into the inline account panel for that role.
+- Fallback path: use browser OAuth from the same inline panel.
+- If a role is already occupied, CrateSync verifies the new identity first and then asks for confirmation before replacing the current role account.
 
 ### 2. Sync collections
 

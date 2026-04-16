@@ -34,7 +34,7 @@ FastAPI lives under `backend/app/`.
 | Module | Responsibility |
 | --- | --- |
 | `api/routes.py` | HTTP endpoints, background task triggers, sync progress surface |
-| `services/discogs.py` | Discogs OAuth and collection API client |
+| `services/discogs.py` | Discogs token/OAuth auth and collection API client |
 | `services/jobs.py` | Copy, delete, rollback, and job execution state |
 | `services/planner.py` | Preview logic, duplicate detection, blocking conflicts |
 | `services/selection.py` | Selection and filter matching against synced snapshots |
@@ -50,7 +50,7 @@ FastAPI lives under `backend/app/`.
 - `POST /collections/{id}/sync` starts a background sync job and returns immediately.
 - The frontend polls `GET /collections/{id}/sync-progress` until the sync reports `done` or `error`.
 - Only one active migration job is allowed at a time.
-- OAuth access tokens are never stored in SQLite; only Keychain references are persisted.
+- Discogs user tokens and OAuth access tokens are never stored in SQLite; only Keychain references are persisted.
 - When `DISCOGS_MIGRATION_SERVE_FRONTEND=1`, FastAPI serves the built frontend bundle from `frontend/dist` (or `DISCOGS_MIGRATION_FRONTEND_DIST_DIR`) and the frontend origin collapses to `BACKEND_ORIGIN`.
 
 ## Frontend
@@ -98,18 +98,28 @@ These files are retained as design-lab/reference components and are not part of 
 
 - SQLite: `app_data/discogs_migration.sqlite3`
 - Exports: `app_data/exports/`
-- OAuth tokens: macOS Keychain under `local.discogs-migration.tokens` by default
+- Discogs auth tokens: macOS Keychain under `local.discogs-migration.tokens` by default
 - Frozen macOS bundles default writable app data to `~/Library/Application Support/CrateSync/`.
 
 ## Authentication
 
-Discogs uses OAuth 1.0a.
+CrateSync is token-first for account setup and keeps OAuth 1.0a as a fallback.
+
+Token flow:
+
+1. The inline Source/Destination account panel submits `POST /auth/discogs/token/verify`.
+2. Backend validates the user token against Discogs identity and returns a pending connection payload.
+3. If the role is empty, the frontend finalizes immediately with `POST /auth/discogs/token/connect`.
+4. If that role already has an account, the frontend asks for confirmation before finalizing the replacement.
+5. Backend stores the final token in macOS Keychain and persists only the local account metadata plus Keychain reference in SQLite.
+
+OAuth fallback:
 
 1. Frontend requests `GET /auth/discogs/start?role=source|destination`.
 2. Backend stores the temporary request token in SQLite.
 3. Frontend opens the Discogs authorization URL in a popup.
 4. Discogs redirects to `GET /auth/discogs/callback`.
-5. Backend exchanges the verifier for access tokens and stores them in the macOS Keychain.
+5. Backend exchanges the verifier for access tokens, then either completes the connection immediately or posts a replacement-confirmation payload back to the opener.
 6. The callback window posts a message back to the opener and closes.
 
 ## Configuration

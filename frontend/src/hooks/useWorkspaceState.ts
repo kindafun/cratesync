@@ -2,13 +2,14 @@ import { startTransition, useEffect, useRef, useState } from "react";
 import { API_ORIGINS, api } from "../lib/api";
 import { deriveLoadedFilterState, type FilterKey } from "../lib/filters";
 import { formatJobStatus } from "../lib/format";
-import { renderOAuthPopup, type OAuthCompleteMessage } from "../lib/oauth";
+import { renderOAuthPopup, type OAuthMessage } from "../lib/oauth";
 import {
   advanceDisplayedSyncProgress,
   type SyncProgressPhase,
   type SyncProgressValue,
 } from "../lib/syncProgressDisplay";
 import type {
+  AccountRole,
   CollectionItemSnapshot,
   CollectionSnapshot,
   ConnectedAccount,
@@ -16,6 +17,7 @@ import type {
   JobStatus,
   MigrationJob,
   MigrationPlanPreviewRequest,
+  PendingAuthConnection,
   PreviewResponse,
   SaveSelectionPresetRequest,
   SelectionFilters,
@@ -27,6 +29,19 @@ const ACTIVE_JOB_STATUSES: JobStatus[] = [
   "awaiting_delete_confirmation",
   "running_delete",
 ];
+const EMPTY_CONNECT_TOKENS: Record<AccountRole, string> = {
+  source: "",
+  destination: "",
+};
+const EMPTY_CONNECT_ERRORS: Record<AccountRole, string | null> = {
+  source: null,
+  destination: null,
+};
+const EMPTY_PENDING_CONNECTIONS: Record<AccountRole, PendingAuthConnection | null> =
+  {
+    source: null,
+    destination: null,
+  };
 const SYNC_PROGRESS_POLL_MS = 800;
 const SYNC_PROGRESS_TICK_MS = 20;
 
@@ -111,6 +126,19 @@ export function useWorkspaceState({
   const [reviewTableMode, setReviewTableMode] = useState<"selected" | "all">(
     "selected",
   );
+  const [openConnectRole, setOpenConnectRole] = useState<AccountRole | null>(
+    null,
+  );
+  const [connectTokenByRole, setConnectTokenByRole] =
+    useState<Record<AccountRole, string>>(EMPTY_CONNECT_TOKENS);
+  const [connectErrorByRole, setConnectErrorByRole] =
+    useState<Record<AccountRole, string | null>>(EMPTY_CONNECT_ERRORS);
+  const [pendingConnectionByRole, setPendingConnectionByRole] = useState<
+    Record<AccountRole, PendingAuthConnection | null>
+  >(EMPTY_PENDING_CONNECTIONS);
+  const [connectBusyRole, setConnectBusyRole] = useState<AccountRole | null>(
+    null,
+  );
 
   // ── Document title ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -159,10 +187,31 @@ export function useWorkspaceState({
 
   // ── OAuth callback message ────────────────────────────────────────────────
   useEffect(() => {
-    function handleOAuthMessage(event: MessageEvent<OAuthCompleteMessage>) {
+    function handleOAuthMessage(event: MessageEvent<OAuthMessage>) {
       if (!API_ORIGINS.includes(event.origin)) return;
-      if (event.data?.type !== "discogs-oauth-complete") return;
+      if (!event.data?.type) return;
+      if (event.data.type === "discogs-auth-verification-ready") {
+        const verification = event.data.verification;
+        if (!verification) return;
+        setOpenConnectRole(verification.role);
+        setPendingConnectionByRole((current) => ({
+          ...current,
+          [verification.role]: verification,
+        }));
+        setConnectErrorByRole((current) => ({
+          ...current,
+          [verification.role]: null,
+        }));
+        setStatus(
+          `Verified ${verification.username}. Confirm replacing the current ${verification.role} account.`,
+        );
+        return;
+      }
+      if (event.data.type !== "discogs-oauth-complete") return;
       const role = event.data.account?.role;
+      if (role) {
+        clearConnectPanel(role);
+      }
       void refreshWorkspace();
       setStatus(
         role
@@ -309,7 +358,114 @@ export function useWorkspaceState({
     }
   }
 
-  async function handleConnect(role: "source" | "destination") {
+  function clearConnectPanel(role: AccountRole) {
+    setOpenConnectRole((current) => (current === role ? null : current));
+    setConnectTokenByRole((current) => ({ ...current, [role]: "" }));
+    setConnectErrorByRole((current) => ({ ...current, [role]: null }));
+    setPendingConnectionByRole((current) => ({ ...current, [role]: null }));
+    setConnectBusyRole((current) => (current === role ? null : current));
+  }
+
+  function resetPlanningStateForAccountChange(accountId?: string | null) {
+    setPreview(null);
+    setLastPreviewSignature(null);
+    setSelectedSourceItemIds([]);
+    if (
+      accountId &&
+      (jobDetail?.job.source_account_id === accountId ||
+        jobDetail?.job.destination_account_id === accountId)
+    ) {
+      setJobDetail(null);
+      setSelectedJobId(null);
+    }
+  }
+
+  function openConnectPanel(role: AccountRole) {
+    setOpenConnectRole(role);
+    setConnectErrorByRole((current) => ({ ...current, [role]: null }));
+  }
+
+  function updateConnectToken(role: AccountRole, value: string) {
+    setConnectTokenByRole((current) => ({ ...current, [role]: value }));
+  }
+
+  async function finalizePendingConnection(
+    role: AccountRole,
+    verification: PendingAuthConnection,
+    confirmReplace: boolean,
+  ) {
+    const roleLabel = role === "source" ? "Source" : "Destination";
+    setConnectBusyRole(role);
+    setConnectErrorByRole((current) => ({ ...current, [role]: null }));
+    try {
+      const account = await api.connectVerifiedDiscogsAuth({
+        verification_id: verification.verification_id,
+        confirm_replace: confirmReplace,
+      });
+      resetPlanningStateForAccountChange(verification.existing_account?.id);
+      await refreshWorkspace();
+      clearConnectPanel(role);
+      setStatus(`${roleLabel} account connected as ${account.username}.`);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Account connection failed.";
+      setConnectErrorByRole((current) => ({ ...current, [role]: message }));
+      setStatus(message);
+    } finally {
+      setConnectBusyRole((current) => (current === role ? null : current));
+    }
+  }
+
+  async function handleVerifyToken(role: AccountRole) {
+    const userToken = connectTokenByRole[role].trim();
+    if (!userToken) {
+      const message = "Paste a Discogs user token first.";
+      setConnectErrorByRole((current) => ({ ...current, [role]: message }));
+      setStatus(message);
+      return;
+    }
+    setConnectBusyRole(role);
+    setConnectErrorByRole((current) => ({ ...current, [role]: null }));
+    try {
+      const verification = await api.verifyDiscogsToken({
+        role,
+        user_token: userToken,
+      });
+      setPendingConnectionByRole((current) => ({
+        ...current,
+        [role]: verification,
+      }));
+      if (verification.requires_replacement_confirmation) {
+        setStatus(
+          `Verified ${verification.username}. Confirm replacing the current ${role} account.`,
+        );
+        setConnectTokenByRole((current) => ({ ...current, [role]: "" }));
+        return;
+      }
+      await finalizePendingConnection(role, verification, false);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Discogs token verification failed.";
+      setConnectErrorByRole((current) => ({ ...current, [role]: message }));
+      setStatus(message);
+    } finally {
+      setConnectBusyRole((current) => (current === role ? null : current));
+    }
+  }
+
+  async function handleConfirmPendingConnection(role: AccountRole) {
+    const verification = pendingConnectionByRole[role];
+    if (!verification) return;
+    await finalizePendingConnection(role, verification, true);
+  }
+
+  function handleCancelPendingConnection(role: AccountRole) {
+    setPendingConnectionByRole((current) => ({ ...current, [role]: null }));
+    setConnectErrorByRole((current) => ({ ...current, [role]: null }));
+    setStatus("Account replacement cancelled.");
+  }
+
+  async function handleStartOAuth(role: AccountRole) {
     const roleLabel = role === "source" ? "Source" : "Destination";
     const popup = window.open(
       "",
@@ -411,17 +567,17 @@ export function useWorkspaceState({
   }
 
   async function handleDisconnect(accountId: string) {
+    const role =
+      sourceAccount?.id === accountId
+        ? "source"
+        : destinationAccount?.id === accountId
+          ? "destination"
+          : null;
     try {
       await api.deleteAccount(accountId);
-      setPreview(null);
-      setLastPreviewSignature(null);
-      setSelectedSourceItemIds([]);
-      if (
-        jobDetail?.job.source_account_id === accountId ||
-        jobDetail?.job.destination_account_id === accountId
-      ) {
-        setJobDetail(null);
-        setSelectedJobId(null);
+      resetPlanningStateForAccountChange(accountId);
+      if (role) {
+        clearConnectPanel(role);
       }
       await refreshWorkspace();
       setStatus("Account disconnected.");
@@ -609,9 +765,20 @@ export function useWorkspaceState({
     selectedPresetId,
     reviewTableMode,
     setReviewTableMode,
+    openConnectRole,
+    connectBusyRole,
+    connectTokenByRole,
+    connectErrorByRole,
+    pendingConnectionByRole,
     refreshWorkspace,
     refreshPresets,
-    handleConnect,
+    openConnectPanel,
+    clearConnectPanel,
+    updateConnectToken,
+    handleVerifyToken,
+    handleConfirmPendingConnection,
+    handleCancelPendingConnection,
+    handleStartOAuth,
     handleSync,
     handleDisconnect,
     handlePreview,

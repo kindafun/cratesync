@@ -53,7 +53,15 @@ class FakeSyncDiscogsClient:
     def __init__(self, items: list[dict]) -> None:
         self.items = items
 
-    def paged_collection_items(self, username, oauth_token, oauth_secret, on_progress=None):
+    def paged_collection_items(
+        self,
+        username,
+        token,
+        token_secret=None,
+        *,
+        auth_type="oauth",
+        on_progress=None,
+    ):
         if on_progress is not None:
             on_progress(100, len(self.items))
         return self.items

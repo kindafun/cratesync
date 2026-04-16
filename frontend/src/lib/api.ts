@@ -5,6 +5,7 @@ import type {
   JobDetailResponse,
   MigrationJob,
   MigrationPlanPreviewRequest,
+  PendingAuthConnection,
   PreviewResponse,
   SaveSelectionPresetRequest,
   SelectionPreset,
@@ -93,6 +94,22 @@ export const api = {
     request<{ authorization_url: string; request_token_key: string }>(
       `/auth/discogs/start?role=${role}`,
     ),
+  verifyDiscogsToken: (payload: {
+    role: "source" | "destination";
+    user_token: string;
+  }) =>
+    request<PendingAuthConnection>("/auth/discogs/token/verify", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  connectVerifiedDiscogsAuth: (payload: {
+    verification_id: string;
+    confirm_replace?: boolean;
+  }) =>
+    request<ConnectedAccount>("/auth/discogs/token/connect", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   syncCollection: (accountId: string) =>
     request<{ status: string }>(`/collections/${accountId}/sync`, {
       method: "POST",

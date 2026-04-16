@@ -9,6 +9,7 @@ import requests
 from requests_oauthlib import OAuth1Session
 
 from ..config import settings
+from ..domain.models import AuthType
 
 
 class DiscogsClient:
@@ -37,6 +38,40 @@ class DiscogsClient:
             callback_uri=callback_uri,
         )
 
+    def _request(
+        self,
+        method: str,
+        url: str,
+        *,
+        auth_type: AuthType,
+        token: str,
+        token_secret: Optional[str] = None,
+        params: Optional[dict[str, Any]] = None,
+    ) -> requests.Response:
+        headers = {"User-Agent": self.user_agent}
+        if auth_type == "token":
+            headers["Authorization"] = f"Discogs token={token}"
+            response = requests.request(
+                method,
+                url,
+                headers=headers,
+                params=params,
+                timeout=30,
+            )
+            return response
+
+        session = self._oauth_session(
+            oauth_token=token,
+            oauth_token_secret=token_secret,
+        )
+        return session.request(
+            method,
+            url,
+            headers=headers,
+            params=params,
+            timeout=30,
+        )
+
     def start_oauth(self, callback_uri: str) -> tuple[str, str, str]:
         session = self._oauth_session(callback_uri=callback_uri)
         tokens = session.fetch_request_token(settings.discogs_request_token_url)
@@ -55,15 +90,22 @@ class DiscogsClient:
         )
         return session.fetch_access_token(settings.discogs_access_token_url)
 
-    def get_identity(self, oauth_token: str, oauth_token_secret: str) -> dict[str, Any]:
-        session = self._oauth_session(
-            oauth_token=oauth_token,
-            oauth_token_secret=oauth_token_secret,
-        )
-        response = session.get(
+    def verify_user_token(self, user_token: str) -> dict[str, Any]:
+        return self.get_identity(user_token, auth_type="token")
+
+    def get_identity(
+        self,
+        token: str,
+        token_secret: Optional[str] = None,
+        *,
+        auth_type: AuthType = "oauth",
+    ) -> dict[str, Any]:
+        response = self._request(
+            "GET",
             f"{settings.discogs_api_base}/oauth/identity",
-            headers={"User-Agent": self.user_agent},
-            timeout=30,
+            auth_type=auth_type,
+            token=token,
+            token_secret=token_secret,
         )
         response.raise_for_status()
         return response.json()
@@ -71,27 +113,27 @@ class DiscogsClient:
     def paged_collection_items(
         self,
         username: str,
-        oauth_token: str,
-        oauth_token_secret: str,
+        token: str,
+        token_secret: Optional[str] = None,
+        *,
+        auth_type: AuthType = "oauth",
         on_progress: Optional[Callable[[int, int], None]] = None,
     ) -> list[dict[str, Any]]:
-        session = self._oauth_session(
-            oauth_token=oauth_token,
-            oauth_token_secret=oauth_token_secret,
-        )
         page = 1
         items: list[dict[str, Any]] = []
         while True:
-            response = session.get(
+            response = self._request(
+                "GET",
                 f"{settings.discogs_api_base}/users/{username}/collection/folders/0/releases",
-                headers={"User-Agent": self.user_agent},
+                auth_type=auth_type,
+                token=token,
+                token_secret=token_secret,
                 params={
                     "page": page,
                     "per_page": 100,
                     "sort": "added",
                     "sort_order": "desc",
                 },
-                timeout=30,
             )
             response.raise_for_status()
             data = response.json()
@@ -109,19 +151,19 @@ class DiscogsClient:
     def add_release(
         self,
         username: str,
-        oauth_token: str,
-        oauth_token_secret: str,
+        token: str,
         folder_id: int,
         release_id: int,
+        *,
+        token_secret: Optional[str] = None,
+        auth_type: AuthType = "oauth",
     ) -> requests.Response:
-        session = self._oauth_session(
-            oauth_token=oauth_token,
-            oauth_token_secret=oauth_token_secret,
-        )
-        response = session.post(
+        response = self._request(
+            "POST",
             f"{settings.discogs_api_base}/users/{username}/collection/folders/{folder_id}/releases/{release_id}",
-            headers={"User-Agent": self.user_agent},
-            timeout=30,
+            auth_type=auth_type,
+            token=token,
+            token_secret=token_secret,
         )
         time.sleep(settings.request_delay_seconds)
         return response
@@ -129,20 +171,20 @@ class DiscogsClient:
     def delete_release_instance(
         self,
         username: str,
-        oauth_token: str,
-        oauth_token_secret: str,
+        token: str,
         folder_id: int,
         release_id: int,
         instance_id: int,
+        *,
+        token_secret: Optional[str] = None,
+        auth_type: AuthType = "oauth",
     ) -> requests.Response:
-        session = self._oauth_session(
-            oauth_token=oauth_token,
-            oauth_token_secret=oauth_token_secret,
-        )
-        response = session.delete(
+        response = self._request(
+            "DELETE",
             f"{settings.discogs_api_base}/users/{username}/collection/folders/{folder_id}/releases/{release_id}/instances/{instance_id}",
-            headers={"User-Agent": self.user_agent},
-            timeout=30,
+            auth_type=auth_type,
+            token=token,
+            token_secret=token_secret,
         )
         time.sleep(settings.request_delay_seconds)
         return response

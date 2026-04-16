@@ -45,6 +45,15 @@ class JobRunner:
             raise ValueError("Delete confirmation is only allowed after the move copy phase finishes.")
         self._start_worker(job_id, self._run_delete)
 
+    def _account_auth(self, account) -> tuple[str, str | None]:
+        token = self.keychain_store.get_secret(account.token_key)
+        token_secret = (
+            self.keychain_store.get_secret(account.token_secret_key)
+            if account.auth_type == "oauth" and account.token_secret_key
+            else None
+        )
+        return token, token_secret
+
     def rollback(self, job_id: str) -> None:
         detail = self.repository.get_job_detail(job_id)
         job = detail.job
@@ -52,15 +61,15 @@ class JobRunner:
             raise ValueError("Rollback is only allowed before deletion starts.")
 
         destination = self.repository.get_account(job.destination_account_id)
-        oauth_token = self.keychain_store.get_secret(destination.token_key)
-        oauth_secret = self.keychain_store.get_secret(destination.token_secret_key)
+        destination_token, destination_secret = self._account_auth(destination)
         for item in detail.items:
             if item.status not in {"copied", "awaiting_delete_confirmation"} or not item.destination_instance_id:
                 continue
             response = self.discogs_client.delete_release_instance(
                 username=destination.username,
-                oauth_token=oauth_token,
-                oauth_token_secret=oauth_secret,
+                auth_type=destination.auth_type,
+                token=destination_token,
+                token_secret=destination_secret,
                 folder_id=item.destination_folder_id or 1,
                 release_id=item.release_id,
                 instance_id=item.destination_instance_id,
@@ -86,8 +95,7 @@ class JobRunner:
             detail = self.repository.get_job_detail(job_id)
             job = detail.job
             destination = self.repository.get_account(job.destination_account_id)
-            destination_token = self.keychain_store.get_secret(destination.token_key)
-            destination_secret = self.keychain_store.get_secret(destination.token_secret_key)
+            destination_token, destination_secret = self._account_auth(destination)
             self.repository.update_job_status(job_id, status="running_copy", started=True)
             self.repository.add_job_event(job_id, "info", "Copy phase started.")
 
@@ -96,8 +104,9 @@ class JobRunner:
                     continue
                 response = self.discogs_client.add_release(
                     username=destination.username,
-                    oauth_token=destination_token,
-                    oauth_token_secret=destination_secret,
+                    auth_type=destination.auth_type,
+                    token=destination_token,
+                    token_secret=destination_secret,
                     folder_id=item.destination_folder_id or 1,
                     release_id=item.release_id,
                 )
@@ -144,8 +153,7 @@ class JobRunner:
             if job.workflow_mode != "move":
                 raise ValueError("Delete phase is only valid for move jobs.")
             source = self.repository.get_account(job.source_account_id)
-            source_token = self.keychain_store.get_secret(source.token_key)
-            source_secret = self.keychain_store.get_secret(source.token_secret_key)
+            source_token, source_secret = self._account_auth(source)
             self.repository.update_job_status(job_id, status="running_delete")
             self.repository.add_job_event(job_id, "info", "Delete phase started.")
 
@@ -154,8 +162,9 @@ class JobRunner:
                     continue
                 response = self.discogs_client.delete_release_instance(
                     username=source.username,
-                    oauth_token=source_token,
-                    oauth_token_secret=source_secret,
+                    auth_type=source.auth_type,
+                    token=source_token,
+                    token_secret=source_secret,
                     folder_id=item.source_folder_id,
                     release_id=item.release_id,
                     instance_id=item.instance_id,

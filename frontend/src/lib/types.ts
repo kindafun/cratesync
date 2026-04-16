@@ -1,4 +1,5 @@
 export type AccountRole = "source" | "destination";
+export type AuthType = "oauth" | "token";
 export type WorkflowMode = "copy" | "move";
 export type JobStatus =
   | "draft"
@@ -14,10 +15,21 @@ export interface ConnectedAccount {
   id: string;
   username: string;
   role: AccountRole;
+  auth_type: AuthType;
   discogs_user_id?: number | null;
   created_at: string;
   updated_at: string;
   last_synced_at?: string | null;
+}
+
+export interface PendingAuthConnection {
+  verification_id: string;
+  role: AccountRole;
+  auth_type: AuthType;
+  username: string;
+  discogs_user_id?: number | null;
+  requires_replacement_confirmation: boolean;
+  existing_account?: ConnectedAccount | null;
 }
 
 export interface CollectionSnapshot {

@@ -164,6 +164,39 @@
   background: var(--color-surface-raised);
 }
 
+.section-account-connect-panel {
+  display: grid;
+  gap: var(--stack-sm);
+  padding: var(--space-sm);
+  border-top: var(--border-grid);
+  background: color-mix(in srgb, var(--color-surface-raised) 78%, white 22%);
+}
+
+.section-account-connect-head,
+.section-account-confirm,
+.section-account-connect-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--inline-gap-md);
+  flex-wrap: wrap;
+}
+
+.section-account-confirm-copy {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.section-account-link {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.14em;
+}
+
+.section-account-link:hover {
+  color: var(--color-ink);
+}
+
 .field-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -180,6 +213,7 @@
 }
 
 input[type="text"],
+input[type="password"],
 input[type="datetime-local"],
 input[type="date"],
 input[type="number"],

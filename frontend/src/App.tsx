@@ -122,8 +122,19 @@ export function App() {
     selectedPresetId,
     reviewTableMode,
     setReviewTableMode,
+    openConnectRole,
+    connectBusyRole,
+    connectTokenByRole,
+    connectErrorByRole,
+    pendingConnectionByRole,
     refreshWorkspace,
-    handleConnect,
+    openConnectPanel,
+    clearConnectPanel,
+    updateConnectToken,
+    handleVerifyToken,
+    handleConfirmPendingConnection,
+    handleCancelPendingConnection,
+    handleStartOAuth,
     handleSync,
     handleDisconnect,
     handlePreview,
@@ -338,7 +349,18 @@ export function App() {
                   retryAccountId === sourceAccount?.id ? status : null
                 }
                 onRetry={retryAccountId === sourceAccount?.id ? retryFn : null}
-                onConnect={handleConnect}
+                connectionOpen={openConnectRole === "source"}
+                connectionBusy={connectBusyRole === "source"}
+                connectionToken={connectTokenByRole.source}
+                connectionError={connectErrorByRole.source}
+                pendingConnection={pendingConnectionByRole.source}
+                onOpenConnect={openConnectPanel}
+                onCloseConnect={clearConnectPanel}
+                onTokenChange={updateConnectToken}
+                onVerifyToken={handleVerifyToken}
+                onStartOAuth={handleStartOAuth}
+                onConfirmPendingConnection={handleConfirmPendingConnection}
+                onCancelPendingConnection={handleCancelPendingConnection}
                 onSync={handleSync}
                 onDisconnect={handleDisconnect}
               />
@@ -462,7 +484,18 @@ export function App() {
                 onRetry={
                   retryAccountId === destinationAccount?.id ? retryFn : null
                 }
-                onConnect={handleConnect}
+                connectionOpen={openConnectRole === "destination"}
+                connectionBusy={connectBusyRole === "destination"}
+                connectionToken={connectTokenByRole.destination}
+                connectionError={connectErrorByRole.destination}
+                pendingConnection={pendingConnectionByRole.destination}
+                onOpenConnect={openConnectPanel}
+                onCloseConnect={clearConnectPanel}
+                onTokenChange={updateConnectToken}
+                onVerifyToken={handleVerifyToken}
+                onStartOAuth={handleStartOAuth}
+                onConfirmPendingConnection={handleConfirmPendingConnection}
+                onCancelPendingConnection={handleCancelPendingConnection}
                 onSync={handleSync}
                 onDisconnect={handleDisconnect}
               />

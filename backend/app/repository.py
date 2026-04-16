@@ -36,9 +36,10 @@ class Repository:
         *,
         username: str,
         role: str,
+        auth_type: str = "oauth",
         discogs_user_id: Optional[int],
         token_key: str,
-        token_secret_key: str,
+        token_secret_key: str = "",
     ) -> ConnectedAccount:
         existing = self.find_account_by_username(username)
         account_id = existing.id if existing else make_id("acct")
@@ -48,13 +49,14 @@ class Repository:
             conn.execute(
                 """
                 INSERT OR REPLACE INTO connected_accounts
-                (id, username, role, discogs_user_id, token_key, token_secret_key, created_at, updated_at, last_synced_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, username, role, auth_type, discogs_user_id, token_key, token_secret_key, created_at, updated_at, last_synced_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     account_id,
                     username,
                     role,
+                    auth_type,
                     discogs_user_id,
                     token_key,
                     token_secret_key,
@@ -88,8 +90,36 @@ class Repository:
             ).fetchone()
         return self._row_to_account(row) if row else None
 
+    def find_account_by_role(self, role: str) -> Optional[ConnectedAccount]:
+        with self.database.connect() as conn:
+            row = conn.execute(
+                """
+                SELECT * FROM connected_accounts
+                WHERE role = ?
+                ORDER BY updated_at DESC
+                LIMIT 1
+                """,
+                (role,),
+            ).fetchone()
+        return self._row_to_account(row) if row else None
+
     def delete_account(self, account_id: str) -> None:
         with self.database.connect() as conn:
+            snapshot_rows = conn.execute(
+                "SELECT id FROM collection_snapshots WHERE account_id = ?",
+                (account_id,),
+            ).fetchall()
+            for row in snapshot_rows:
+                conn.execute(
+                    "DELETE FROM collection_item_snapshots WHERE snapshot_id = ?",
+                    (row["id"],),
+                )
+            conn.execute(
+                "DELETE FROM collection_snapshots WHERE account_id = ?", (account_id,)
+            )
+            conn.execute(
+                "DELETE FROM selection_presets WHERE account_id = ?", (account_id,)
+            )
             conn.execute("DELETE FROM connected_accounts WHERE id = ?", (account_id,))
 
     def replace_snapshot(

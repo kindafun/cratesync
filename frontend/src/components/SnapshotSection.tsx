@@ -116,7 +116,7 @@ export const SnapshotSection = memo(function SnapshotSection({
               <div className="header-note">
                 {snapshot
                   ? `${snapshot.total_items} items · synced ${formatSyncDateTime(snapshot.created_at)}`
-                  : "No local snapshot"}
+                  : "Not synced yet"}
               </div>
             </div>
           </div>
@@ -189,7 +189,7 @@ export const SnapshotSection = memo(function SnapshotSection({
                   ) : (
                     <tr>
                       <td colSpan={6} className="empty-cell">
-                        Sync this account to populate the local snapshot.
+                        Sync this account to load its snapshot.
                       </td>
                     </tr>
                   ))}

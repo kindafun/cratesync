@@ -147,7 +147,7 @@ export function ReviewSection({
             aria-hidden="true"
           />
           <div className="canvas-header-title">
-            <h2>Review and launch</h2>
+            <h2>Preview and start</h2>
           </div>
         </button>
       </div>
@@ -178,7 +178,7 @@ export function ReviewSection({
                     onClick={onLaunchJob}
                   >
                     <Play size={14} />
-                    {isCreatingJob ? "Launching…" : "Start migration"}
+                    {isCreatingJob ? "Starting…" : "Start migration"}
                   </button>
                 </div>
               </div>
@@ -186,15 +186,15 @@ export function ReviewSection({
               {shouldShowMetrics && (
                 <div className="summary-strip review-summary-strip">
                   <ReviewSummaryStat
-                    label="Current selection"
+                    label="Selected now"
                     value={selectedSourceCount}
                   />
                   <ReviewSummaryStat
-                    label="Last preview"
+                    label="In last preview"
                     value={preview?.selected_count ?? 0}
                   />
                   <ReviewSummaryStat
-                    label="Duplicates on destination"
+                    label="Already in receiving account"
                     value={duplicateCount}
                     quiet={duplicateCount === 0}
                     attention={duplicateCount > 0}
@@ -207,7 +207,7 @@ export function ReviewSection({
               )}
 
               <div className="review-checklist-block">
-                <div className="review-checklist" aria-label="Launch readiness checklist">
+                <div className="review-checklist" aria-label="Migration readiness checklist">
                   {reviewState.checklist.map((item) => (
                     <span
                       key={item.label}
@@ -330,7 +330,7 @@ export function ReviewSection({
               >
                 <div className="review-evidence-head">
                   <div>
-                    <h3>Preview items</h3>
+                    <h3>Preview rows</h3>
                     <p className="review-evidence-copy">{evidenceDescription}</p>
                   </div>
                   <div
@@ -367,17 +367,17 @@ export function ReviewSection({
                       <tr>
                         <th>Artist</th>
                         <th>Title</th>
-                        <th>Source folder</th>
+                        <th>From folder</th>
                         <th>Release</th>
                         <th>Added</th>
-                        <th>Review state</th>
+                        <th>Preview status</th>
                       </tr>
                     </thead>
                     <tbody>
                       {reviewItems.length === 0 && (
                         <tr>
                           <td colSpan={6} className="empty-cell">
-                            No rows available for this review mode.
+                            No rows available in this view.
                           </td>
                         </tr>
                       )}
@@ -423,7 +423,7 @@ export function ReviewSection({
                                 </span>
                                 {isDuplicate && (
                                   <span className="state-pill warning">
-                                    Duplicate on destination
+                                    Already in receiving account
                                   </span>
                                 )}
                               </div>
@@ -450,7 +450,7 @@ export function ReviewSection({
           {!preview && isGeneratingPreview && (
             <div className="empty-block preview-loading">
               <span className="preview-loading-label">
-                Checking selections against destination…
+                Checking selections against receiving account…
               </span>
               <div className="preview-loading-bars">
                 <span className="skeleton-cell skeleton-cell-long" />
@@ -509,7 +509,7 @@ function FolderConflictCard({
       <h3>{getReviewFolderConflictTitle(folderName)}</h3>
       <p>{getReviewFolderConflictBody(folderName)}</p>
       <select
-        aria-label={`Map ${folderName} to destination folder`}
+        aria-label={`Map ${folderName} to receiving folder`}
         value={selectedValue ? String(selectedValue) : ""}
         onChange={(event) =>
           onChange(
@@ -518,7 +518,7 @@ function FolderConflictCard({
           )
         }
       >
-        <option value="">Choose destination folder</option>
+        <option value="">Choose receiving folder</option>
         {destinationFolderIds.map((folderId) => (
           <option key={folderId} value={folderId}>
             {destinationFolderLookup[folderId] ?? `Folder ${folderId}`}
@@ -548,8 +548,8 @@ function CustomFieldConflictCard({
       <div className="inline-action">
         <input
           type="text"
-          aria-label={`Destination field name for ${fieldName}`}
-          placeholder="Destination field name"
+          aria-label={`Receiving account field name for ${fieldName}`}
+          placeholder="Receiving account field name"
           value={value}
           onChange={(event) => onChange(fieldName, event.target.value)}
         />

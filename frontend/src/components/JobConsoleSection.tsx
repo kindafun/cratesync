@@ -6,6 +6,7 @@ import {
   formatJobNextAction,
   formatJobPhase,
   formatJobSummaryLabel,
+  formatWorkflowMode,
   statusTone,
 } from "../lib/format";
 import type { JobDetailResponse, MigrationJob } from "../lib/types";
@@ -44,8 +45,8 @@ export function JobConsoleSection({
   const phaseLabel = jobDetail ? formatJobPhase(jobDetail.job.status) : null;
   const nextAction = jobDetail ? formatJobNextAction(jobDetail.job.status) : null;
   const consoleHeaderNote = jobDetail
-    ? `${recentJobs.length} recent job${recentJobs.length === 1 ? "" : "s"}`
-    : "Choose a job to inspect the audit record.";
+    ? `${recentJobs.length} recent run${recentJobs.length === 1 ? "" : "s"}`
+    : "Choose a run to inspect the migration record.";
 
   return (
     <section className={`canvas-section${collapsed ? " is-collapsed" : ""}`}>
@@ -62,7 +63,7 @@ export function JobConsoleSection({
             aria-hidden="true"
           />
           <div className="canvas-header-title">
-            <h2>Job console</h2>
+            <h2>Migration history</h2>
           </div>
         </button>
         <div className="canvas-header-controls job-console-header-note">
@@ -74,7 +75,7 @@ export function JobConsoleSection({
         <>
           <div className="history-strip">
             {recentJobs.length === 0 && (
-              <span className="text-muted text-meta">No jobs created yet.</span>
+              <span className="text-muted text-meta">No migration runs yet.</span>
             )}
             {recentJobs.map((job) => (
               <button
@@ -90,8 +91,8 @@ export function JobConsoleSection({
 
           {!jobDetail && (
             <div className="empty-block">
-              Launch a migration or choose a recent job to inspect its phase,
-              results, and exported audit reports.
+              Start a migration or choose a recent run to inspect its phase,
+              results, and exported reports.
             </div>
           )}
 
@@ -109,7 +110,7 @@ export function JobConsoleSection({
                       </span>
                     </div>
                     <div className="job-meta">
-                      {jobDetail.job.workflow_mode} workflow · created{" "}
+                      {formatWorkflowMode(jobDetail.job.workflow_mode)} · created{" "}
                       {formatDateTime(jobDetail.job.created_at)}
                       {jobDetail.job.started_at &&
                         ` · started ${formatDateTime(jobDetail.job.started_at)}`}
@@ -164,9 +165,9 @@ export function JobConsoleSection({
                   <thead>
                     <tr>
                       <th>Release</th>
-                      <th>Source folder</th>
+                      <th>From folder</th>
                       <th>Outcome</th>
-                      <th>Destination</th>
+                      <th>To folder</th>
                       <th>Note</th>
                     </tr>
                   </thead>
@@ -184,7 +185,7 @@ export function JobConsoleSection({
                             </span>
                             {item.date_added && (
                               <span className="job-row-meta">
-                                Source added {formatDate(item.date_added)}
+                                Added {formatDate(item.date_added)}
                               </span>
                             )}
                           </div>
@@ -214,7 +215,7 @@ export function JobConsoleSection({
                             <div className="job-note-cell">{item.message}</div>
                           ) : item.destination_instance_id ? (
                             <div className="job-note-cell">
-                              Destination instance {item.destination_instance_id}
+                              New instance {item.destination_instance_id}
                             </div>
                           ) : (
                             "—"

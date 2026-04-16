@@ -44,6 +44,17 @@ export function formatJobPhase(status: string): string {
   }
 }
 
+export function formatWorkflowMode(mode: string): string {
+  switch (mode) {
+    case "copy":
+      return "Copy migration";
+    case "move":
+      return "Move migration";
+    default:
+      return mode.replace(/_/g, " ");
+  }
+}
+
 export function formatJobNextAction(status: string): string {
   switch (status) {
     case "awaiting_delete_confirmation":
@@ -91,16 +102,16 @@ const CAPABILITY_DISPLAY: Record<string, (v: unknown) => CapabilityChip> = {
   supports_date_added_write: () => ({
     label: "Date added",
     value: "not preserved",
-    note: "Discogs doesn't allow writing original collection dates — items will show today's date in the destination.",
+    note: "Discogs doesn't allow writing original collection dates — items will show today's date in the receiving account.",
   }),
   supports_folder_recreation: () => ({
     label: "Folders",
-    value: "recreated in destination",
+    value: "recreated in receiving account",
   }),
   custom_fields_best_effort: () => ({
     label: "Custom fields",
     value: "best effort",
-    note: "Custom field values are written when the destination has a matching field name.",
+    note: "Custom field values are written when the receiving account has a matching field name.",
   }),
   duplicate_policy: (v) => ({
     label: "Duplicates",

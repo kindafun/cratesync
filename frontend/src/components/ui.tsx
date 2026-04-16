@@ -77,7 +77,7 @@ export function PillSelect({
   if (options.length === 0) {
     return (
       <div className="empty-block compact">
-        No values available in the synced source snapshot.
+        No values available in the synced account you're moving from.
       </div>
     );
   }

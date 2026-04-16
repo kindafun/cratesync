@@ -34,7 +34,7 @@ export function deriveReviewState({
       status: accountsReady ? "done" : "blocked",
     },
     {
-      label: "Items selected",
+      label: selectionReady ? "Items selected" : "No items selected",
       status: !accountsReady ? "attention" : selectionReady ? "done" : "blocked",
     },
     {
@@ -52,7 +52,7 @@ export function deriveReviewState({
       tone: "default",
       title: "Connect both accounts",
       message:
-        "Sync your source and connect the destination before you review this migration.",
+        "Sync the account you're moving from and connect the account you're moving to before you preview this migration.",
       blockerCount: 1,
       checklist: [...checklist],
     };
@@ -61,7 +61,8 @@ export function deriveReviewState({
     return {
       tone: "warning",
       title: "Select releases to include",
-      message: "Choose at least one source row before you generate a preview.",
+      message:
+        "Choose at least one release from the account you're moving from before you generate a preview.",
       blockerCount: 1,
       checklist: [...checklist],
     };
@@ -70,7 +71,8 @@ export function deriveReviewState({
     return {
       tone: "default",
       title: "Generate a preview",
-      message: "Check duplicates, mappings, and destination behavior before launch.",
+      message:
+        "Check duplicates, mappings, and what already exists in the receiving account before you start the migration.",
       blockerCount: 1,
       checklist: [...checklist],
     };
@@ -79,7 +81,7 @@ export function deriveReviewState({
     return {
       tone: "warning",
       title: "Preview out of date",
-      message: "Your filters or workflow changed. Refresh the preview before launch.",
+      message: "Your filters or mappings changed. Refresh the preview before you start.",
       blockerCount: 1,
       checklist: [...checklist],
     };
@@ -87,7 +89,7 @@ export function deriveReviewState({
   if (blockerCount > 0) {
     return {
       tone: "warning",
-      title: "Resolve blockers before launch",
+      title: "Resolve blockers before start",
       message: `Resolve ${blockerCount} blocker${blockerCount !== 1 ? "s" : ""} before you start the migration.`,
       blockerCount,
       checklist: [...checklist],
@@ -95,7 +97,7 @@ export function deriveReviewState({
   }
   return {
     tone: "ready",
-    title: "Ready to launch",
+    title: "Ready to start",
     message: "Your preview is current and blockers are cleared.",
     blockerCount: 0,
     checklist: [...checklist],
@@ -111,9 +113,9 @@ export function getReviewCapabilityIntro() {
 
 export function getReviewBlockersTitle(blockerCount: number): string {
   if (blockerCount > 1) {
-    return `Resolve before launch (${blockerCount})`;
+    return `Resolve before start (${blockerCount})`;
   }
-  return "Resolve before launch";
+  return "Resolve before start";
 }
 
 export function getReviewBlockersRefreshCue(): string {
@@ -135,24 +137,24 @@ export function getReviewSummaryStaleMessage({
 }
 
 export function getReviewCustomFieldConflictTitle(fieldName: string): string {
-  return `Map source field "${fieldName}"`;
+  return `Map field "${fieldName}"`;
 }
 
 export function getReviewCustomFieldConflictBody(fieldName: string): string {
-  return `This source field is not mapped in the destination yet. Enter the destination field name for "${fieldName}", or keep the same name on both sides.`;
+  return `This field is not mapped in the receiving account yet. Enter the matching field name for "${fieldName}", or keep the same name on both sides.`;
 }
 
 export function getReviewFolderConflictTitle(folderName: string): string {
-  return `Choose destination folder for "${folderName}"`;
+  return `Choose receiving folder for "${folderName}"`;
 }
 
 export function getReviewFolderConflictBody(folderName: string): string {
-  return `The destination account has more than one folder named "${folderName}". Choose the folder this source folder should map to.`;
+  return `The account you're moving to has more than one folder named "${folderName}". Choose which folder the matching folder from the account you're moving from should map to.`;
 }
 
 export function getReviewEvidenceDescription(mode: "selected" | "all"): string {
   if (mode === "selected") {
     return "Spot-check the rows included in this preview.";
   }
-  return "Compare the preview against the wider filtered source rows.";
+  return "Compare the preview against the wider filtered rows from the account you're moving from.";
 }

@@ -183,7 +183,7 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
               <div className="header-note">
                 {snapshot
                   ? `${selectedCount} selected · ${totalItems} visible · ${totalSourceItems} total`
-                  : "No local snapshot"}
+                  : "Not synced yet"}
               </div>
             </div>
             <div className="toolbar-actions">
@@ -287,7 +287,7 @@ export const SourceSelectionSection = memo(function SourceSelectionSection({
                   ) : (
                     <tr>
                       <td colSpan={8} className="empty-cell">
-                        Sync the source account to populate the local snapshot.
+                        Sync the account you're moving from to load its snapshot.
                       </td>
                     </tr>
                   ))}

@@ -286,7 +286,7 @@ export function App() {
                 id="workflow-mode-copy-tip"
                 role="tooltip"
               >
-                Keeps releases in the source and adds them to the destination.
+                Keeps releases in the account you're moving from and adds them to the account you're moving to.
               </span>
             </span>
             <span className="mode-toggle-option-shell">
@@ -303,7 +303,7 @@ export function App() {
                 id="workflow-mode-move-tip"
                 role="tooltip"
               >
-                Adds releases to the destination and removes them from the source.
+                Adds releases to the account you're moving to and removes them from the account you're moving from.
               </span>
             </span>
           </div>
@@ -325,7 +325,7 @@ export function App() {
       <section className="shell-grid">
         <section className="shell-content">
           <SourceSelectionSection
-            title="Source"
+            title="From account"
             snapshot={sourceSnapshot}
             items={filteredSourceItems}
             totalSourceItems={sourceItems.length}
@@ -466,7 +466,7 @@ export function App() {
           />
 
           <SnapshotSection
-            title="Destination"
+            title="To account"
             snapshot={destinationSnapshot}
             items={destinationItems}
             loading={loading || isSyncing !== null}

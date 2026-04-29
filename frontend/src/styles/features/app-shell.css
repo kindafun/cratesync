@@ -271,6 +271,22 @@
   transform: translateX(-50%) translateY(0);
 }
 
+.floating-tooltip {
+  position: fixed;
+  box-sizing: border-box;
+  width: 16rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.55rem 0.7rem;
+  border: var(--border-grid-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised);
+  color: var(--color-ink);
+  font-size: var(--text-meta);
+  line-height: 1.45;
+  box-shadow: var(--shadow-soft);
+  z-index: 20;
+}
+
 @media (max-width: 760px) {
   .hero-status,
   .toggle-group,

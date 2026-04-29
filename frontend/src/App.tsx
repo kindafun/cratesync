@@ -25,7 +25,15 @@ import type {
 } from "./lib/types";
 
 export function App() {
+  const clearLocalDataTooltipCopy =
+    "Removes saved accounts, cached collection data, and local migration state from this device only. Nothing is removed from Discogs.";
   const [accounts, setAccounts] = useState<ConnectedAccount[]>([]);
+  const [showClearLocalDataTooltip, setShowClearLocalDataTooltip] =
+    useState(false);
+  const [clearLocalDataTooltipStyle, setClearLocalDataTooltipStyle] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
 
   const {
     sourceSnapshot,
@@ -175,7 +183,36 @@ export function App() {
   // ── DOM refs ──────────────────────────────────────────────────────────────
   const savedViewsRef = useRef<HTMLDetailsElement>(null);
   const handlePreviewRef = useRef(handlePreview);
+  const clearLocalDataButtonRef = useRef<HTMLButtonElement>(null);
+  const clearLocalDataTooltipRef = useRef<HTMLSpanElement>(null);
   handlePreviewRef.current = handlePreview;
+
+  function positionClearLocalDataTooltip() {
+    const button = clearLocalDataButtonRef.current;
+    if (!button) return;
+
+    const rect = button.getBoundingClientRect();
+    const tooltipWidth =
+      clearLocalDataTooltipRef.current?.getBoundingClientRect().width ?? 224;
+    const viewportPadding = 16;
+    const left = Math.max(
+      viewportPadding,
+      Math.min(rect.left, window.innerWidth - tooltipWidth - viewportPadding),
+    );
+
+    setClearLocalDataTooltipStyle({
+      left,
+      top: rect.bottom + 8,
+    });
+  }
+
+  function openClearLocalDataTooltip() {
+    setShowClearLocalDataTooltip(true);
+  }
+
+  function closeClearLocalDataTooltip() {
+    setShowClearLocalDataTooltip(false);
+  }
 
   // ── Initial workspace load ────────────────────────────────────────────────
   useEffect(() => {
@@ -218,6 +255,25 @@ export function App() {
     window.addEventListener("pointerdown", onPointerDown);
     return () => window.removeEventListener("pointerdown", onPointerDown);
   }, []);
+
+  useEffect(() => {
+    if (!showClearLocalDataTooltip) return;
+
+    function updatePosition() {
+      positionClearLocalDataTooltip();
+    }
+
+    updatePosition();
+    const frameId = window.requestAnimationFrame(updatePosition);
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [showClearLocalDataTooltip]);
 
   // ── Derived render values ─────────────────────────────────────────────────
   const previewIsStale = Boolean(
@@ -313,14 +369,36 @@ export function App() {
             </button>
           )}
           <button
+            aria-describedby="clear-local-data-tip"
             className="text-btn text-btn-danger"
+            onBlur={closeClearLocalDataTooltip}
             onClick={() => void handleClearLocalData()}
+            onFocus={openClearLocalDataTooltip}
+            onMouseEnter={openClearLocalDataTooltip}
+            onMouseLeave={closeClearLocalDataTooltip}
+            ref={clearLocalDataButtonRef}
           >
             <Trash2 size={13} />
             Clear local data
           </button>
         </div>
       </header>
+
+      {showClearLocalDataTooltip && (
+        <span
+          className="floating-tooltip"
+          id="clear-local-data-tip"
+          ref={clearLocalDataTooltipRef}
+          role="tooltip"
+          style={
+            clearLocalDataTooltipStyle
+              ? clearLocalDataTooltipStyle
+              : { left: -9999, top: -9999, visibility: "hidden" }
+          }
+        >
+          {clearLocalDataTooltipCopy}
+        </span>
+      )}
 
       <section className="shell-grid">
         <section className="shell-content">

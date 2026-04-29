@@ -89,15 +89,15 @@ export function deriveReviewState({
   if (blockerCount > 0) {
     return {
       tone: "warning",
-      title: "Resolve blockers before start",
-      message: `Resolve ${blockerCount} blocker${blockerCount !== 1 ? "s" : ""} before you start the migration.`,
+      title: "Resolve blockers before launch",
+      message: `Resolve ${blockerCount} blocker${blockerCount !== 1 ? "s" : ""} before you launch the migration.`,
       blockerCount,
       checklist: [...checklist],
     };
   }
   return {
     tone: "ready",
-    title: "Ready to start",
+    title: "Ready to launch",
     message: "Your preview is current and blockers are cleared.",
     blockerCount: 0,
     checklist: [...checklist],
@@ -113,9 +113,9 @@ export function getReviewCapabilityIntro() {
 
 export function getReviewBlockersTitle(blockerCount: number): string {
   if (blockerCount > 1) {
-    return `Resolve before start (${blockerCount})`;
+    return `Resolve before launch (${blockerCount})`;
   }
-  return "Resolve before start";
+  return "Resolve before launch";
 }
 
 export function getReviewBlockersRefreshCue(): string {
@@ -137,24 +137,27 @@ export function getReviewSummaryStaleMessage({
 }
 
 export function getReviewCustomFieldConflictTitle(fieldName: string): string {
-  return `Map field "${fieldName}"`;
+  return `Map source field "${fieldName}"`;
 }
 
 export function getReviewCustomFieldConflictBody(fieldName: string): string {
-  return `This field is not mapped in the receiving account yet. Enter the matching field name for "${fieldName}", or keep the same name on both sides.`;
+  return `This source field is not mapped in the destination yet. Enter the destination field name for "${fieldName}", or keep the same name on both sides.`;
 }
 
 export function getReviewFolderConflictTitle(folderName: string): string {
-  return `Choose receiving folder for "${folderName}"`;
+  return `Choose destination folder for "${folderName}"`;
 }
 
-export function getReviewFolderConflictBody(folderName: string): string {
-  return `The account you're moving to has more than one folder named "${folderName}". Choose which folder the matching folder from the account you're moving from should map to.`;
+export function getReviewFolderConflictBody(folderName: string, reason?: string): string {
+  if (reason === "missing_destination_folder") {
+    return `The destination account has no folder named "${folderName}". Choose the destination folder this source folder should map to.`;
+  }
+  return `The destination account has more than one folder named "${folderName}". Choose the folder this source folder should map to.`;
 }
 
 export function getReviewEvidenceDescription(mode: "selected" | "all"): string {
   if (mode === "selected") {
     return "Spot-check the rows included in this preview.";
   }
-  return "Compare the preview against the wider filtered rows from the account you're moving from.";
+  return "Compare the preview against the wider filtered source rows.";
 }
